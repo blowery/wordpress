@@ -1,0 +1,3 @@
+[submodule "wp-content/themes/rococo"]
+	path = wp-content/themes/rococo
+	url = git://github.com/blowery/rococo.git
