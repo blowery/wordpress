@@ -10,7 +10,7 @@ function bloginfo_rss($show = '') {
 }
 
 function get_default_feed() {
-	return apply_filters('default_feed', 'rss2');
+	return apply_filters('default_feed', 'atom');
 }
 
 function get_wp_title_rss($sep = '&#187;') {
