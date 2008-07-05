@@ -439,7 +439,7 @@ function fetch_rss ($url) {
 			if ( isset($rss) and $rss ) {
 				$rss->from_cache = 1;
 				if ( MAGPIE_DEBUG > 1) {
-				debug("MagpieRSS: Cache HIT", E_USER_NOTICE);
+				$cache->debug("MagpieRSS: Cache HIT on $url", E_USER_NOTICE);
 			}
 				return $rss;
 			}
@@ -462,7 +462,7 @@ function fetch_rss ($url) {
 			if ($resp->status == '304' ) {
 				// we have the most current copy
 				if ( MAGPIE_DEBUG > 1) {
-					debug("Got 304 for $url");
+					$cache->debug("Got 304 for $url");
 				}
 				// reset cache on 304 (at minutillo insistent prodding)
 				$cache->set($url, $rss);
@@ -472,7 +472,7 @@ function fetch_rss ($url) {
 				$rss = _response_to_rss( $resp );
 				if ( $rss ) {
 					if (MAGPIE_DEBUG > 1) {
-						debug("Fetch successful");
+						$cache->debug("Fetch successful");
 					}
 					// add object to cache
 					$cache->set( $url, $rss );
@@ -683,7 +683,7 @@ class RSSCache {
 		if ( !$wpdb->get_var( $wpdb->prepare( "SELECT option_name FROM $wpdb->options WHERE option_name = %s", $cache_timestamp ) ) )
 			add_option($cache_timestamp, '', '', 'no');
 
-		update_option($cache_option, $rss);
+		update_option($cache_option, $this->serialize($rss));
 		update_option($cache_timestamp, time() );
 
 		return $cache_option;
@@ -705,9 +705,7 @@ class RSSCache {
 			);
 			return 0;
 		}
-
-		$rss = get_option( $cache_option );
-
+		$rss = $this->unserialize(get_option( $cache_option ));
 		return $rss;
 	}
 
@@ -746,14 +744,14 @@ class RSSCache {
 	Function:	serialize
 \*=======================================================================*/
 	function serialize ( $rss ) {
-		return serialize( $rss );
+		return base64_encode(serialize( $rss ));
 	}
 
 /*=======================================================================*\
 	Function:	unserialize
 \*=======================================================================*/
 	function unserialize ( $data ) {
-		return unserialize( $data );
+		return unserialize(base64_decode($data));
 	}
 
 /*=======================================================================*\
