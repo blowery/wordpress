@@ -1,0 +1,123 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Too Many Timeouts</title>
+	
+	<script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
+
+	<script type="text/javascript">
+	  var startedAt = null;
+	  var lastSeen = null;
+	  var lastI = -1;
+	  var which = null;
+    function run() {
+      var timers = parseInt(document.getElementById("howMany").value, 10);
+      if(isNaN(timers)) alert("That's not a number");
+      
+      var fWait = (dojo.byId("increment").checked) ? 
+        function(i) { return 5+i; } :
+        function(i) { return 5; }
+      for(var i = 0; i < timers; i++) {
+        setTimeout(dojo.hitch(window, recordTime, i), fWait(i));
+      }
+      setTimeout(report, fWait(i)+100);
+      lastI = 0;
+      startedAt = new Date();
+      which = dojo.byId("which");
+    }
+    
+    function recordTime(i){
+      lastSeen = new Date();
+      which.innerHTML = i.toString();
+      if(i < lastI) {
+      dojo.byId("status").innerHTML += "Out of order!";
+      }
+      lastI = i;
+    }
+    
+    function report() {
+      var duration = lastSeen.valueOf() - startedAt.valueOf();
+      console.log("Took %dms to complete", duration);
+    }
+    
+    function empty() {}
+    
+    function hitchingPost() {}
+    
+    function timeToCreateTimeouts(n, bHitch) {
+      var s = new Date();
+      for(var i = 0; i < n; i++ )
+        setTimeout(bHitch ? dojo.hitch(window, empty) : empty, 100+i);
+      var e = new Date();
+      console.log("time to create %d timeouts: %d", n, e.valueOf() - s.valueOf() );
+      
+    }
+    
+    function timeToCreateTimeoutsClosure(n, bHitch) {
+      var s = new Date();
+      for(var i = 0; i < n; i++ )
+        setTimeout(function() {}, 100+i);
+      var e = new Date();
+      console.log("time to create %d timeouts: %d", n, e.valueOf() - s.valueOf() );
+      
+    }
+    
+    function timeToConnect(n) {
+      var node = dojo.byId("status");
+      var s = new Date();
+      
+      for(var i = 0; i < n; i++ )
+        dojo.connect(hitchingPost, empty);
+      var e = new Date();
+      console.log("time to create %d connects: %d", n, e.valueOf() - s.valueOf() );
+    }
+    
+    function timeToConnectClosure(n) {
+      var node = dojo.byId("status");
+      var s = new Date();
+      
+      for(var i = 0; i < n; i++ )
+        dojo.connect(hitchingPost, function() { });
+      var e = new Date();
+      console.log("time to create %d connects: %d", n, e.valueOf() - s.valueOf() );
+    }
+	</script>
+	
+	<style type="text/css">
+	noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+	}
+	</style>
+
+</head>
+<body>
+<h1>Too Many Timeouts</h1>
+<p>This is a little test to see how many timeouts I can make before the page explodes. It's also a test to see how long timeouts actually take to run when there's a ton of them doing very little work.</p>
+
+<dl>
+  <dt>Number of timers to create</dt>
+  <dd><input type="text" size="10" id="howMany"/></dd>
+  <dt>Increment wait time by 1ms per timeout?</dt>
+  <dd><input type="checkbox" id="increment"><label for="increment">Yes</label></dd>
+  <dt>Include hitch in setTimeout creation?</dt>
+  <dd><input type="checkbox" id="hitch"><label for="hitch">Yes</label></dd>
+
+</dl>
+
+<div><button type="button" onclick="run()">Run!</button></div>
+<div><button type="button" onclick="timeToCreateTimeouts(parseInt(dojo.byId('howMany').value, 10), dojo.byId('hitch').checked);">Make Timeouts</button></div>
+<div><button type="button" onclick="timeToConnect(parseInt(dojo.byId('howMany').value, 10));">Make Connects</button></div>
+<div><button type="button" onclick="timeToCreateTimeoutsClosure(parseInt(dojo.byId('howMany').value, 10), dojo.byId('hitch').checked);">Make Timeouts w/Closure</button></div>
+<div><button type="button" onclick="timeToConnectClosure(parseInt(dojo.byId('howMany').value, 10));">Make Connects w/Closure</button></div>
+
+<div id="status">Running <span id="which">nothing</span></div>
+<noscript>
+  This page requires you to enable JavaScript for full functionality.
+</noscript>
+</body>
+</html>

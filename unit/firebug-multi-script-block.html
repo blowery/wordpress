@@ -1,0 +1,21 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>A test of multiple script blocks for Firebug 1.1 Beta</title>
+  </head>
+  <body>
+    <h1>Welcome</h1>
+    <p>This is a test of multiple script blocks on Firefox with Firebug 1.1 beta.
+    I'm trying to verify that the blocks are loaded syncronously and in order so that
+    code in one block can depend on code in another.</p>
+    <div id="loaded">Page not finished loading.</div>
+    <script type="text/javascript" src="one.js"></script>
+    <script type="text/javascript" src="two.js"></script>
+    <script type="text/javascript">
+      one.foo = "bar";
+      two.foo = "baz";
+      document.getElementById("loaded").innerHTML = "Page finished loading!";
+    </script>
+  </body>
+</html>

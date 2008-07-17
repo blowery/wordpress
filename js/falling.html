@@ -1,0 +1,62 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Dojo Playground: Animation Looper</title>
+
+	<script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
+
+	<script type="text/javascript">
+    dojo.require("dojo.fx");
+    
+    var flakes = {
+      small: new Image("flake-small.png"),
+      medium: new Image("flake-medium.png"),
+      large: new Image("flake-large.png"),
+      xl: new Image("flake-xl.png")
+    }
+    
+    dojo.declare("Flake", null, {
+      constructor: function(sz, speed){
+        this.speed = speed;
+        this.n = dojo.body().appendChild(document.createElement("img"));
+        this.n.src = flakes[sz].src;
+        this.position()
+      },
+      
+    });
+    
+    function go(){
+    
+    }
+    
+    dojo.addOnLoad(go);
+	</script>
+	
+	<style type="text/css">
+	noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+	}
+	html, body {
+	  margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+	}
+	</style>
+
+</head>
+<body>
+<div id="loader">Loading dojo...</div>
+<div id="scrolly">
+  
+</div>
+<noscript>
+  This page requires you to enable JavaScript for full functionality.
+</noscript>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Dojo Playground :: Gems from YAHOO, ported to Dojo</title>
+
+	<script type="text/javascript" djConfig="isDebug: false" src="dojo/dojo.js.uncompressed.js"></script>
+	
+	<script type="text/javascript">
+    dojo.require("dojo.string");
+		
+		function getVal(id) {
+		  return dojo.byId(id).value;
+		}
+		
+		function trimmer(e){
+		  var v = getVal("trimme");
+		  dojo.byId("trimmed").innerHTML = "\"" + dojo.trim(v) + "\"";
+		}
+		
+		function subPos(e){
+		  var v = getVal("subpos");
+		  dojo.byId("subposed").innerHTML = dojo.string.substitute(v, [Math.random(), Math.random(), Math.random(), Math.random()]);
+		}
+		
+		function subName(e){
+		  var v = getVal("subname");
+		  dojo.byId("subnamed").innerHTML = dojo.string.substitute(v, { color: "blue" });
+		}
+		
+		dojo.addOnLoad(function(){
+		  // kill every button press on the page
+		  dojo.query("button").connect("onclick", dojo, dojo.stopEvent);
+		  
+		  // hook up handlers for individual buttons
+      dojo.connect(dojo.byId("trimmer"), "onclick", trimmer);
+      dojo.connect(dojo.byId("subposer"), "onclick", subPos);
+      dojo.connect(dojo.byId("subnamer"), "onclick", subName)
+		});
+		
+		
+	</script>
+	
+	<style type="text/css">
+
+	</style>
+
+</head>
+<body>
+<h1>is*</h1>
+<table>
+  <tr>
+    <td></td>
+  </tr>
+</table>
+
+<h1>trim()</h1>
+<form>
+<label>Trim Me: <input type="text" id="trimme" value="  too much whitespace!  "/></label> 
+<button id="trimmer">Trim</button>
+<pre id="trimmed"></pre>
+</form>
+
+<h1>substitute</h1>
+<form>
+<label>Positional Pattern: <input type="text" id="subpos" size="60" value="four random numbers: ${0}, ${1}, ${2}, ${3}" /></label> 
+<button id="subposer">Generate</button>
+<pre id="subposed"></pre>
+<label>Named Pattern: <input type="text" id="subname" size="60" value="my favorite color is ${color}" /></label>
+<button id="subnamer">Generate</button>
+<pre id="subnamed"></pre>
+
+</form>
+
+</body>
+</html>

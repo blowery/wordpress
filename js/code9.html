@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Dojo Playground: Animation Looper</title>
+
+	<script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
+
+	<script type="text/javascript">
+    dojo.require("dojo.fx");
+		
+		dojo.addOnLoad(function(){
+		  var n = dojo.byId("loader");
+      dojo.fadeOut({ node: n, onEnd: function() {
+        dojo.byId("loader").innerHTML = "Dojo loaded!";
+        dojo.fadeIn({ node: n }).play();
+      } }).play();
+      
+      code9();
+      
+		});
+		
+		function setContent(c) {
+		  dojo.byId("scrolly").innerHTML = c;
+		}
+		
+		function code9() {
+		  setContent("<div>is some content</div>");
+		  var n = dojo._getMarginBox(dojo.byId("scrolly"), dojo.getComputedStyle(dojo.byId("scrolly")))
+		  dojo.byId("h").innerHTML = n.w + n.h;
+		  dojo.style("scrolly", "border", "1px solid red");
+		  dojo.style("scrolly", "height", n.h + 50);
+		  dojo.getComputedStyle(null);
+		}
+	</script>
+	
+	<style type="text/css">
+	noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+	}
+	</style>
+
+</head>
+<body>
+<div id="loader">Loading dojo...</div>
+<div id="scrolly">
+  
+</div>
+<div id="h"></div>
+<noscript>
+  This page requires you to enable JavaScript for full functionality.
+</noscript>
+<script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script>
+<script type="text/javascript">
+_uacct = "UA-71217-2";
+urchinTracker();
+</script>
+
+</body>
+</html>

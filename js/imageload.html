@@ -1,0 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Testing image loading</title>
+
+	<script type="text/javascript" djConfig="isDebug: true" src="http://o.aolcdn.com/dojo/1.0.0/dojo/dojo.xd.js"></script>
+
+	<script type="text/javascript">
+    function addImage(src){
+      var img = document.createElement("img");
+      img.src = src;
+      var imgs = dojo.byId("images");
+      imgs.appendChild(img);
+      imgs.appendChild(document.createElement("br"));
+    }
+    
+    var pendingReport = null;
+	
+    function report(){
+      if(pendingReport){
+        clearTimeout(pendingReport);
+        pendingReport = null;
+      }
+      var allDone = true;
+      dojo.query("img").forEach(function(n){
+        line("img at " + n.src + "is " + (n.complete ? "loaded" : "still loading"));
+        allDone = allDone && n.complete;
+      });
+      if(!allDone) pendingReport = window.setTimeout(report, 500);
+    }
+    
+    function line(s){
+      dojo.byId("report").innerHTML += s + "\n";     
+    }
+        
+		dojo.addOnLoad(function(){
+		  addImage("http://farm3.static.flickr.com/2121/2050742188_67390abe9e_m.jpg");
+		  addImage("http://farm1.static.flickr.com/80/259792802_9a7be91edb_m.jpg");
+		  report();
+		});
+	</script>
+
+</head>
+<body>
+  <div id="images">
+  </div>
+  <pre id="report">Here we go!
+</pre>
+</body>
+</html>
