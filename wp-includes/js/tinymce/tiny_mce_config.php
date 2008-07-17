@@ -130,6 +130,8 @@ $mce_buttons_3 = implode($mce_buttons_3, ',');
 $mce_buttons_4 = apply_filters('mce_buttons_4', array());
 $mce_buttons_4 = implode($mce_buttons_4, ',');
 
+$no_captions = ( apply_filters( 'disable_captions', '' ) ) ? true : false;
+
 // TinyMCE init settings
 $initArray = array (
 	'mode' => 'none',
@@ -163,6 +165,7 @@ $initArray = array (
 	'tab_focus' => ':next',
 	'content_css' => "$mce_css",
 	'save_callback' => 'switchEditors.saveCallback',
+	'wpeditimage_disable_captions' => $no_captions,
 	'plugins' => "$plugins",
 	// pass-through the settings for compression and caching, so they can be changed with "tiny_mce_before_init"
 	'disk_cache' => true,
@@ -222,7 +225,7 @@ if ( $compress && isset($_SERVER['HTTP_ACCEPT_ENCODING']) ) {
 // Setup cache info
 if ( $disk_cache ) {
 
-	$cacheKey = apply_filters('tiny_mce_version', '20080703');
+	$cacheKey = apply_filters('tiny_mce_version', '20080712');
 
 	foreach ( $initArray as $v )
 		$cacheKey .= $v;

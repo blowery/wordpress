@@ -411,7 +411,6 @@ size:"' . mce_escape( __('Size') ) . '",
 thumbnail:"' . mce_escape( __('Thumbnail') ) . '",
 medium:"' . mce_escape( __('Medium') ) . '",
 full_size:"' . mce_escape( __('Full Size') ) . '",
-alt_help:"' . js_escape( __('Alternate text, e.g. "The Mona Lisa"') )  . '",
 current_link:"' . mce_escape( __('Current Link') ) . '",
 link_to_img:"' . mce_escape( __('Link to Image') ) . '",
 link_help:"' . mce_escape( __('Enter a link URL or click above for presets.') ) . '",
@@ -434,7 +433,9 @@ s100:"' . mce_escape( __('100%') ) . '",
 s110:"' . mce_escape( __('110%') ) . '",
 s120:"' . mce_escape( __('120%') ) . '",
 s130:"' . mce_escape( __('130%') ) . '",
-caption:"' . mce_escape( __('Caption') ) . '"
+img_title:"' . mce_escape( __('Edit Image Title') ) . '",
+caption:"' . mce_escape( __('Edit Image Caption') ) . '",
+alt:"' . mce_escape( __('Edit Alternate Text') ) . '"
 });
 ';
 ?>

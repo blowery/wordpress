@@ -1481,21 +1481,30 @@ function path_join( $base, $path ) {
 function wp_upload_dir( $time = NULL ) {
 	$siteurl = get_option( 'siteurl' );
 	$upload_path = get_option( 'upload_path' );
-	if ( trim($upload_path) === '' )
-		$upload_path = WP_CONTENT_DIR . '/uploads';
-	$dir = $upload_path;
+	$upload_path = trim($upload_path);
+	if ( empty($upload_path) )
+		$dir = WP_CONTENT_DIR . '/uploads';
+	else 
+		$dir = $upload_path;
 
 	// $dir is absolute, $path is (maybe) relative to ABSPATH
-	$dir = path_join( ABSPATH, $upload_path );
+	$dir = path_join( ABSPATH, $dir );
 
-	if ( !$url = get_option( 'upload_url_path' ) )
-		$url = WP_CONTENT_URL . '/uploads';
+	if ( !$url = get_option( 'upload_url_path' ) ) {
+		if ( empty($upload_path) )
+			$url = WP_CONTENT_URL . '/uploads';
+		else
+			$url = trailingslashit( $siteurl ) . $upload_path;
+	}
 
 	if ( defined('UPLOADS') ) {
 		$dir = ABSPATH . UPLOADS;
 		$url = trailingslashit( $siteurl ) . UPLOADS;
 	}
-	
+
+	$bdir = $dir; 
+	$burl = $url;
+
 	$subdir = '';
 	if ( get_option( 'uploads_use_yearmonth_folders' ) ) {
 		// Generate the yearly and monthly dirs
@@ -1515,7 +1524,7 @@ function wp_upload_dir( $time = NULL ) {
 		return array( 'error' => $message );
 	}
 
-	$uploads = array( 'path' => $dir, 'url' => $url, 'subdir' => $subdir, 'error' => false );
+	$uploads = array( 'path' => $dir, 'url' => $url, 'subdir' => $subdir, 'basedir' => $bdir, 'baseurl' => $burl, 'error' => false );
 	return apply_filters( 'upload_dir', $uploads );
 }
 
@@ -2256,7 +2265,7 @@ function validate_file( $file, $allowed_files = '' ) {
  * @return bool True if SSL, false if not used.
  */
 function is_ssl() {
-	return ( 'on' == strtolower($_SERVER['HTTPS']) ) ? true : false; 
+	return ( isset($_SERVER['HTTPS']) && 'on' == strtolower($_SERVER['HTTPS']) ) ? true : false; 
 }
 
 /**
