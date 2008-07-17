@@ -1,0 +1,51 @@
+<html>
+  <head>
+    <title>blowery.org : code : StringCrypto</title>
+    <link rel="stylesheet" type="text/css" href="/style/global.css">
+  </head>
+  
+  <body>
+  <table align="center">
+  <tr>
+    <td>&nbsp;<br />&nbsp;<br />&nbsp;<br /></td>
+  </tr>
+  <tr>
+     <td valign="top" align="center">
+       <a href="./" title="back home"><img src="img/crypto.jpg" alt="cryptomeria japonica" border="0" width="164" height="150"></a>
+     </td>
+     <td valign="top" style="padding-top:1em;" width="400px">
+        <p>
+        <span class="listHeading">/code/StringCrypto</span><br />
+        &nbsp;&nbsp;<a href="StringCrypto.zip">zipped souce</a><br/><br/>
+        This little program I wrote to mess around with the crypto classes in .NET
+        and serve as an example cypto program.  Generally fun stuff really, and
+        it shows off just how easy it is to perform crypto jazz.
+        </p>
+
+        <p>
+        The program uses Rijndael by default (with CBC and PKCS7 padding), but it's pretty
+        easy to switch it to other things.  One thing to watch out for, there's a <a href="Padding.zip">bug</a>
+        in V1 of the Framework when using PaddingMode.Zeros.  It doesn't play nice with
+        FlushFinalBlock() on the CryptoStream.  To work around it, just pad your
+        plaintext input buffer with zeros before writing it into the CryptoStream.
+        Works out nicely.
+        </p>
+
+        <p>
+        If you have comments or patches or anything, <a 
+        href="mailto:code@blowery.org?subject=StringCrypto Comments">lemme know</a>.
+        </p>
+    </td>
+  </tr>
+  </table>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-71217-2");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script>
+  </body>
+</html>
