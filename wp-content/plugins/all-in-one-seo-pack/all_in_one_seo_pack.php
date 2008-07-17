@@ -4,7 +4,7 @@
 Plugin Name: All in One SEO Pack
 Plugin URI: http://semperfiwebdesign.com
 Description: Out-of-the-box SEO for your Wordpress blog.
-Version: 1.4.6.11
+Version: 1.4.6.13
 Author: Michael Torbert
 Author URI: http://semperfiwebdesign.com
 */
@@ -476,7 +476,7 @@ $UTF8_TABLES['strtoupper'] = array(
 
 class All_in_One_SEO_Pack {
 	
- 	var $version = "1.4.6.11";
+ 	var $version = "1.4.6.13";
  	
  	/** Max numbers of chars in auto-generated description */
  	var $maximum_description_length = 160;
@@ -1419,21 +1419,21 @@ class All_in_One_SEO_Pack {
 		//  End -->
 		</script>
 
-		<?php if (substr($this->wp_version, 0, 3) == '2.5') { ?>
-		<div id="postaiosp" class="postbox closed">
-		<h3><?php _e('All in One SEO Pack', 'all_in_one_seo_pack') ?></h3>
-		<div class="inside">
-		<div id="postaiosp">
-		<?php } else { ?>
-		<div class="dbx-b-ox-wrapper">
-		<fieldset id="seodiv" class="dbx-box">
-		<div class="dbx-h-andle-wrapper">
-		<h3 class="dbx-handle"><?php _e('All in One SEO Pack', 'all_in_one_seo_pack') ?></h3>
-		</div>
-		<div class="dbx-c-ontent-wrapper">
-		<div class="dbx-content">
-		<?php } ?>
-		
+	 <?php if (substr($this->wp_version, 0, 3) >= '2.5') { ?>
+                <div id="postaiosp" class="postbox closed">
+                <h3><?php _e('All in One SEO Pack', 'all_in_one_seo_pack') ?></h3>
+                <div class="inside">
+                <div id="postaiosp">
+                <?php } else { ?>
+                <div class="dbx-b-ox-wrapper">
+                <fieldset id="seodiv" class="dbx-box">
+                <div class="dbx-h-andle-wrapper">
+                <h3 class="dbx-handle"><?php _e('All in One SEO Pack', 'all_in_one_seo_pack') ?></h3>
+                </div>
+                <div class="dbx-c-ontent-wrapper">
+                <div class="dbx-content">
+                <?php } ?>
+	
 		<a target="__blank" href="http://semperfiwebdesign.com/portfolio/wordpress/wordpress-plugins/all-in-one-seo-pack/"><?php _e('Click here for Support', 'all_in_one_seo_pack') ?></a>
 		<input value="aiosp_edit" type="hidden" name="aiosp_edit" />
 		<table style="margin-bottom:40px">
@@ -1472,7 +1472,7 @@ class All_in_One_SEO_Pack {
 
 		</table>
 		
-		<?php if (substr($this->wp_version, 0, 3) == '2.5') { ?>
+		<?php if (substr($this->wp_version, 0, 3) >= '2.5') { ?>
 		</div></div></div>
 		<?php } else { ?>
 		</div>
@@ -2079,7 +2079,7 @@ add_action('template_redirect', array($aiosp, 'template_redirect'));
 
 add_action('init', array($aiosp, 'init'));
 
-if (substr($aiosp->wp_version, 0, 3) == '2.5') {
+if (substr($aiosp->wp_version, 0, 3) >= '2.5') {
 	add_action('edit_form_advanced', array($aiosp, 'add_meta_tags_textinput'));
 	add_action('edit_page_form', array($aiosp, 'add_meta_tags_textinput'));
 } else {
