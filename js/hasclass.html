@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Dojo Playground: Animation Looper</title>
+
+	<script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
+
+	<script type="text/javascript">
+    dojo.require("dojo.fx");
+		
+		dojo.addOnLoad(function(){
+		  setTimeout(runTests, 0);
+		});
+		
+		function runTests(){
+		
+      var i = 0;
+    
+      var n = dojo.byId("scrolly");
+      var e1, e2, e3;
+      var s = new Date().valueOf();
+      for(i = 0; i < 10000; i++){
+        dojo.hasClass(n, "funky");    
+      }
+      e1 = new Date().valueOf() - s;
+      
+      s = new Date().valueOf();
+      for(i = 0; i < 10000; i++){
+        hasClassName(n, "funky");
+      }
+      e2 = new Date().valueOf() - s;
+      
+      s = new Date().valueOf();
+      for(i = 0; i < 10000; i++){
+        hasClassRegex(n, "funky");
+      }
+      e3 = new Date().valueOf() - s;
+      
+      var e4;
+      s = new Date().valueOf();
+      for(i = 0; i < 10000; i++){
+        hasClassNameProper(n, "funky");
+      }
+      e4 = new Date().valueOf() - s;
+
+      
+      setContent("dojo.hasClass: " + e1 + "; hasClassName: " + e2 + "; hasClassRegex: " + e3 + "; hasClassNameProper: " + e4);
+		
+		}
+		
+		function hasClassName(n,s){
+		  return n.className.indexOf(s) > -1;
+		}
+		
+		function hasClassNameProper(n,s){
+		  var c = n.className;
+		  var i = c.indexOf(s);
+		  if(i === -1) return false;
+		  if(i === 0){
+		    if(c.length === s.length) return true;
+		    return c.charAt(s.length) === " ";
+		  } else {
+		    return c.charAt(i-1) === " " && c.charAt(i+s.length) === " ";
+		  }
+		}
+		
+		function hasClassRegex(n,s){
+		  return (new RegExp("\\s*" + s + "\\s*")).test(n.className);
+		}
+		
+				
+		function setContent(c) {
+		  dojo.byId("scrolly").innerHTML = c;
+		}
+	</script>
+	
+	<style type="text/css">
+	noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+	}
+	</style>
+
+</head>
+<body>
+<div id="loader">Loading dojo...</div>
+<div id="scrolly" class="funky chicken">
+  
+</div>
+<noscript>
+  This page requires you to enable JavaScript for full functionality.
+</noscript>
+</body>
+</html>

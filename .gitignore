@@ -1,2 +1,4 @@
 wp-config.php
-.htaccess
+movies
+js/dojo
+js/util

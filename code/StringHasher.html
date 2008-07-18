@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <title>blowery.org : code : StringHasher</title>
+    <link rel="stylesheet" type="text/css" href="/style/global.css">
+  </head>
+  
+  <body>
+  <table align="center">
+  <tr>
+    <td>&nbsp;<br />&nbsp;<br />&nbsp;<br /></td>
+  </tr>
+  <tr>
+    <td valign="top" align="center">
+       <a href="http://www.blowery.org" title="back home"><img src="img/enigma.jpg" alt="" border="0" width="125" height="197"></a>
+     </td>
+     <td valign="top" style="padding-top:1em;" width="400px">
+        <p>
+        <span class="listHeading">/code/StringHasher</span><br />
+        &nbsp;&nbsp;<a href="StringHasher.zip">zipped souce</a><br/><br/>
+        More messing around with crypto in .NET.  Instead of <a href="StringCrypto.html">two-way encryption</a>,
+        I went for a one-way hash this time.  This would be great for hashing passwords or signing a long string.
+        </p>
+
+        <p>
+        The program really just wraps up hashing a string using anything that inherits from the HashAlgorithm class in
+        System.Security.Cryptography.  It allows for a salt and a encoding method and is really pretty flexible.
+        Thanks to the built-in classes, the work to actually perform the hash is sickenly short.  So wonderful.. 
+        </p>
+
+        <p>
+        If you have comments or patches or anything, <a 
+        href="mailto:code@blowery.org?subject=StringHasher Comments">lemme know</a>.
+        </p>
+    </td>
+  </tr>
+  </table>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-71217-2");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script>
+  </body>
+</html>

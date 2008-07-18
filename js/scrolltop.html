@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+	<title>Dojo Playground</title>
+
+	<script type="text/javascript" djConfig="isDebug: true" src="http://o.aolcdn.com/dojo/1.0.0/dojo/dojo.xd.js"></script>
+	<script type="text/javascript" src="lipsum.js"></script>
+
+	<script type="text/javascript">
+    dojo.require("dojo.fx");
+		
+		dojo.addOnLoad(function(){
+      dojo.fadeOut({ node: "loader", onEnd: function() {
+        dojo.byId("loader").innerHTML = "Dojo loaded!";
+        dojo.fadeIn({ node: "loader" }).play();
+      } }).play();
+      
+      dojo.connect(dojo.byId("act"), "onclick", function() { 
+        changeContent();
+      });
+		});
+		
+		function changeContent(){
+		  var nwords = Math.min((Math.random() * 500) + 100, lipsum.length);
+		  var words = lipsum.slice(0, nwords);
+		  var s = dojo.byId("scrolly");
+		  s.scrollTop = 0;
+		  s.innerHTML = words.join(" ");	
+		  s.scrollTop = 0;  
+		}
+	</script>
+	<style type="text/css">
+    #scrolly {
+      overflow: auto;
+      height: 200px;
+      width: 400px;
+    }
+	</style>
+
+</head>
+<body>
+<div id="loader">Loading dojo...</div>
+<button type="button" id="act">Fill</button>
+<div id="scrolly">
+</div>
+</body>
+</html>

@@ -1,0 +1,520 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head profile="http://gmpg.org/xfn/1">
+<title>meyerweb.com</title>
+<link rel="openid.server" href="http://www.myopenid.com/server">
+<link rel="openid.delegate" href="http://emeyer.myopenid.com/">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><link rel="shortcut icon" href="/favicon.ico"><link rel="home" href="http://meyerweb.com/" title="Home" ><link rel="stylesheet" href="http://meyerweb.com/ui/meyerweb.css" type="text/css" media="screen, projection"><link rel="stylesheet" href="http://meyerweb.com/ui/theme.css" type="text/css" media="screen, projection" id="themeLink"><link rel="stylesheet" href="http://meyerweb.com/ui/print.css" type="text/css" media="print"><script src="http://meyerweb.com/ui/addresses.js" type="text/javascript"></script><link rel="stylesheet" href="/ui/wordpress.css" type="text/css" media="screen">
+<link rel="stylesheet" href="/ui/tfe.css" type="text/css" media="screen">
+<link rel="stylesheet" href="/ui/home.css" type="text/css" media="screen">
+</head>
+<body id="www-meyerweb-com" class="hpg">
+
+<div id="sitemast"><h1><a href="/"><span>meyerweb</span>.com</a></h1></div><div id="search"><h4>Exploration</h4><!-- SiteSearch Google --><form method="get" action="http://www.google.com/custom" target="_top"><div><input type="hidden" name="domains" value="meyerweb.com"></input><label for="sbb" style="display: none">Submit search form</label><input type="submit" name="sa" value="Google Search" id="sbb"></input><label for="sbi" style="display: none">Enter your search terms</label><input type="text" name="q" size="31" maxlength="255" value="" id="sbi"></input><p><input type="radio" name="sitesearch" value="meyerweb.com" checked id="ss1"></input><label for="ss1" title="Search meyerweb.com">meyerweb.com</label><input type="radio" name="sitesearch" value="" id="ss0"></input><label for="ss0" title="Search the Web">Web</label></p><input type="hidden" name="client" value="pub-3772084027748653"></input><input type="hidden" name="forid" value="1"></input><input type="hidden" name="ie" value="ISO-8859-1"></input><input type="hidden" name="oe" value="ISO-8859-1"></input><input type="hidden" name="safe" value="active"></input><input type="hidden" name="cof" value="GALT:#008000;GL:1;DIV:#336699;VLC:663399;AH:center;BGC:FFFFFF;LBGC:336699;ALC:0000FF;LC:0000FF;T:000000;GFNT:0000FF;GIMP:0000FF;FORID:1"></input><input type="hidden" name="hl" value="en"></input></div></form><!-- SiteSearch Google --><!-- <form method="get" action="http://www.google.com/custom"><div><input type="submit" name="sa" value="Search"><input type="text" name="q" size="20" maxlength="255" value=""><input type="hidden" name="sitesearch" value="meyerweb.com"></div></form><small><a href="http://www.google.com/search">Powered by Google</a></small> --></div><div id="main"><div class="skipper">Skip to: <a href="#navhead">site navigation/presentation</a></div><div class="skipper">Skip to: <a href="#thoughts">Thoughts From Eric</a></div>
+<div id="thoughts">
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/05/06/line-height-abnormal/" rel="bookmark" title="Permanent Link: line-height: abnormal">line-height: abnormal</a></h3>
+<ul class="meta">
+<li class="date">Tue 6 May 2008</li>
+<li class="time">1113</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/tech/browsers/" title="View all posts in Browsers" rel="category tag">Browsers</a><br> <a href="http://meyerweb.com/eric/thoughts/category/tech/css/" title="View all posts in CSS" rel="category tag">CSS</a><br> <a href="http://meyerweb.com/eric/thoughts/category/tech/standards/" title="View all posts in Standards" rel="category tag">Standards</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/05/06/line-height-abnormal/#comments">20 responses</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<p>
+When I first wrote <a href="http://meyerweb.com/eric/books/css-tdg/"><cite>Cascading Style Sheets: The Definitive Guide</cite></a>, the part that caused me the most difficulty and headaches was the line layout material.  Several times I was sure I had it all figured out and accurately described, only to find out I was wrong.  For two weeks I corresponded with <a href="http://hixie.ch/" rel="acquaintance colleague met">Ian Hickson</a> and <a href="http://dbaron.org/" rel="acquaintance colleague met">David Baron</a>, arguing for my understanding of things and having them show me, in merciless detail, how I was wrong.  I doubt that I will ever stop owing them for their dedication to getting me through the wilderness of my own misunderstandings.
+</p>
+<p>
+Later on, I produced <a href="http://meyerweb.com/eric/css/inline-format.html">a terse description of line layout</a> which went through a protracted vetting process with the CSS Working Group and the members of <a href="http://lists.w3.org/Archives/Public/www-style/">www-style</a>.  At the time it was published, there was no more detailed and accurate description of line layout available.  Even at that, corrections trickled in over the years, which made me think of it as my own tiny little <a href="http://en.wikipedia.org/wiki/The_Art_of_Computer_Programming"><cite>The Art of Computer Programming</cite></a>.  Only without the small monetary reward for finding errors.
+</p>
+<p>
+The point here is that line layout is very difficult to truly understand&#8212;even given everything I just said, I&#8217;m still not convinced that I do&#8212;and that there are often surprises lurking for anyone who goes looking into the far corners of how it happens.  As I&#8217;ve said before, my knowledge of what goes into the layout of lines of text imparts a sense of astonishment that any page can be successfully displayed in less than the projected age of the universe.
+</p>
+<p>
+Why bring all this up?  Because I went and poked <code>line-height: normal</code> with a stick, and found it to be both squamous and rugose.  As with all driven to such madness, I now seek, grinning wildly, to infect others.
+</p>
+<p>
+Here&#8217;s the punchline: the effects of declaring <code>line-height: normal</code> not only vary from browser to browser, which I had expected&#8212;in fact, quantifying those differences was the whole point&#8212;<em>but they also vary from one font face to another, and can also vary within a given face</em>.
+</p>
+<p>
+I did not expect that.  At least, not consciously.
+</p>
+<p>
+My work, let me show it to you: <a href="http://meyerweb.com/eric/css/tests/line-height/inspect-multi.html">a JavaScript-driven test file</a> where you can pick from a list of fonts and see what happens at a variety of sizes.  (Yes, the JS is completely obtrusive; and yes, the JS is the square of amateur hour.  Let&#8217;s move on, please.  I&#8217;m perfectly happy to replace what&#8217;s there with unobtrusive and sharper JS, as long as the basic point of the page, which is testing <code>line-height: normal</code>, is not compromised.  Again, moving on.)
+</p>
+<p>
+When you first go to the test, you should (I hope) see a bunch of rulered boxes containing text using the very common font face Webdings, set at a bunch of different font sizes.  The table shows you how tall the simple line boxes are at each size, and therefore the numeric equivalent for <code>line-height: normal</code> at those sizes.  So if a line box is using <code>font-size: 50px</code> and the line box is 55 pixels tall, the numeric equivalent for <code>line-height: normal</code> is 1.1 (55 divided by 50).
+</p>
+<p>
+On my PowerBook, Webdings always yields a 1:1 ratio between the <code>font-size</code> and line box height.  The ten-pixel font size yields a ten-pixel-tall line box, and so on.
+</p>
+<p>
+This is actually a little surprising by itself.  <a href="http://www.w3.org/TR/CSS21/visudet.html#propdef-line-height">The CSS 2.1 specification says</a>:
+</p>
+
+<blockquote cite="http://www.w3.org/TR/CSS21/visudet.html#propdef-line-height">
+<dl>
+<dt><strong>normal</strong></dt>
+<dd>Tells user agents to set the used value to a &#8220;reasonable&#8221; value based on the font of the element. The value has the same meaning as <a name="x23" href="http://www.w3.org/TR/CSS21/syndata.html#value-def-number" class="noxref">&lt;number&gt;</a>. We recommend a used value for &#8216;normal&#8217; between 1.0 to 1.2. The <a href="http://www.w3.org/TR/CSS21/cascade.html#computed-value">computed value</a> is &#8216;normal&#8217;.
+</dd>
+</dl>
+</blockquote>
+
+<p>
+This is basically what CSS has said since its first days (see the equivalent text <a href="http://www.w3.org/TR/CSS1#line-height">in CSS1</a> or <a href="http://www.w3.org/TR/CSS2/visudet.html#propdef-line-height">in CSS2</a> for confirmation) and there&#8217;s always been a widespread assumption that, since 1.0 is probably too crowded, something around 1.2 is much more likely.
+</p>
+<p>
+So finding a value of 1 was a surprise.  It was an even bigger surprise to me that this held true in Camino 1.5.2, Firefox 2.0.0.14, and Safari 2.0.4, all on OS X.  Firefox 3b5 didn&#8217;t render Webdings at all, so I don&#8217;t know if it would do the same.  I actually suspect not, for reasons best left for another time (and, possibly, a final release of Firefox 3).
+</p>
+<p>
+Various browsers doing the same thing in an under-specified area of the spec?  That can&#8217;t be right.  It&#8217;s pretty much an article of faith that given the chance to do <em>anything</em> differently, browsers will.  The sailing was so unexpectedly smooth that I immediately assumed was that a storm lurked just over the horizon.
+</p>
+<p>
+Well, I was right.  All I had to do was start picking other font faces.
+</p>
+<p>
+To start, I picked the next font on the list, Times New Roman, and the equivalent values for <code>normal</code> immediately changed.  In other words, <em>the numeric equivalents for Times New Roman are different than those for Webdings</em>.  The browsers weren&#8217;t maintaining a specific value for <code>normal</code>, but were altering it on a per-face basis.
+</p>
+<p>
+Now, this is legal, given the way <code>normal</code> is under-specified.  There&#8217;s room to allow for this behavior.  It&#8217;s actually, once you think about it, a fairly good thing from a visual point of view: the best default line height for Times New Roman is probably not the best default line height for Courier New.  So while I was initially surprised, I got over it quickly.  The seemingly obvious conclusion was that browsers were actually respecting the fonts&#8217; built-in metrics.  This was reinforced when I found that the results were exactly the same from browser to browser.
+</p>
+<p>
+Then I looked more closely at the numbers, and confusion set back in.  For Times New Roman, I was getting values of 1.1, 1.12, 1.16, 1.15, 1.149, and 1.1499.  If you were to round all of those numbers to two decimal points, you&#8217;d get 1.10, 1.12, 1.16, 1.15, 1.15, 1.15.  If you round them all to one decimal place, you&#8217;d get 1.1, 1.1, 1.2, 1.2, 1.1, 1.1.  They&#8217;re inconsistent.
+</p>
+<p>
+But wait, I thought, I&#8217;m trying to compare numbers I derived by dividing pixels by pixels.  Let&#8217;s turn it around.  If I multiply the most precise measurement I&#8217;ve gotten by the various font sizes, I get&#8230; carry the two&#8230; 11.499, 28.7475, 57.495, 114.99, 1149.9, 11499.  As compared to the actual values I got, which were 11, 28, 58, 115, 1149, and 11499.
+</p>
+<p>
+Which means the results were inappropriately rounded up in some cases and down in others.  28.7475 became 28 and 1149.9 became 1149, whereas 57.495 became 58.  Even though 11.499 became 11 and 114.99 became 115.
+</p>
+<p>
+This was consistent across all the browsers I was testing.  So again, I was suspecting the fonts themselves.
+</p>
+<p>
+And then I switched from Times New Roman to just plain old Times, and the storm was full upon me.  I&#8217;ll give you the results in a table.
+</p>
+
+<table class="chart">
+<caption>Derived <code>normal</code> equivalents for Times in OS X browsers</caption>
+<tr>
+<th><code>font-size</code></th>
+<th scope="col">Camino 1.5.2</th>
+<th scope="col">Firefox 2.0.0.14</th>
+<th scope="col">Safari 2.0.4</th>
+</tr>
+<tr>
+<th scope="row">10
+<td>1</td>
+<td>1.2</td>
+<td>1.3</td>
+</th></tr>
+<tr>
+<th scope="row">25
+<td>1</td>
+<td>1</td>
+<td>1.16</td>
+</th></tr>
+<tr>
+<th scope="row">50
+<td>1</td>
+<td>1</td>
+<td>1.18</td>
+</th></tr>
+<tr>
+<th scope="row">100
+<td>1</td>
+<td>1</td>
+<td>1.15</td>
+</th></tr>
+<tr>
+<th scope="row">1000
+<td>1</td>
+<td>1</td>
+<td>1.15</td>
+</th></tr>
+<tr>
+<th scope="row">10000
+<td>1</td>
+<td>1</td>
+<td>1.15</td>
+</th></tr>
+</table>
+
+<p>
+Much the same happened when comparing Courier New with plain old Courier: full consistency on Courier New between browsers, albeit with the same strange (non-)rounding effects as seen with Times New Roman; but inconsistency between browsers on plain Courier&#8212;with Camino yielding a flat 1 down the line, Firefox going from 1.2 to 1, and Safari having a range of values above the others&#8217; values.
+</p>
+<p>
+Squamous!  Not to mention rugose!
+</p>
+<p>
+Now it&#8217;s time for the stunning conclusion that derives from all this information, which is: not here.  Sorry.  So far all I have are observations.  I may turn all this into a summary page which shows the results for all the font faces across multiple browsers and platforms, but first I&#8217;ll need to get those numbers.
+</p>
+<p>
+I do have a few speculations, though:
+</p>
+
+<ol>
+<li>
+<p>
+Firefox&#8217;s inconsistency within font faces (see Times and Courier, above) may come from face substitution.  That&#8217;s when a browser doesn&#8217;t have a given character in a given face, so it looks for a substitute in another face.  If Firefox thinks it doesn&#8217;t have 10-pixel Times, it might substitute 10-pixel something else serif-ish, and that face has different line height characteristics than Times.  I don&#8217;t know what that other face might be, since it&#8217;s not Times New Roman or Georgia, but this is one possibility.  It is <strong>not</strong> the minimum font size setting in the preferences, as I&#8217;ve triple-checked to make sure I have that set to &#8220;None&#8221;.
+</p>
+</li>
+<li>
+<p>
+Another possibility for Firefox&#8217;s line height weirdness is a shift from subpixel font rendering to pixelly font rendering.  10-pixel text in Firefox is distinctly pixelly compared to the other browsers I tested, while sizes above there are nice and smooth.  Why this would drive up the line height by two pixels (20%), though, is not clear to me.
+</p>
+</li>
+<li>
+<p>
+Much of what I&#8217;ve observed will likely be laid to rest at the doorsteps of the font faces themselves.  I&#8217;d like to know how it is that the rounding behaviors are so (mathematically) messed up within faces, though.  Perhaps ideal line heights are described as an equation rather than a simple ratio?
+</p>
+</li>
+</ol>
+
+<p>
+Again, this was all done in OS X; I&#8217;ll be very interested to find out what happens on Windows, Linux, and other operating systems.  Side note for the Mac Opera fans warming up their flamethrowers: I&#8217;ve left Opera 9.27 for OS X out of this because it seems to cap font sizes at a size well below 1000, although this limit varied from one face to another.  Webdings and Courier capped at 507 pixels, whereas Courier capped at 574 pixels and Comic Sans MS stopped at 707 pixels.  I have no explanation, though doubtless someone will, but the upshot is that direct comparisons between Opera and the other browsers are impossible.  For sizes up to 100 pixels, the results were exactly consistent with Camino, if that means anything.
+</p>
+<p>
+The one tentative conclusion I did reach is this: <code>line-height: normal</code> is a jumbled terrain of inconsistent behaviors, and it&#8217;s best avoided in any sort of precision layout work.  I&#8217;d already had that feeling, but at least now there&#8217;s some evidence to back up the feeling.
+</p>
+<p>
+In any case, I doubt this is the last I&#8217;ll have to say on this particular topic.
+</p>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/05/05/the-really-perfect-ringtone/" rel="bookmark" title="Permanent Link: The Really Perfect Ringtone">The Really Perfect Ringtone</a></h3>
+<ul class="meta">
+<li class="date">Mon 5 May 2008</li>
+<li class="time">1233</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/humor/" title="View all posts in Humor" rel="category tag">Humor</a><br> <a href="http://meyerweb.com/eric/thoughts/category/personal/projects/" title="View all posts in Projects" rel="category tag">Projects</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/05/05/the-really-perfect-ringtone/#comments">19 responses</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<p>
+When I saw a couple of people link to &#8220;<a href="http://helderluis.net/297">the perfect iPhone ringtone</a>&#8221; last week, I had that sinking feeling that comes from being beaten to the punch.  I <em>knew</em> I should have stayed up an extra hour that one night and just gotten it done!
+</p>
+<p>
+But wait, hold it, never mind, cancel the panic parade: it was <em>not</em>, in fact, the perfect ringtone.  Crisis averted!  Still, the sinking feeling lingered, reminding me of what could have been, so last night I sat down and got it done.  Now I bring to you <a href="http://meyerweb.com/sounds/yy-ringtone.mp3">the absolutely most perfect ringtone ever</a>.
+</p>
+<p>
+Feel free to preview it using that link, if you really feel that&#8217;s necessary, but frankly you should just charge ahead and download the <a href="http://meyerweb.com/sounds/yy-ringtone.m4r"><tt>.m4r</tt> AAC</a> for instant ringtoniness.  If for some reason you&#8217;d rather have the audio source and do your own ringtone conversions, you can get the same file as a <a href="http://meyerweb.com/sounds/yy-ringtone.m4a"><tt>.m4a</tt> AAC</a> or a <a href="http://meyerweb.com/sounds/yy-ringtone.mp3">comfy old <tt>.mp3</tt></a>.  And for all you completists, there&#8217;s a <a href="http://meyerweb.com/sounds/yy-ringtone.zip"><tt>.zip</tt> archive of all three formats</a>.
+</p>
+<p>
+Go.  Ring.  Enjoy.
+</p>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/04/17/five-years/" rel="bookmark" title="Permanent Link: Five Years">Five Years</a></h3>
+<ul class="meta">
+<li class="date">Thu 17 Apr 2008</li>
+<li class="time">2323</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/personal/" title="View all posts in Personal" rel="category tag">Personal</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/04/17/five-years/#comments">No responses</a></li>
+<li>Comments off</li></ul>
+
+<div class="text">
+<p>
+Five years ago, the phone rang and my life was forever altered.  It was the first of two utterly transforming phone calls we would get that year, and by far the worse.
+</p>
+<p>
+Shortly after hanging up, I put in place <a href="http://meyerweb.com/other/mom/memorial.html">the temporary home page I&#8217;d prepared ahead of time</a>, complete with errors of fact which had grown out of my inability to think clearly about what I knew beyond any doubt was going to happen.  The next day, I noticed and corrected the errors, and then realized after a while that my corrections were incorrect and corrected them.  Correctly, at last.
+</p>
+<p>
+When I appended the block of text a day or two later, it was a straight copy-and-paste job, and I was able to avoid introducing errors.  I was able to find a perverse solace in that.
+</p>
+<p>
+To mark this anniversary, I&#8217;m publishing <a href="http://meyerweb.com/other/mom/coincidences.html">the piece I read on stage at Vox Nox 2005</a>, which was the only time it was shared publicly in the last five years.  The stunning part, even to me, is that every bit of that piece is the raw, unedited, unaltered truth.
+</p>
+<p>
+In some ways, I still can&#8217;t believe that it&#8217;s been five years and that she&#8217;s really forever gone, that she&#8217;s missed everything that&#8217;s happened in my life.  In some ways, I can&#8217;t accept that she will never know her granddaughter, and that her granddaughter will never know her.  And in little ways, I do my best to bridge that yawning chasm with myself and what I learned, what I was taught, over all the years of my life&#8230; minus just a bit less than five.
+</p>
+<p>
+Five years.  Five very busy years.  Five awful, wonderful, stressful, liberating, irreplaceable years.
+</p>
+<p>
+I miss you, Mom.
+</p>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/04/17/crafting-ourselves/" rel="bookmark" title="Permanent Link: Crafting Ourselves">Crafting Ourselves</a></h3>
+<ul class="meta">
+<li class="date">Thu 17 Apr 2008</li>
+<li class="time">1247</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/tech/css/" title="View all posts in CSS" rel="category tag">CSS</a><br> <a href="http://meyerweb.com/eric/thoughts/category/commentary/" title="View all posts in Commentary" rel="category tag">Commentary</a><br> <a href="http://meyerweb.com/eric/thoughts/category/personal/culture/" title="View all posts in Culture" rel="category tag">Culture</a><br> <a href="http://meyerweb.com/eric/thoughts/category/tech/standards/" title="View all posts in Standards" rel="category tag">Standards</a><br> <a href="http://meyerweb.com/eric/thoughts/category/tech/web/" title="View all posts in Web" rel="category tag">Web</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/04/17/crafting-ourselves/#comments">40 responses</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<p>
+My referrers lit up recently due to <a href="http://snook.ca/archives/html_and_css/no_css_reset/">Jonathan Snook&#8217;s article about CSS resets and how he doesn&#8217;t use them</a>.  To Jonathan and all the doubters and nay-sayers out there, I have only one thing to say:
+</p>
+<p>
+<strong>Good for you.</strong>
+</p>
+<p>
+Seriously; no sarcasm or passive-aggressiveness intended.  If I thought my reset styles, or really anything I&#8217;ve ever published or advocated, was a be-all end-all ultimate solution for every designer and design that&#8217;s ever been and could ever be, I&#8217;d be long past due for six rounds on the receiving end of a clue-by-four.
+</p>
+<p>
+Reset styles clearly work for a lot of people, whether as-is or in a modified form.  As I say on <a href="http://meyerweb.com/eric/tools/css/reset/">the reset page</a>, those styles aren&#8217;t supposed to be left alone by anyone.  They&#8217;re a starting point.  If a thousand people took them and created a thousand different personalized style sheets, that would be right on the money.  But there&#8217;s also nothing wrong with taking them and writing your own overrides.  If that works for you, then awesome.
+</p>
+<p>
+For others, reset styles are more of an impediment.  That&#8217;s only to be expected; we all work in different ways.  The key here, and the reason I made the approving comment above, is that you evaluate various tools by thinking about how they relate to the ways you do what you do&#8212;and then choose what tools to use, and how, and when.  That&#8217;s the mark of someone who thinks seriously about their craft and strives to do it better.
+</p>
+<p>
+I&#8217;m not saying that craftsmen/craftswomen are those people who reject the use of common tools, of course.  I&#8217;m saying that they use the tools that fit them best and modify (or create) tools to best fit them, applying their skills and knowledge of their craft to make those decisions.  It&#8217;s much the same in the world of programming.  You can&#8217;t identify a code craftsman by whether or not they use this framework or that language.  You can identify them by how they decide which framework or language to use, or not use, in a given situation.
+</p>
+<p>
+Craftsmanship is something I&#8217;ve been thinking about quite a bit recently, <a href="http://bokardo.com/archives/markup-style-society-talk/">as has Joshua Porter</a>.  I delivered a keynote address on that very topic just <a href="http://minnewebcon.umn.edu/">a few days ago in Minneapolis</a>, and my thinking infuses both of the talks I&#8217;m giving next week at <a href="http://aneventapart.com/events/2008/neworleans/">An Event Apart New Orleans</a>.  I&#8217;ve started looking harder for evidence of it, both in myself and in what I see online, and I believe striving toward being a craftsman/craftswoman is an important process for anyone who chooses to work in this field.
+</p>
+<p>
+Because this isn&#8217;t a field of straightforward answers and universal solutions.  We are often faced with problems that have multiple solutions, none of them perfect.  To understand what makes each solution imperfect and to know which of them is the best choice in the situation&#8212;that&#8217;s knowing your craft.  That&#8217;s being a craftsman/craftswoman.  It&#8217;s a never-ending process that is all the more critical precisely because it is never-ending.
+</p>
+<p>
+So it&#8217;s no surprise that we, as a community, keep building and sharing solutions to problems we encounter.  Discussions about the merits of those solutions in various situations are also no surprise.  Indeed, they&#8217;re exactly the opposite: the surest and, to me, most hopeful sign that web design/development continues to mature as a profession, a discipline, and a craft.  It&#8217;s evidence that we continue to challenge ourselves and each other to advance our skills, to keep learning better and better how better to do what we love so much.
+</p>
+<p>
+I wouldn&#8217;t have it any other way.
+</p>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/04/07/time-and-motion/" rel="bookmark" title="Permanent Link: Time and Motion">Time and Motion</a></h3>
+<ul class="meta">
+<li class="date">Mon 7 Apr 2008</li>
+<li class="time">0712</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/questions/" title="View all posts in Questions" rel="category tag">Questions</a><br> <a href="http://meyerweb.com/eric/thoughts/category/personal/science/" title="View all posts in Science" rel="category tag">Science</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/04/07/time-and-motion/#comments">30 responses</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<p>
+I was reading <a href="http://www.sciam.com/article.cfm?id=the-end-of-cosmology&amp;print=true">an article on cosmology</a>, as I am sometimes wont to do, and it brought back to me one of those questions that I&#8217;ve had for a while now, concerning the redshifting of light from distant galaxies as it relates to the history and expansion of the universe.
+</p>
+<p>
+For those of you not familiar with this topic, the general idea here is that when we look at galaxies outside our own, the light they give off is shifted toward the redder end of the electromagnetic spectrum, which means the wavelengths are getting longer.  According to our present understanding of physics, the simplest explanation for this observation that the further away a galaxy is, the faster it is receding from us&#8212;thus redshifting the light it gives off, thanks to the <a href="http://en.wikipedia.org/wiki/Doppler_effect">Doppler effect</a>.  It turns out that the amount of redshifting is directly and linearly proportional to the distance of the galaxy, a ratio named the <a href="http://en.wikipedia.org/wiki/Hubble's_law">Hubble constant</a> in honor of <a href="http://en.wikipedia.org/wiki/Edwin_Hubble">Edwin Hubble</a>, the man who first made this observation.  (He&#8217;s also the namesake of the <a href="http://en.wikipedia.org/wiki/Hubble_Space_Telescope">Hubble Space Telescope</a>, of course.)
+</p>
+<p>
+It seems to me that this explanation  either overlooks or glosses over one kind of important point: we don&#8217;t see those galaxies as they are right now.  In fact, we&#8217;re seeing them as they were in the past, and the further out we look, the further back in time we&#8217;re looking.  If a galaxy is a five million light-years distant, then we see it as it was five million years ago.  Double the distance, and double the amount of time involved, which would seem to mean that greater redshifts are as much a product of how far back in time we&#8217;re looking as they are distance.
+</p>
+<p>
+So why is it that distance is regarded as the primary factor here?  Why don&#8217;t we assume that the universe&#8217;s expansion is actually <em>slowing down</em>, given that the closer things are (and therefore the more recent they are), the less quickly they&#8217;re receding, whereas the really distant (and therefore much, much older) galaxies were receding more quickly back then?
+</p>
+<p>
+I&#8217;ve no doubt this has been explained one way or another by people way smarter than me, but some Googling yielded no decent results&#8212;just about everything I came up with challenged the Hubble constant on various and sundry grounds, not all of them sensical (at least to me).  Nothing I found addressed this specifically.  Though I figure the explanation is straightforward enough, I don&#8217;t seem to be using the right search terms to find it.  Anyone got any help for me here?
+</p>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/04/01/full-disclosure/" rel="bookmark" title="Permanent Link: Full Disclosure">Full Disclosure</a></h3>
+<ul class="meta">
+<li class="date">Tue 1 Apr 2008</li>
+<li class="time">0945</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/humor/" title="View all posts in Humor" rel="category tag">Humor</a><br> <a href="http://meyerweb.com/eric/thoughts/category/tech/standards/" title="View all posts in Standards" rel="category tag">Standards</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/04/01/full-disclosure/#comments">Four responses</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<a href="http://www.flickr.com/groups/wasp-april-fools/pool/"><img src="/pix/2008/wasp-warn-alt.jpg" alt="WARNING: This person omits alt text from images (Happy April Fool's Day from The Web Standards Project.)" class="standalone border" /></a>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/03/27/acid-redux/" rel="bookmark" title="Permanent Link: Acid Redux">Acid Redux</a></h3>
+<ul class="meta">
+<li class="date">Thu 27 Mar 2008</li>
+<li class="time">2222</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/tech/browsers/" title="View all posts in Browsers" rel="category tag">Browsers</a><br> <a href="http://meyerweb.com/eric/thoughts/category/tech/standards/" title="View all posts in Standards" rel="category tag">Standards</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/03/27/acid-redux/#comments">33 responses</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<p>
+So the feeds I read have been buzzing the past few days with running commentary of the WebKit and Opera teams&#8217; race to be the first to hit 100/100 on <a href="http://acid3.acidtests.org/">Acid3</a>, and then after that the effort to get a pixel-perfect match with the reference image.  Last I saw, <a href="http://my.opera.com/desktopteam/blog/2008/03/26/opera-and-the-acid3-test">Opera claimed to have gotten to 100 first</a> but <a href="http://webkit.org/blog/173/webkit-achieves-acid3-100100-in-public-build/">it looked like WebKit had gotten both with something publicly available</a>, but I haven&#8217;t verified any of this for myself.  Nor do I have any particular plans to do so.
+</p>
+<p>
+Because as lovely as it is to see that you can, in fact, get one or more browser implementation teams to jump in a precisely defined sequence through a series of cunningly (one might say sadistically) placed hoops, half of which are on fire and the other half lined with razor wire, it doesn&#8217;t strike me as the best possible use of the teams&#8217; time and energy.
+</p>
+<p>
+No, I don&#8217;t hate standards, though I may hate freedom (depends on who&#8217;s asking).  What I disagree with is the idea that if you cherry-pick enough obscure and difficult corners of a bunch of different specifications and mix them all together into a spicy meatball of difficulty, it constitutes a useful test of the specifications you cherry-picked.  Because the one does not automatically follow from the other.
+</p>
+<p>
+For example, suppose I told you that WebKit had implemented just the bits of SMIL-related SVG needed to pass the test, and that in doing so they exposed a woefully incomplete SVG implementation, one that gets something like 2% pass rates on actual SMIL/SVG tests.  Laughable, right?  <a href="http://blog.codedread.com/archives/2008/03/26/webkit-nightly-not-smiling/">Yes, well</a>.
+</p>
+<p>
+Of course, that&#8217;s in a nightly build and they might totally support SMIL by the time the corresponding final version is released and we&#8217;ll all look back on this and laugh the carefree laugh of children in springtime.  Maybe.  The real point here is that the Acid3 test isn&#8217;t a broad-spectrum standards-support test.  It&#8217;s a showpiece, and something of a Potemkin village at that.  Which is a shame, because what&#8217;s really needed right now is exhaustive test suites for specifications&#8211; XHTML, CSS, DOM, SVG, you name it.  We&#8217;ve been seeing more of these emerge recently, but they&#8217;re not enough.  I&#8217;d have been much more firmly in the cheering section had the effort that went into Acid3 had gone into, say, an obssessively thorough DOM test suite.
+</p>
+<p>
+I&#8217;d had this post in mind for a while now, really ever since Acid3 was released.  Then the horse race started to develop, and I told myself I really needed to get around to writing that post&#8212;and I got overtaken.  Well, that&#8217;s being busy for you.  It&#8217;s just as well I waited, really, because much of what I was going to say got covered by <a href="http://shaver.off.net/">Mike Shaver</a> in his piece <a href="http://shaver.off.net/diary/2008/03/27/the-missed-opportunity-of-acid-3/">explaining why Firefox 3 isn&#8217;t going to hit 100% on Acid3</a>.  For example:
+</p>
+
+<blockquote cite="http://shaver.off.net/diary/2008/03/27/the-missed-opportunity-of-acid-3/">
+<p>
+Ian&#8217;s Acid3, unlike its predecessors, is not about establishing a baseline of useful web capabilities. It&#8217;s quite explicitly about making browser developers jump&#8230; the Acid tests shouldn&#8217;t be fair to browsers, they should be fair to the <em>web</em>; they should be based on how good the web will be as a platform if all browsers conform, not about how far any given browser has to stretch to get there.
+</p>
+</blockquote>
+
+<p>
+That&#8217;s no doubt more concisely and clearly stated than I would have managed, so it&#8217;s all for the best that he got to say it first.
+</p>
+<p>
+By the by, I was quite intrigued by this part of Mike&#8217;s post:
+</p>
+
+<blockquote cite="http://shaver.off.net/diary/2008/03/27/the-missed-opportunity-of-acid-3/">
+<p>
+You might ask why Mozilla&#8217;s not racking up daily gains, especially if you&#8217;re following the relevant bugs and seeing that people have produced patches for some issues that are covered by Acid3.
+</p>
+<p>
+The most obvious reason is Firefox 3. We&#8217;re in the end-game of building what I really do believe is the best browser the web has ever known, and we expect to be putting it in the hands of more than 170 million users in a pretty short period of time. We&#8217;re still taking fixes for important issues, but virtually none of the issues on <a href="http://spreadsheets.google.com/pub?key=pNgBCwWdyRTT2JeiZn4B2Yw">the Acid3 list</a> are important enough for us to take at this stage. We don&#8217;t want to be rushing fixes in, or rushing out a release, only to find that we&#8217;ve broken important sites or regressed previous standards support, or worse introduced a security problem. Every API that&#8217;s exposed to content needs to be tested for compliance and security and reliability&#8230; We think these remaining late-stage patches are worth the test burden, often because they help make the web platform much more powerful, and reflect real-web compatibility and capability issues. Acid3&#8217;s contents, sadly, are not as often of that nature.
+</p>
+</blockquote>
+
+<p>
+You know, it&#8217;s weird, but that seems really familiar, like I&#8217;ve heard or read something like that before.  Now if only I could remember&#8230;  Oh yeah!  It&#8217;s basically <a href="http://blogs.msdn.com/ie/archive/2005/07/29/445242.aspx">what the IE team said</a> about not passing <a href="http://acid2.acidtests.org/#top">Acid2</a> when the IE7 betas came out, for which they were promptly excoriated.
+</p>
+<p>
+Huh.
+</p>
+<p>
+Well, never mind that now.  Of course it was a <em>totally</em> different set of circumstances and core motivations, and I&#8217;m sure there&#8217;s absolutely no parallel to be drawn between the two situations.  At <em>all</em>.
+</p>
+<p>
+Returning to the main point here:  I&#8217;m a little bit sad, to tell the truth.  The <a href="http://www.w3.org/Style/CSS/Test/CSS1/current/test5526c.htm">original acid test</a> was a prefect example of what I think makes for a good stress test.  Recall that the test&#8217;s original name, before it got shorthanded, was the &#8220;Box Model Acid Test&#8221;.  It was a test of CSS box model handling, including floats.  That&#8217;s all it was designed to do.  It did that fairly well for its time, considering it was part of <a href="http://www.w3.org/Style/CSS/Test/CSS1/">a CSS1 test suite</a>.  It didn&#8217;t try to combine box model testing with tests for PNG support, HTML parse error recovery, and DOM scripting.
+</p>
+<p>
+To me, the ideal CSS test suite is one that has a bunch of basic property/value tests, like the ones I&#8217;ve been responsible for creating (<a href="http://www.w3.org/Style/CSS/Test/CSS1/">1</a>, <a href="http://meyerweb.com/eric/css/tests/css2/">2</a>), along with a bunch of acid tests for specific areas or concepts in that specification.  So an acidified CSS test suite would have individual acid tests for the box model, positioning, fonts, selectors, table layout, and so on.  It would <strong>not</strong> involve scripting or markup parsing (beyond what&#8217;s needed to handle selectors).  It would <strong>not</strong> use animated SVG icons.  Hell, it probably wouldn&#8217;t even use PNGs, except possibly alphaed PNGs when testing opacity and RGBA colors.  And maybe not even then.
+</p>
+<p>
+So in a DOM test suite, you&#8217;d have one test page for each method or attribute, and then build some acid tests out of related bits (say, on an entire interface or set of closely related interfaces).  And maybe, at the end, you&#8217;d build an overarching acid test that rolled verything in the DOM spec into one fiendishly difficult test.  But it would be <em>just about the DOM</em> and whatever absolute minimum of other stuff you needed, like text rendering and maybe GIF support.  (Similarly, the CSS tests had to assume some basic HTML and CSS selector support, or else everything else fell down.)
+</p>
+<p>
+And then, after all those test suites have been built up and a series of acid tests woven into them, with each one culminating in its own spec-spanning acid test, you might think about taking those end-point acid tests and slamming them all together into one super-ultra-hyper-mega acid test, something that even the xenomorphs from the <cite>Alien</cite> series would look at and say, &#8220;<em>That&#8217;s</em> gonna sting&#8221;.  That would be awesome.  But that&#8217;s not what we have.
+</p>
+<p>
+I fully acknowledge that a whole lot of very clever thinking went into the construction of Acid3 (as was true of Acid2), and that a lot of very smart people have worked very hard to pass it.  Congratulations all around, really.  I just can&#8217;t help feeling like some broader and more important point has been missed.  To me, it&#8217;s kind of like meeting the general challenge of finding an economical way to loft broadband transceivers to an altitude of 25,000 feet (in order to get full coverage of large metropolitan areas while avoiding the jetstream) by daring a bunch of teams to plant a transceiver near the summit of Mount Everest&#8212;and then getting them to do it.  Progress toward the summit can be demonstrated and kudos bestowed afterward, but there&#8217;s a wider picture that seems to have been overlooked in the process.
+</p>
+</div>
+
+</div>
+
+
+<div class="entry">
+<h3><a href="http://meyerweb.com/eric/thoughts/2008/03/24/notacon-not-to-be-missed/" rel="bookmark" title="Permanent Link: Notacon: Not to be Missed">Notacon: Not to be Missed</a></h3>
+<ul class="meta">
+<li class="date">Mon 24 Mar 2008</li>
+<li class="time">1549</li>
+<li class="cat"><a href="http://meyerweb.com/eric/thoughts/category/tech/css/" title="View all posts in CSS" rel="category tag">CSS</a><br> <a href="http://meyerweb.com/eric/thoughts/category/personal/cleveland/" title="View all posts in Cleveland" rel="category tag">Cleveland</a><br> <a href="http://meyerweb.com/eric/thoughts/category/personal/speaking/" title="View all posts in Speaking" rel="category tag">Speaking</a></li>
+<li class="cmt"><a href="http://meyerweb.com/eric/thoughts/2008/03/24/notacon-not-to-be-missed/#comments">One response</a></li>
+<li></li><li></li></ul>
+
+<div class="text">
+<p>
+In just under a couple of weeks, the fifth annual <a href="http://notacon.org/">NOTACON</a> will be held right here in beautiful Cleveland, Ohio.  You&#8217;re going, I know; you&#8217;re super-&uuml;ber-cool like that, and you don&#8217;t need to be reminded of your coolness.  But I&#8217;d like to mention the show here for posterity, so that our descendants will know just how completely they missed out.
+</p>
+<p>
+Notacon straddles, like a Colossus built entirely out of recycled motherboards, backtech chips, and loops of soldering wire, the middle ground between regular conferences and <a href="http://barcamp.org/">BarCamp</a>s (though Notacon predates BarCamp by a couple of years).  It&#8217;s not free to attend, but it is <a href="http://www.notacon.org/prereg.html">very inexpensive</a>.  What it lacks in slick advertising and corporate sponsors, it makes up ten times over in raw, unfiltered geekiness and fascinating material.  This is the kind of event where presenters will hold forth on the depths of digital security, the physics of wireless networking, homebrew chip architecture, the coolness of HyperCard, online society dynamics, and more.  There&#8217;s a running <a href="http://www.notacon.org/events.html#abe">contest called Anything but Ethernet</a>, where you get bonus points for having one of the links in your network architecture incorporate barbed wire.
+</p>
+<p>
+Yeah.  It&#8217;s like <em>that</em>.
+</p>
+<p>
+The <a href="http://notacon.org/speakers.html">speakers</a> will be as wildly diverse as the audience.  The lead engineer for the <a href="http://en.wikipedia.org/wiki/C64_Direct-to-TV">C64 Direct-to-TV</a> (a C64 in a joystick!); the man behind <a href="http://thedailywtf.com/">The Daily WTF</a>; some of the folks putting out <a href="http://2600.com/">2600 magazine</a>; the woman behind <a href="http://crochetme.com/">CrochetMe.com</a>; and many more.  I&#8217;ll be there as well, talking about the bleeding edge of CSS and web design, ripping apart some recent projects of mine at top speed while discussing where I think we&#8217;ll be in three years.  Plus Drew Curtis of <a href="http://fark.com/">FARK</a> fame will be back, as he always is, this year sponsoring a FARK party.  The mind fairly boggles.  Boggles!
+</p>
+<p>
+As you&#8217;re no doubt gathering by now, it&#8217;s hard to describe Notacon in a quick, concise summary&#8212;and that&#8217;s a big part of what makes it so awesome.  For my contemporaries: see you there!  To you future historians: okay, you missed out, but drop everything right now to find out when the next one is and I&#8217;ll see you there!
+</p>
+</div>
+
+</div>
+
+</div>
+<p style="font-size: 90%; text-align: right; margin-top: 0.5em; padding-top: 0;">(If you care, there's even an <a href="/eric/thoughts/">archive of previous thoughts</a>...)</p>
+
+</div><div id="extra"><div class="panel" id="archipelago"><h4>Identity Archipelago</h4><ul><li><a href="http://flickr.com/photos/meyerweb/" rel="me">Flickr</a></li><li><a href="http://twitter.com/meyerweb/" rel="me">Twitter</a></li><li><a href="http://www.linkedin.com/in/meyerweb" rel="me">LinkedIn</a></li><li><a href="http://technorati.com/profile/emeyer" rel="me">Technorati</a></li></ul></div><div class="panel" id="pointers"><h4>Projects Elsewhere</h4><ul><li><a href="http://aneventapart.com/">An Event Apart</a></li><li><a href="http://complexspiral.com/">Complex Spiral Consulting</a></li><li><a href="http://www.webassist.com/go/css/emeyer/">CSS Sculptor</a></li><li><a href="http://css-discuss.org/">css-discuss</a></li><li><a href="http://microformats.org/">Microformats</a></li><li><a href="http://s5project.org/">S5</a></li></ul></div><div class="panel" id="tour"><ul><li style="text-align: center; margin-bottom: 1.25em;"><a href="http://aneventapart.com/events/2008/boston/"><!-- <img src="/pix/2008/aea-bos-speak-220px.gif" alt=" -->See me speak at An Event Apart Boston 2008 - June 23-24, 2008<!-- " style="max-width: 100%;" /> --></a><br/> ...and get $50 off with the discount code AEAMEYE</li><li><a href="http://www.webassist.com/go/css/emeyer/"><img src="/pix/CS_ad_180x109.jpg" alt="CSS Sculptor for Dreamweaver" style="max-width: 100%;" /></a></li></ul></div><div id="sideblog" class="panel">
+<h4>Distractions</h4>
+<p class="more">
+<a href="/eric/thoughts/recent-links/">archive</a>
+</p>
+<ul>
+<li><a href="http://www.nytimes.com/2008/05/04/opinion/04rich.html?_r=4&amp;ref=opinion&amp;oref=slogin&amp;oref=login&amp;oref=slogin&amp;oref=slogin" title="May 6 | I do wonder if we&#8217;re going to hear a lot more about Robertson and Hagee once the Democrats have one candidate and the race begins in earnest.">The All-White Elephant in the Room</a></li>
+<li><a href="http://www.cssquirrel.com/comic/?comic=1" title="May 5 | So THAT&#8217;S what took so long.  It all makes sense now.">The Ballad of Andy&#8217;s Bag</a></li>
+<li><a href="http://airbagindustries.com/wsdd/" title="April 30 | Join us!  Joiiiiiin ussss!">Web Standards Design + Development, a group of Interactive Craftsmen</a></li>
+<li><a href="http://www.dirtystylus.com/blog/2008/04/28/keyboards-keyboards/" title="April 30 | Filed under &#8220;indispensable peripheral advice for when I buy my next Mac&#8221;.">Keyboards, Keyboards</a></li>
+<li><a href="http://designintellection.com/2008/this-is-how-you-get-sifr-to-work/" title="April 30 | I have needed this for the longest time, and now it&#8217;s finally here.">This is How You Get sIFR to Work</a></li>
+<li><a href="http://web.forret.com/tools/twitter-tq.asp?name=meyerweb" title="April 29 | I neither think slowly nor have anything valuable to say, sir, and I&#8217;ll thank you not to insinuate otherwise!">Twitter Quotient for &#8216;meyerweb&#8217;</a></li>
+<li><a href="http://www.scottandrew.com/wordpress/archives/2008/04/flugtag.html" title="April 29 | Anything I tried to say would cheapen the experience.  Just go read it.">flugtag</a></li>
+<li><a href="http://www.nytimes.com/2008/04/26/us/26atheist.html?_r=1&amp;oref=slogin&amp;pagewanted=all" title="April 29 | Punishment of military personnel for not joining a state religion: check.  Hey, only three more checkmarks and we&#8217;ll be back to &#8220;Monarchy&#8221;!">Soldier Sues Army, Saying His Atheism Led to Threats</a></li>
+<li><a href="http://gizmodo.com/384601/a10-rc-model-vs-the-real-thing-at-top-gun-2008" title="April 28 | I seriously would have joined the military if someone could have iron-clad guaranteed me assignment to fly an A-10.">A10 RC Model vs the Real Thing at Top Gun 2008</a></li>
+<li><a href="http://www.immonen.ca/news/archives/963" title="April 22 | Or, unauthorized blog-scraping for profit and the jerks who abet it.">copyright theft, and how it hurts the ones you love</a></li>
+<li><a href="http://waxy.org/2008/04/milliways_infocoms_unreleased_sequel_to_hitchhikers_guide_to_the_galax/" title="April 18 | Ever wanted to play it?  Now you sort of can, a little.  (Assuming the crush of nostalgia traffic doesn&#8217;t kill Andy&#8217;s server.)">Milliways: Infocom&#8217;s Unreleased Sequel to Hitchhiker&#8217;s Guide to the Galaxy</a></li>
+<li><a href="http://www.economist.com/PrinterFriendly.cfm?story_id=11050128" title="April 18 | I&#8217;d like to think we&#8217;re coming to the end of this kind of thing, but I really doubt it.">A bitter pill</a></li>
+<li><a href="http://disruptive-innovations.com/zoo/cssvariables/" title="April 17 | Holy jumping mother of Penelope is it ever time this happened.">CSS Variables</a></li>
+</ul>
+</div>
+<div class="panel" id="advisory">
+<div class="guarded">
+<a href="http://blogadvisorysystem.com/"><img src="/pix/bas/guarded.png" alt="Blog Advisory System Alert Level: Guarded"></a>
+</div>
+</div>
+
+<div class="panel" id="excuse">
+<h4>The <a href="/feeds/excuse/">excuse of the day</a> is</h4>
+<p>fnord</p>
+</div>
+
+<div class="panel" id="extras">
+<h4>Extras</h4>
+<ul>
+<li><a href="/feeds/">Feeds</a> &#8226;</li>
+<li><a href="/eric/faq.html">FAQ</a> &#8226;</li>
+<li><a href="/family.html">Family</a></li>
+</ul>
+</div>
+
+</div>
+
+<div id="navigate">
+<h4>Navigation</h4>
+<ul id="navlinks">
+<li id="archLink"><a href="/eric/thoughts/">Archives</a></li>
+<li id="cssLink"><a href="/eric/css/">CSS</a></li>
+<li id="toolsLink"><a href="/eric/tools/">Toolbox</a></li>
+<li id="writeLink"><a href="/eric/writing.html">Writing</a></li>
+<li id="speakLink"><a href="/eric/talks/">Speaking</a></li>
+<li id="otherLink"><a href="/other/">Leftovers</a></li>
+<li id="aboutsite"><a href="/ui/about.html">About this site</a></li>
+</ul>
+</div>
+
+<div id="footer">
+<p class="sosumi">All contents of this site, unless otherwise noted, are &copy;1995-2005 <strong>Eric A. and Kathryn S. Meyer</strong>.  All Rights Reserved.</p>
+<p>"<a href="/eric/thoughts/">Thoughts From Eric</a>" is powered by the &uuml;bercool <a href="http://wordpress.org/">WordPress</a> 1.5.</p>
+</div>
+</body>
+</html>

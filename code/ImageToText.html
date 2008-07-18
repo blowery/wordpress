@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <title>blowery.org : code : ImageToText</title>
+    <link rel="stylesheet" type="text/css" href="/style/global.css">
+  </head>
+  
+  <body>
+  <table align="center">
+  <tr>
+    <td>&nbsp;<br />&nbsp;<br />&nbsp;<br /></td>
+  </tr>
+  <tr>
+     <td valign="top" align="center">
+       <a href="./" title="back home"><img src="img/maya_hieroglyphs.gif" alt="mayan hieroglyphs" border="0" width="150" height="175"></a>
+     </td>
+     <td valign="top" style="padding-top:1em;" width="400px">
+        <p>
+        <span class="listHeading">/code/ImageToText</span><br />
+        &nbsp;&nbsp;<a href="ImageToText.zip">zipped souce</a><br/><br/>
+        This is a little program I wrote in response to <a href="http://pic3html.vvv.tf">another
+        site</a> I found while poking around on the web.  It takes an image (GIF / JPEG / PNG / BMP)
+        as in input and spits out some HTML representing the image to a file.
+        </p>
+
+        <p>
+        I thought the idea was pretty cool, and I was wondering how it was done, so I 
+        started playing around with the System.Drawing namespace in the new <a 
+        href="http://msdn.microsoft.com/net">.NET framework</a>.
+        I found the Bitmap object, which lets me get access to each pixel in an image, and
+        the static FromFile method on the Image object that parses a number of different 
+        image formats.  Really cool.  
+        </p>
+
+        <p>
+        So, I just spin though the image a block at a time (usually 4 x 6, but it can change).
+        I average the colors in the block into one color and then spit out a "pixel" of 
+        the averaged color.  It's really pretty simple.  Going forward, maybe an enhancement 
+        to up the brightness for the pixels?  The images seem dark overall.  Oh well.
+        </p>
+
+        <p>
+        If you have comments or patches or anything, <a 
+        href="mailto:code@blowery.org?subject=ImageToText Comments">lemme know</a>.
+        </p>
+
+        <p>
+        <b>Samples</b><br/>
+        &nbsp;&nbsp;<a href="img/PennyArcade.gif">original</a> &nbsp;&nbsp;&nbsp;[from <a href="http://www.penny-arcade.com">Penny Arcade</a>]<br/>
+        &nbsp;&nbsp;<a href="PennyArcade.html">converted</a><br/>
+        <br/>
+        &nbsp;&nbsp;<a href="img/franken.jpg">original</a> - sorry ladies, he's taken<br/>
+        &nbsp;&nbsp;<a href="franken.html">converted</a><br/>
+        <br/>
+        &nbsp;&nbsp;<a href="img/frankenFace.jpg">original</a> - ditto<br/>
+        &nbsp;&nbsp;<a href="frankenFace.html">converted</a><br/>
+        <br/>
+        </p>
+    </td>
+  </tr>
+  </table>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-71217-2");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script>
+  </body>
+</html>
