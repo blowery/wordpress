@@ -630,12 +630,12 @@ function delete_option( $name ) {
  * @return mixed A scalar data
  */
 function maybe_serialize( $data ) {
-	if ( is_string( $data ) )
-		return $data;
-	elseif ( is_array( $data ) || is_object( $data ) )
+	if ( is_array( $data ) || is_object( $data ) )
 		return serialize( $data );
+
 	if ( is_serialized( $data ) )
 		return serialize( $data );
+
 	return $data;
 }
 
@@ -1489,9 +1489,9 @@ function wp_upload_dir( $time = NULL ) {
 
 	// $dir is absolute, $path is (maybe) relative to ABSPATH
 	$dir = path_join( ABSPATH, $dir );
-
+	
 	if ( !$url = get_option( 'upload_url_path' ) ) {
-		if ( empty($upload_path) )
+		if ( empty($upload_path) or ( $upload_path == $dir ) )
 			$url = WP_CONTENT_URL . '/uploads';
 		else
 			$url = trailingslashit( $siteurl ) . $upload_path;
@@ -1523,8 +1523,9 @@ function wp_upload_dir( $time = NULL ) {
 		$message = sprintf( __( 'Unable to create directory %s. Is its parent directory writable by the server?' ), $dir );
 		return array( 'error' => $message );
 	}
-
+	
 	$uploads = array( 'path' => $dir, 'url' => $url, 'subdir' => $subdir, 'basedir' => $bdir, 'baseurl' => $burl, 'error' => false );
+
 	return apply_filters( 'upload_dir', $uploads );
 }
 
