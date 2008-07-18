@@ -1,34 +1,138 @@
 <?php
+/**
+ * WordPress Plugin Administration API
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
 
+/**
+ * plugin_get_contents() - Retrieve enough of the plugin file to get plugin data.
+ *
+ * Some users have issues with opening large files and manipulating the
+ * contents for want is usually the first 1kiB or 2kiB. This function
+ * stops pulling in the plugin contents when it has all of the required
+ * plugin data.
+ *
+ * It also adds a little bit of padding for fudging the version info
+ * and to make sure that we grab absolutely everything, in case of a
+ * long description.
+ *
+ * The plugin file is assumed to have permissions to allow for scripts to
+ * read the file. This is not checked however and the file is only opened
+ * for reading.
+ *
+ * @link http://trac.wordpress.org/ticket/5651 Purpose of function.
+ * @since 2.7.0
+ * @uses plugin_has_required_fields() Checks for all of the required plugin
+ *		data fields.
+ *
+ * @param string $plugin_file Path to plugin file to open
+ * @return string Plugin file contents retrieved
+ */
+function plugin_get_contents($plugin_file) {
+
+	// We don't need to write to the file, so just open for reading.
+	$fp = fopen($plugin_file, 'r');
+
+	// Store the contents of the plugin file here.
+	$contents = '';
+
+	// Keep reading the contents of the file until End of File is
+	// reached, or we grabbed all of the required plugin data.
+	while( !feof($fp) && !plugin_has_required_fields($contents) )
+		$contents .= fread( $fp, 1024 );
+
+	// Make sure that any padding is adding for long descriptions
+	// and grabbing any optional plugin data, not checked for.
+	if( !feof($fp) )
+		$contents .= fread( $fp, 512 );
+
+	// PHP will close file handle, but we are good citizens
+	fclose($fp);
+	return $contents;
+}
+
+/**
+ * plugin_has_required_fields() - Checks plugin contents for required plugin data
+ *
+ * @since 2.7.0
+ * @usedby plugin_get_contents()
+ *
+ * @param string $plugin_contents Plugin file contents
+ * @return bool Whether contents has all plugin data.
+ */
+function plugin_has_required_fields($plugin_contents) {
+	$hasName = stripos($plugin_contents, 'plugin name:');
+	$hasPluginURI = stripos($plugin_contents, 'plugin uri:');
+	$hasDescription = stripos($plugin_contents, 'description:');
+	$hasAuthor = stripos($plugin_contents, 'author:');
+	$hasAuthorURI = stripos($plugin_contents, 'author uri:');
+
+	if( false !== $hasName && false !== $hasPluginURI && false !== $hasDescription &&
+		false !== $hasAuthor && false !== $hasAuthorURI)
+		return true;
+
+	return false;
+}
+
+/**
+ * get_plugin_data() - Parse the plugin contents to retrieve plugin's metadata
+ *
+ * The metadata of the plugin's data searches for the following in the plugin's
+ * header.
+ *
+ * <code>
+ * /*
+ * Plugin Name: Name of Plugin
+ * Plugin URI: Link to plugin information
+ * Description: Plugin Description
+ * Author: Plugin author's name
+ * Author URI: Link to the author's web site
+ * Version: Must be set in the plugin for WordPress 2.3+
+ * Text Domain: Optional. Unique identifier, should be same as the one used in
+ *		plugin_text_domain()
+ * Domain Path: Optional. Only useful if the translations are located in a folder
+ *		above the plugin's base path. For example, if .mo files are located in
+ *		the locale folder then Domain Path will be "/locale/" and must have the
+ *		first slash. Defaults to the base folder the plugin is located in.
+ *  * / # Remove the space to close comment
+ * </code>
+ *
+ * Plugin data returned array contains the following:
+ *		'Name' - Name of the plugin, must be unique.
+ *		'Title' - Title of the plugin and the link to the plugin's web site.
+ *		'Description' - Description of what the plugin does and/or notes
+ *		from the author.
+ *		'Author' - The author's name and web site link.
+ *		'Version' - The plugin version number.
+ *
+ * @param string $plugin_file Path to the plugin file
+ * @return array See above for description.
+ */
 function get_plugin_data( $plugin_file ) {
-	$plugin_data = implode( '', file( $plugin_file ));
-	preg_match( '|Plugin Name:(.*)$|mi', $plugin_data, $plugin_name );
-	preg_match( '|Plugin URI:(.*)$|mi', $plugin_data, $plugin_uri );
+	$plugin_data = plugin_get_contents( $plugin_file );
+	preg_match( '|Plugin Name:(.*)$|mi', $plugin_data, $name );
+	preg_match( '|Plugin URI:(.*)$|mi', $plugin_data, $uri );
+	preg_match( '|Version:(.*)|i', $plugin_data, $version );
 	preg_match( '|Description:(.*)$|mi', $plugin_data, $description );
 	preg_match( '|Author:(.*)$|mi', $plugin_data, $author_name );
 	preg_match( '|Author URI:(.*)$|mi', $plugin_data, $author_uri );
+	preg_match( '|Text Domain:(.*)$|mi', $plugin_data, $text_domain );
+	preg_match( '|Domain Path:(.*)$|mi', $plugin_data, $domain_path );
 
-	if ( preg_match( "|Version:(.*)|i", $plugin_data, $version ))
-		$version = trim( $version[1] );
-	else
-		$version = '';
-
-	$description = wptexturize( trim( $description[1] ));
-
-	$name = $plugin_name[1];
-	$name = trim( $name );
-	$plugin = $name;
-	if ('' != trim($plugin_uri[1]) && '' != $name ) {
-		$plugin = '<a href="' . trim( $plugin_uri[1] ) . '" title="'.__( 'Visit plugin homepage' ).'">'.$plugin.'</a>';
+	foreach ( array( 'name', 'uri', 'version', 'description', 'author_name', 'author_uri', 'text_domain', 'domain_path' ) as $field ) {
+		if ( !empty( ${$field} ) )
+			${$field} = trim(${$field}[1]);
+		else
+			${$field} = '';
 	}
 
-	if ('' == $author_uri[1] ) {
-		$author = trim( $author_name[1] );
-	} else {
-		$author = '<a href="' . trim( $author_uri[1] ) . '" title="'.__( 'Visit author homepage' ).'">' . trim( $author_name[1] ) . '</a>';
-	}
-
-	return array('Name' => $name, 'Title' => $plugin, 'Description' => $description, 'Author' => $author, 'Version' => $version);
+	return array(
+				'Name' => $name, 'PluginURI' => $uri, 'Description' => $description, 
+				'Author' => $author_name, 'AuthorURI' => $author_uri, 'Version' => $version, 
+				'TextDomain' => $text_domain, 'DomainPath' => $domain_path
+				);
 }
 
 function get_plugins($plugin_folder = '') {
