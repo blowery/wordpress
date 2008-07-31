@@ -1,9 +1,9 @@
 === WP-Footnotes ===
 Contributors: drzax
-Tags: footnotes, post, posts, notes, reference, formatting, referencing, side, sidenotes, side notes
+Tags: footnotes, post, posts, notes, reference, formatting, referencing, bibliography
 Requires at least: 2.0
-Tested up to: 2.5.1
-Stable tag: 3.2
+Tested up to: 2.6
+Stable tag: 3.3
 
 Allows post authors to easily add footnotes to their posts.
 
@@ -33,6 +33,10 @@ Sure can! Add your feature request at [my bug tracking site](http://bugs.elvery.
 Because answers to pretty much all the questions that get asked frequently are in [the manual](http://elvery.net/drzax/more-things/wordpress-footnotes-plugin/).
 
 == Change Log ==
+
+= 3.3 =
+
+- Bug fix: Not setting default options on install.
 
 = 3.2 =
 

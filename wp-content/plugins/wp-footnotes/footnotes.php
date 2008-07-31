@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP-Footnotes
 Plugin URI: http://www.elvery.net/drzax/more-things/wordpress-footnotes-plugin/
-Version: 3.2
+Version: 3.3
 Description: Allows a user to easily add footnotes to a post.
 Author: Simon Elvery
 Author URI: http://www.elvery.net/drzax/
@@ -30,7 +30,7 @@ Author URI: http://www.elvery.net/drzax/
 // Some important constants
 define('WP_FOOTNOTES_OPEN', " ((");  //You can change this if you really have to, but I wouldn't recommend it.
 define('WP_FOOTNOTES_CLOSE', "))");  //Same with this one.
-define('WP_FOOTNOTES_VERSION', '3.2');
+define('WP_FOOTNOTES_VERSION', '3.3');
 
 // Instantiate the class 
 $swas_wp_footnotes = new swas_wp_footnotes();
@@ -81,6 +81,7 @@ class swas_wp_footnotes {
 		// Get the current settings or setup some defaults if needed
 		if (!$this->current_options = get_option('swas_footnote_options')){
 			$this->current_options = $this->default_options;
+			update_option('swas_footnote_options', $this->current_options);
 		} else { 
 			
 			// Set any unset options
