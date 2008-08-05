@@ -1,0 +1,407 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>	
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>WP-PluginsUsed 1.31 Readme</title>
+	<style type="text/css" media="screen">
+		/* Default Style */
+		BODY {
+			font-family: Verdana, Arial;
+			font-size: 12px;
+			color: #000000;
+			background: #FFFFFF;
+		}
+		P {
+			padding-left: 10px;
+		}
+		BLOCKQUOTE {
+			margin: 10px 20px 0px 20px;
+			padding: 10px;
+			border: 1px solid #8d8d8d;
+			background-color: #f5f5f5;
+		}
+		LI {
+			margin-top: 20px;
+		}
+		UL LI UL LI {
+			margin-top: 10px;
+		}
+		A, A:active, A:link, A:visited {
+			color: #2d3a4c;
+			text-decoration: none;
+		}
+		A:hover {
+			color: #5577a5;
+			text-decoration: underline;
+		}
+		/* Place Holder Style */
+		#Container {
+			width: 780px;
+			margin-left: auto;
+			margin-right: auto; 
+		}
+		#Content {
+			background-color: #fafafa;
+			border: 1px solid #a2b6cb;
+			padding: 10px;
+			margin-top: -13px;
+		}
+		/* Title Style */
+		#Title {
+			font-family: Verdana, Arial;
+			font-size: 22px;
+			font-weight: bold;
+			color: #389aff;
+			border-bottom: 1px solid #389aff;
+			margin-bottom: 10px;
+		}
+		.SubTitle {
+			font-family: Verdana, Arial;
+			font-size: 18px;
+			font-weight: bold;
+			color: #5b87b4;
+		}
+		.SubSubTitle {
+			font-family: Verdana, Arial;
+			font-size: 14px;
+			font-weight: bold;
+			color: #73a4d6;
+		}
+		/* Tabs */
+		UL#Tabs {
+			font-family: Verdana, Arial;
+			font-size: 12px;
+			font-weight: bold;
+			list-style-type: none;
+			padding-bottom: 28px;
+			border-bottom: 1px solid #a2b6cb;
+			margin-bottom: 12px;
+			z-index: 1;
+		}
+		#Tabs LI.Tab {
+			float: right;
+			height: 25px;
+			background-color: #deedfb;
+			margin: 2px 0px 0px 5px;
+			border: 1px solid #a2b6cb;
+		}
+		#Tabs LI.Tab A {
+			float: left;
+			display: block;
+			color: #666666;
+			text-decoration: none;
+			padding: 5px;
+		}
+		#Tabs LI.Tab A:hover {
+			background-color: #bfe0fe;
+			border-bottom: 1px solid #bfe0fe;
+		}
+		/* Selected Tab */
+		#Tabs LI.SelectedTab {
+			float: right;
+			height: 25px;
+			background-color: #fafafa;
+			margin: 2px 0px 0px 5px;
+			border-top: 1px solid #a2b6cb;
+			border-right: 1px solid #a2b6cb;
+			border-bottom: 1px solid #fafafa;
+			border-left: 1px solid #a2b6cb;
+		}
+		#Tabs LI.SelectedTab A {
+			float: left;
+			display: block;
+			color: #666666;
+			text-decoration: none;
+			padding: 5px;
+			cursor: default;
+		}
+		/* Copyright */
+		#Copyright {
+			text-align: center;
+		}
+	</style>
+	<script type="text/javascript">
+	/* <![CDATA[*/
+		// Index Page
+		function index() {
+			// Tab
+			document.getElementById('IndexTab').className = 'SelectedTab';
+			document.getElementById('ChangelogTab').className = 'Tab';
+			document.getElementById('InstallTab').className = 'Tab';
+			document.getElementById('UpgradeTab').className = 'Tab';
+			document.getElementById('UsageTab').className = 'Tab';
+			// Page
+			document.getElementById('Index').style.display= 'block';
+			document.getElementById('Changelog').style.display = 'none';
+			document.getElementById('Install').style.display = 'none';
+			document.getElementById('Upgrade').style.display = 'none';
+			document.getElementById('Usage').style.display = 'none';
+		}
+		// Changelog Page
+		function changelog() {
+			// Tab
+			document.getElementById('IndexTab').className = 'Tab';
+			document.getElementById('ChangelogTab').className = 'SelectedTab';
+			document.getElementById('InstallTab').className = 'Tab';
+			document.getElementById('UpgradeTab').className = 'Tab';
+			document.getElementById('UsageTab').className = 'Tab';
+			// Page
+			document.getElementById('Index').style.display = 'none';
+			document.getElementById('Changelog').style.display = 'block';
+			document.getElementById('Install').style.display = 'none';
+			document.getElementById('Upgrade').style.display = 'none';
+			document.getElementById('Usage').style.display = 'none';
+		}
+		// Installation Page
+		function install() {
+			// Tab
+			document.getElementById('IndexTab').className = 'Tab';
+			document.getElementById('ChangelogTab').className = 'Tab';
+			document.getElementById('InstallTab').className = 'SelectedTab';
+			document.getElementById('UpgradeTab').className = 'Tab';
+			document.getElementById('UsageTab').className = 'Tab';
+			// Page
+			document.getElementById('Index').style.display= 'none';
+			document.getElementById('Changelog').style.display = 'none';
+			document.getElementById('Install').style.display = 'block';
+			document.getElementById('Upgrade').style.display = 'none';
+			document.getElementById('Usage').style.display = 'none';
+		}
+		// Upgrade Page
+		function upgrade() {
+			// Tab
+			document.getElementById('IndexTab').className = 'Tab';
+			document.getElementById('ChangelogTab').className = 'Tab';
+			document.getElementById('InstallTab').className = 'Tab';
+			document.getElementById('UpgradeTab').className = 'SelectedTab';
+			document.getElementById('UsageTab').className = 'Tab';
+			// Page
+			document.getElementById('Index').style.display= 'none';
+			document.getElementById('Changelog').style.display = 'none';
+			document.getElementById('Install').style.display = 'none';
+			document.getElementById('Upgrade').style.display = 'block';
+			document.getElementById('Usage').style.display = 'none';
+		}
+		// Usage Page
+		function usage() {
+			// Tab
+			document.getElementById('IndexTab').className = 'Tab';
+			document.getElementById('ChangelogTab').className = 'Tab';
+			document.getElementById('InstallTab').className = 'Tab';
+			document.getElementById('UpgradeTab').className = 'Tab';
+			document.getElementById('UsageTab').className = 'SelectedTab';
+			// Page
+			document.getElementById('Index').style.display= 'none';
+			document.getElementById('Changelog').style.display = 'none';
+			document.getElementById('Install').style.display = 'none';
+			document.getElementById('Upgrade').style.display = 'none';
+			document.getElementById('Usage').style.display = 'block';
+		}
+	/* ]]> */
+	</script>
+</head>
+<body>
+<div id="Container">
+	<!-- Title -->
+	<div id="Title">WP-PluginsUsed 1.31&nbsp;&nbsp;&nbsp;<span style="color: #aaaaaa;">Readme</span></div>
+
+	<!-- Tabs -->
+	<ul id="Tabs">
+		<li id="UsageTab" class="Tab"><a href="#Usage" onclick="usage(); return false;" title="Usage Instructions">Usage</a></li>
+		<li id="UpgradeTab" class="Tab"><a href="#Upgrade" onclick="upgrade(); return false;" title="Upgrade Instructions">Upgrade</a></li>
+		<li id="InstallTab" class="Tab"><a href="#Installation" onclick="install(); return false;" title="Installation Instructions">Installation</a></li>
+		<li id="ChangelogTab" class="Tab"><a href="#Changelog" onclick="changelog(); return false;" title="Changelog">Changelog</a></li>
+		<li id="IndexTab" class="SelectedTab"><a href="#Index" onclick="index(); return false;" title="Index Instructions">Index</a></li>
+	</ul>
+
+	<!-- Content -->
+	<div id="Content">
+		<!-- Index -->
+		<div id="Index">
+			<div class="SubTitle">&raquo; Index</div>
+			<div class="SubSubTitle">Plugin Information</div>
+			<p>
+				<strong>Author:</strong><br />
+				<strong>&raquo;</strong> Lester 'GaMerZ' Chan
+			</p>
+			<p>
+				<strong>Website:</strong><br />
+				<strong>&raquo;</strong> <a href="http://lesterchan.net/" title="http://lesterchan.net/">http://lesterchan.net/</a>
+			</p>
+			<p>
+				<strong>Features:</strong><br />
+				<strong>&raquo;</strong> Display WordPress plugins that you currently have (both active and inactive) onto a post/page.
+			</p>
+			<p>
+				<strong>Download:</strong><br />
+				<strong>&raquo;</strong> <a href="http://downloads.wordpress.org/plugin/wp-pluginsused.1.31.zip" title="http://downloads.wordpress.org/plugin/wp-pluginsused.1.31.zip">WP-PluginsUsed 1.31 For WordPress 2.5.x And Above</a><br />
+				<strong>&raquo;</strong> <a href="http://downloads.wordpress.org/plugin/wp-pluginsused.1.00.zip" title="http://downloads.wordpress.org/plugin/wp-pluginsused.1.00.zip">WP-PluginsUsed 1.00 For WordPress 2.1.x, 2.2.x And 2.3.x</a><br />
+			</p>			
+			<p>
+				<strong>Screenshots:</strong><br />
+				<strong>&raquo;</strong> <a href="http://lesterchan.net/wordpress/screenshots/browse/wp-pluginsused/" title="http://lesterchan.net/wordpress/screenshots/browse/wp-pluginsused/">http://lesterchan.net/wordpress/screenshots/browse/wp-pluginsused/</a>
+			</p>
+			<p>
+				<strong>Demo:</strong><br />
+				<strong>&raquo;</strong> <a href="http://lesterchan.net/wordpress/plugins-used/" title="http://lesterchan.net/wordpress/plugins-used/">http://lesterchan.net/wordpress/plugins-used/</a>
+			</p>
+			<p>
+				<strong>Development:</strong><br />
+				<strong>&raquo;</strong> <a href="http://dev.wp-plugins.org/browser/wp-pluginsused/" title="http://dev.wp-plugins.org/browser/wp-pluginsused/">http://dev.wp-plugins.org/browser/wp-pluginsused/</a>
+			</p>
+			<p>
+				<strong>Translations:</strong><br />
+				<strong>&raquo;</strong> <a href="http://dev.wp-plugins.org/browser/wp-pluginsused/i18n/" title="http://dev.wp-plugins.org/browser/wp-pluginsused/i18n/">http://dev.wp-plugins.org/browser/wp-pluginsused/i18n/</a>
+			</p>
+			<p>
+				<strong>Support Forums:</strong><br />
+				<strong>&raquo;</strong> <a href="http://forums.lesterchan.net/index.php?board=29.0" title="http://forums.lesterchan.net/index.php?board=29.0">http://forums.lesterchan.net/index.php?board=29.0</a>
+			</p>
+			<p>
+				<strong>Credits:</strong><br />
+				<strong>&raquo;</strong> Icons courtesy of <a href="http://www.famfamfam.com/">FamFamFam</a>.
+			</p>
+			<p>
+				<strong>Note:</strong><br />
+				<strong>&raquo;</strong> The <strong>Changelog</strong>, <strong>Installation</strong>, <strong>Upgrade</strong>, <strong>Usage</strong> Tab at the top of the page.<br />
+			</p>
+			<p>
+				<strong>Donations:</strong><br />
+				<strong>&raquo;</strong> I spent most of my free time creating, updating, maintaining and supporting these plugins, if you really love my plugins and could spare me a couple of bucks as my school allowance, I will really appericiate it. If not feel free to use it without any obligations. Thank You. My Paypal account is 
+				<script type="text/javascript">
+					/* <![CDATA[*/
+					document.write(' <strong>lesterchan@gmail.com</strong>.');
+					/* ]]> */
+				</script>
+			</p>
+		</div>
+
+		<!-- Changelog -->
+		<div id="Changelog" style="display: none;">
+			<div class="SubTitle">&raquo; Changelog</div>
+			<ul>
+				<li>
+					<strong>Version 1.31 (16-07-2008)</strong>
+					<ul>
+						<li>NEW: Works For WordPress 2.6</li>
+					</ul>
+				</li>
+				<li>
+					<strong>Version 1.30 (01-06-2008)</strong>
+					<ul>
+						<li>NEW: Works With WordPress 2.5 Only</li>
+						<li>NEW: Uses ShortCode API</li>
+						<li>NEW: Uses /wp-pluginsused/ Folder Instead Of /pluginsused/</li>
+						<li>NEW: Uses wp-pluginsused.php Instead Of pluginsused.php</li>
+						<li>NEW: Added Option To Hide Plugins Version Number (See Usage Tab)</li>
+						<li>FIXED: Strip Away HTML Codes In Plugin Descriptions</li>
+					</ul>
+				</li>
+				<li>
+					<strong>Version 1.00 (01-10-2007)</strong>
+					<ul>
+						<li>NEW: Initial Release</li>
+					</ul>
+				</li>
+			</ul>
+		</div>
+
+		<!-- Installation Instructions -->
+		<div id="Install" style="display: none;">
+			<div class="SubTitle">&raquo; Installation Instructions</div>
+			<ol>
+				<li>
+					Open <strong>wp-content/plugins</strong> Folder
+				</li>
+				<li>
+					Put:
+					<blockquote>Folder: wp-pluginsused</blockquote>
+				</li>
+				<li>
+					<strong>Activate</strong> WP-PluginsUsed Plugin
+				</li>
+				<li>
+					Refer To <strong>Usage</strong> For Further Instructions
+				</li>
+			</ol>
+		</div>
+
+		<!-- Upgrade Instructions -->	
+		<div id="Upgrade" style="display: none;">
+			<div class="SubTitle">&raquo; Upgrade Instructions</div>
+			<div class="SubSubTitle">From v1.0x To v1.31</div>
+			<ol>
+				<li>
+					<strong>Deactivate</strong> WP-PluginsUsed Plugin
+				</li>
+				<li>
+					Open <strong>wp-content/plugins</strong> Folder
+				</li>
+				<li>
+					Put/Overwrite:
+					<blockquote>Folder: wp-pluginsused</blockquote>
+				</li>
+				<li>
+					Delete this folder if exists:
+					<blockquote>
+						Folder: pluginsused
+					</blockquote>
+				</li>
+				<li>
+					<strong>Activate</strong> WP-PluginsUsed Plugin
+				</li>
+				<li>
+					Refer To <strong>Usage</strong> For Further Instructions
+				</li>
+			</ol>
+		</div>
+
+		<!-- Usage Instructions -->	
+		<div id="Usage" style="display: none;">
+			<div class="SubTitle">&raquo; Usage Instructions</div>
+			<div class="SubSubTitle">Plugins Used Page</div>
+			<ol>
+				<li>
+					Go to '<strong>WP-Admin -> Write -> Write Page</strong>'
+				</li>
+				<li>
+					Type any title you like in the post's title area
+				</li>
+				<li>
+					Copy and paste the following in the post's content area
+					<blockquote>
+						[stats_pluginsused]<br />
+						&lt;h2&gt;Active Plugins&lt;/h2&gt;<br />
+						[active_pluginsused]<br />
+						&lt;h2&gt;Inactive Plugins&lt;/h2&gt;<br />
+						[inactive_pluginsused]
+					</blockquote>
+				</li>
+				<li>
+					Click 'Publish'
+				</li>
+			</ol>
+			<div class="SubSubTitle">To Hide Plugins Version Number</div>
+			<ol>
+				<li>
+					Open <strong>wp-pluginsused.php</strong>
+				</li>
+				<li>
+					Find:
+					<blockquote>
+							define('PLUGINSUSED_SHOW_VERSION', true);
+					</blockquote>
+				</li>
+				<li>
+					Replace:
+					<blockquote>
+							define('PLUGINSUSED_SHOW_VERSION', false);
+					</blockquote>
+				</li>
+			</ol>
+		</div>
+	</div>
+</div>
+<p id="Copyright">WP-PluginsUsed 1.31<br />Copyright &copy; 2008 Lester 'GaMerZ' Chan. All Rights Reserved.</p>
+</body>
+</html>

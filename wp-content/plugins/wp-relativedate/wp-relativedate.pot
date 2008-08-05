@@ -1,0 +1,77 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WP-RelativeDate 1.31\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-07-15 15:37+0800\n"
+"PO-Revision-Date: 2008-07-15 15:37+0800\n"
+"Last-Translator: Lester Chan <lesterchan@gmail.com>\n"
+"Language-Team: Lester Chan <lesterchan@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: English\n"
+"X-Poedit-Country: SINGAPORE\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: wp-relativedate.php:54
+#: wp-relativedate.php:92
+#: wp-relativedate.php:159
+msgid "Today"
+msgstr ""
+
+#: wp-relativedate.php:56
+#: wp-relativedate.php:94
+#: wp-relativedate.php:161
+msgid "Yesterday"
+msgstr ""
+
+#: wp-relativedate.php:59
+#: wp-relativedate.php:61
+#: wp-relativedate.php:97
+#: wp-relativedate.php:99
+#: wp-relativedate.php:164
+#: wp-relativedate.php:166
+#, php-format
+msgid "%s day ago"
+msgid_plural "%s days ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: wp-relativedate.php:65
+#: wp-relativedate.php:67
+#: wp-relativedate.php:103
+#: wp-relativedate.php:105
+#: wp-relativedate.php:170
+#: wp-relativedate.php:172
+#, php-format
+msgid "%s week ago"
+msgid_plural "%s weeks ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: wp-relativedate.php:131
+#: wp-relativedate.php:193
+#, php-format
+msgid "%s second ago"
+msgid_plural "%s seconds ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: wp-relativedate.php:133
+#: wp-relativedate.php:195
+#, php-format
+msgid "%s minute ago"
+msgid_plural "%s minutes ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: wp-relativedate.php:135
+#: wp-relativedate.php:197
+#, php-format
+msgid "%s hour ago"
+msgid_plural "%s hours ago"
+msgstr[0] ""
+msgstr[1] ""
+
