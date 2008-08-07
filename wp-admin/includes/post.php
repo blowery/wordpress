@@ -161,6 +161,13 @@ function edit_post() {
 
 	wp_set_post_lock( $post_ID, $GLOBALS['current_user']->ID );
 
+	if ( current_user_can( 'edit_others_posts' ) ) {
+		if ( !empty($_POST['sticky']) )
+			stick_post($post_ID);
+		else
+			unstick_post($post_ID);
+	}
+
 	return $post_ID;
 }
 
@@ -603,7 +610,6 @@ function get_sample_permalink($id, $title=null, $name = null) {
 	$post->post_status = $original_status;
 	$post->post_date = $original_date;
 	$post->post_name = $original_name;
-	$post->post_title = $original_title;
 	return $permalink;
 }
 

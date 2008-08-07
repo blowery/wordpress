@@ -280,7 +280,7 @@ function wp_mail( $to, $subject, $message, $headers = '' ) {
 		// If it's actually got contents
 		if ( !empty( $tempheaders ) ) {
 			// Iterate through the raw headers
-			foreach ( $tempheaders as $header ) {
+			foreach ( (array) $tempheaders as $header ) {
 				if ( strpos($header, ':') === false )
 					continue;
 				// Explode them out
@@ -363,12 +363,12 @@ function wp_mail( $to, $subject, $message, $headers = '' ) {
 
 	// Add any CC and BCC recipients
 	if ( !empty($cc) ) {
-		foreach ($cc as $recipient) {
+		foreach ( (array) $cc as $recipient ) {
 			$phpmailer->AddCc( trim($recipient) );
 		}
 	}
 	if ( !empty($bcc) ) {
-		foreach ($bcc as $recipient) {
+		foreach ( (array) $bcc as $recipient) {
 			$phpmailer->AddBcc( trim($recipient) );
 		}
 	}
@@ -401,7 +401,7 @@ function wp_mail( $to, $subject, $message, $headers = '' ) {
 
 	// Set custom headers
 	if ( !empty( $headers ) ) {
-		foreach ( $headers as $name => $content ) {
+		foreach( (array) $headers as $name => $content ) {
 			$phpmailer->AddCustomHeader( sprintf( '%1$s: %2$s', $name, $content ) );
 		}
 	}
@@ -789,7 +789,7 @@ function wp_sanitize_redirect($location) {
 	$found = true;
 	while($found) {
 		$found = false;
-		foreach($strip as $val) {
+		foreach( (array) $strip as $val ) {
 			while(strpos($location, $val) !== false) {
 				$found = true;
 				$location = str_replace($val, '', $location);
@@ -987,6 +987,24 @@ function wp_notify_moderator($comment_id) {
 	@wp_mail($admin_email, $subject, $notify_message);
 
 	return true;
+}
+endif;
+
+if ( !function_exists('wp_password_change_notification') ) :
+/**
+ * Notify the blog admin of a user changing password, normally via email.
+ *
+ * @since 2.7
+ *
+ * @param object $user User Object
+ */
+function wp_password_change_notification(&$user) {
+	// send a copy of password change notification to the admin
+	// but check to see if it's the admin whose password we're changing, and skip this
+	if ( $user->user_email != get_option('admin_email') ) {
+		$message = sprintf(__('Password Lost and Changed for user: %s'), $user->user_login) . "\r\n";
+		wp_mail(get_option('admin_email'), sprintf(__('[%s] Password Lost/Changed'), get_option('blogname')), $message);
+	}
 }
 endif;
 
