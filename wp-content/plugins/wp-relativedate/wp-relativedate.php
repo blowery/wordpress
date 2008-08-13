@@ -40,7 +40,7 @@ function relativedate_textdomain() {
 
 
 ### Function: Display Post Relative Date (Today/Yesterday/Days Ago/Weeks Ago)
-add_filter('the_date', 'relative_post_date', '', 4);
+#add_filter('the_date', 'relative_post_date', '', 4);
 function relative_post_date($the_date, $d, $before, $after, $display_ago_only = false) {
 	global $id, $post, $previous_day;
 	$the_date = strip_tags($the_date);
@@ -117,7 +117,7 @@ function relative_post_the_date($d = '', $before = '', $after = '', $display_ago
 
 
 ### Function: Display Post Relative Time (Seconds Ago/Minutes Ago/Hours Ago)
-add_filter('the_time', 'relative_post_time');
+#add_filter('the_time', 'relative_post_time');
 function relative_post_time($current_timeformat, $display_ago_only = 0) {
 	$current_time = current_time('timestamp');
 	$date_today_time = gmdate('j-n-Y H:i:s', $current_time);
