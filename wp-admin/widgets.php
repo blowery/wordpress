@@ -1,6 +1,15 @@
 <?php
+/**
+ * Widgets administration panel.
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
 
+/** WordPress Administration Bootstrap */
 require_once( 'admin.php' );
+
+/** WordPress Administration Widgets API */
 require_once(ABSPATH . 'wp-admin/includes/widgets.php');
 
 if ( ! current_user_can('switch_themes') )
@@ -132,7 +141,7 @@ if ( isset($_GET['add']) && $_GET['add'] ) {
 		<h2><?php _e( 'Add Widget' ); ?></h2>
 		<br />
 		<form action="<?php echo clean_url( remove_query_arg( $query_args ) ); ?>" method="post">
-		
+
 			<ul class="widget-control-list">
 				<li class="widget-list-control-item">
 					<div class="widget-top">

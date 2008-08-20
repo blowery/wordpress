@@ -1,24 +1,40 @@
 <?php
+/**
+ * Edit Posts Administration Panel.
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
+
+/** WordPress Administration Bootstrap */
 require_once('admin.php');
 
-// Handle bulk deletes
-if ( isset($_GET['deleteit']) && isset($_GET['delete']) ) {
-	check_admin_referer('bulk-posts');
-	foreach( (array) $_GET['delete'] as $post_id_del ) {
-		$post_del = & get_post($post_id_del);
+// Handle bulk actions
+if ( isset($_GET['action']) && $_GET['action'] != 'Actions' ) {
+	switch ( $_GET['action'] ) {
+		case 'delete':
+			if ( isset($_GET['post']) ) {
+				check_admin_referer('bulk-posts');
+				foreach( (array) $_GET['post'] as $post_id_del ) {
+					$post_del = & get_post($post_id_del);
 
-		if ( !current_user_can('delete_post', $post_id_del) )
-			wp_die( __('You are not allowed to delete this post.') );
+					if ( !current_user_can('delete_post', $post_id_del) )
+						wp_die( __('You are not allowed to delete this post.') );
 
-		if ( $post_del->post_type == 'attachment' ) {
-			if ( ! wp_delete_attachment($post_id_del) )
-				wp_die( __('Error in deleting...') );
-		} else {
-			if ( !wp_delete_post($post_id_del) )
-				wp_die( __('Error in deleting...') );
-		}
+					if ( $post_del->post_type == 'attachment' ) {
+						if ( ! wp_delete_attachment($post_id_del) )
+							wp_die( __('Error in deleting...') );
+					} else {
+						if ( !wp_delete_post($post_id_del) )
+							wp_die( __('Error in deleting...') );
+					}
+				}
+			}
+			break;
+		case 'edit':
+			// TODO: Decide what to do here - add bulk edit feature, or just disallow if >1 post selected
+			break;
 	}
-
 	$sendback = wp_get_referer();
 	if (strpos($sendback, 'post.php') !== false) $sendback = admin_url('post-new.php');
 	elseif (strpos($sendback, 'attachments.php') !== false) $sendback = admin_url('attachments.php');
@@ -44,6 +60,10 @@ require_once('admin-header.php');
 if ( !isset( $_GET['paged'] ) )
 	$_GET['paged'] = 1;
 
+if ( empty($_GET['mode']) )
+	$mode = 'list';
+else
+	$mode = attribute_escape($_GET['mode']);
 ?>
 
 <div class="wrap">
@@ -53,16 +73,16 @@ if ( !isset( $_GET['paged'] ) )
 if ( is_single() ) {
 	printf(__('Comments on %s'), apply_filters( "the_title", $post->post_title));
 } else {
-	$post_status_label = _c('Manage Posts|manage posts header');
+	$post_status_label = _c('Posts|manage posts header');
 	if ( isset($_GET['post_status']) && in_array( $_GET['post_status'], array_keys($post_stati) ) )
         $post_status_label = $post_stati[$_GET['post_status']][1];
-	if ( $post_listing_pageable && !is_archive() && !is_search() )
-		$h2_noun = is_paged() ? sprintf(__( 'Previous %s' ), $post_status_label) : sprintf(__('Latest %s'), $post_status_label);
-	else
+	//if ( $post_listing_pageable && !is_archive() && !is_search() ) //Unreachable code: $post_listing_pageable is undefined, Similar code in upload.php
+	//	$h2_noun = is_paged() ? sprintf(__( 'Previous %s' ), $post_status_label) : sprintf(__('Latest %s'), $post_status_label);
+	//else
 		$h2_noun = $post_status_label;
 	// Use $_GET instead of is_ since they can override each other
 	$h2_author = '';
-	$_GET['author'] = (int) $_GET['author'];
+	$_GET['author'] = isset($_GET['author']) ? (int) $_GET['author'] : 0;
 	if ( $_GET['author'] != 0 ) {
 		if ( $_GET['author'] == '-' . $user_ID ) { // author exclusion
 			$h2_author = ' ' . __('by other authors');
@@ -75,7 +95,7 @@ if ( is_single() ) {
 	$h2_cat    = isset($_GET['cat']) && $_GET['cat'] ? ' ' . sprintf( __('in &#8220;%s&#8221;'), single_cat_title('', false) ) : '';
 	$h2_tag    = isset($_GET['tag']) && $_GET['tag'] ? ' ' . sprintf( __('tagged with &#8220;%s&#8221;'), single_tag_title('', false) ) : '';
 	$h2_month  = isset($_GET['m'])   && $_GET['m']   ? ' ' . sprintf( __('during %s'), single_month_title(' ', false) ) : '';
-	printf( _c( '%1$s%2$s%3$s%4$s%5$s%6$s|You can reorder these: 1: Posts, 2: by {s}, 3: matching {s}, 4: in {s}, 5: tagged with {s}, 6: during {s}' ), $h2_noun, $h2_author, $h2_search, $h2_cat, $h2_tag, $h2_month );
+	printf( _c( '%1$s%2$s%3$s%4$s%5$s%6$s (<a href="%7$s">Add New</a>)|You can reorder these: 1: Posts, 2: by {s}, 3: matching {s}, 4: in {s}, 5: tagged with {s}, 6: during {s}' ), $h2_noun, $h2_author, $h2_search, $h2_cat, $h2_tag, $h2_month, 'post-new.php' );
 }
 ?></h2>
 
@@ -93,7 +113,7 @@ foreach ( $post_stati as $status => $label ) {
 
 	if ( empty( $num_posts->$status ) )
 		continue;
-	if ( $status == $_GET['post_status'] )
+	if ( isset($_GET['post_status']) && $status == $_GET['post_status'] )
 		$class = ' class="current"';
 
 	$status_links[] = "<li><a href='edit.php?post_status=$status' $class>" .
@@ -121,6 +141,13 @@ endif;
 	<input type="submit" value="<?php _e( 'Search Posts' ); ?>" class="button" />
 </p>
 
+<input type="hidden" name="mode" value="<?php echo $mode; ?>" />
+
+<ul class="view-switch">
+	<li <?php if ( 'list' == $mode ) echo "class='current'" ?>><a href="<?php echo clean_url(add_query_arg('mode', 'list', $_SERVER['REQUEST_URI'])) ?>"><?php _e('List View') ?></a></li>
+	<li <?php if ( 'excerpt' == $mode ) echo "class='current'" ?>><a href="<?php echo clean_url(add_query_arg('mode', 'excerpt', $_SERVER['REQUEST_URI'])) ?>"><?php _e('Excerpt View') ?></a></li>
+</ul>
+
 <div class="tablenav">
 
 <?php
@@ -136,7 +163,12 @@ if ( $page_links )
 ?>
 
 <div class="alignleft">
-<input type="submit" value="<?php _e('Delete'); ?>" name="deleteit" class="button-secondary delete" />
+<select name="action">
+<option value="" selected><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+<option value="edit"><?php _e('Edit'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" class="button-secondary action" />
 <?php wp_nonce_field('bulk-posts'); ?>
 <?php
 if ( !is_singular() ) {
@@ -146,16 +178,18 @@ $arc_result = $wpdb->get_results( $arc_query );
 
 $month_count = count($arc_result);
 
-if ( $month_count && !( 1 == $month_count && 0 == $arc_result[0]->mmonth ) ) { ?>
+if ( $month_count && !( 1 == $month_count && 0 == $arc_result[0]->mmonth ) ) {
+$m = isset($_GET['m']) ? (int)$_GET['m'] : 0;
+?>
 <select name='m'>
-<option<?php selected( @$_GET['m'], 0 ); ?> value='0'><?php _e('Show all dates'); ?></option>
+<option<?php selected( $m, 0 ); ?> value='0'><?php _e('Show all dates'); ?></option>
 <?php
 foreach ($arc_result as $arc_row) {
 	if ( $arc_row->yyear == 0 )
 		continue;
 	$arc_row->mmonth = zeroise( $arc_row->mmonth, 2 );
 
-	if ( $arc_row->yyear . $arc_row->mmonth == $_GET['m'] )
+	if ( $arc_row->yyear . $arc_row->mmonth == $m )
 		$default = ' selected="selected"';
 	else
 		$default = '';
@@ -220,14 +254,13 @@ if ( 1 == count($posts) && is_singular() ) :
 <thead>
   <tr>
     <th scope="col"><?php _e('Comment') ?></th>
-    <th scope="col"><?php _e('Date') ?></th>
-    <th scope="col"><?php _e('Actions') ?></th>
+    <th scope="col"><?php _e('Submitted') ?></th>
   </tr>
 </thead>
 <tbody id="the-comment-list" class="list:comment">
 <?php
 	foreach ($comments as $comment)
-		_wp_comment_row( $comment->comment_ID, 'detail', false, false );
+		_wp_comment_row( $comment->comment_ID, 'single', false, false );
 ?>
 </tbody>
 </table>

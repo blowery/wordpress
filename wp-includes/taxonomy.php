@@ -297,11 +297,15 @@ function get_objects_in_term( $terms, $taxonomies, $args = array() ) {
 function &get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
 	global $wpdb;
 
-	if ( empty($term) )
-		return null;
+	if ( empty($term) ) {
+		$error = new WP_Error('invalid_term', __('Empty Term'));
+		return $error;
+	}
 
-	if ( ! is_taxonomy($taxonomy) )
-		return new WP_Error('invalid_taxonomy', __('Invalid Taxonomy'));
+	if ( ! is_taxonomy($taxonomy) ) {
+		$error = new WP_Error('invalid_taxonomy', __('Invalid Taxonomy'));
+		return $error;
+	}
 
 	if ( is_object($term) ) {
 		wp_cache_add($term->term_id, $term, $taxonomy);
@@ -784,7 +788,7 @@ function is_term($term, $taxonomy = '') {
 	if ( !empty($taxonomy) ) {
 		if ( $result = $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $slug, $taxonomy), ARRAY_A) )
 			return $result;
-			
+
 		return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $else_where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A);
 	}
 

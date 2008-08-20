@@ -90,20 +90,20 @@ function get_plugin_data( $plugin_file ) {
 	}
 
 	return array(
-				'Name' => $name, 'PluginURI' => $uri, 'Description' => $description, 
-				'Author' => $author_name, 'AuthorURI' => $author_uri, 'Version' => $version, 
+				'Name' => $name, 'PluginURI' => $uri, 'Description' => $description,
+				'Author' => $author_name, 'AuthorURI' => $author_uri, 'Version' => $version,
 				'TextDomain' => $text_domain, 'DomainPath' => $domain_path
 				);
 }
 
 function get_plugins($plugin_folder = '') {
-	
+
 	if ( ! $cache_plugins = wp_cache_get('plugins', 'plugins') )
 		$cache_plugins = array();
-	
+
 	if ( isset($cache_plugins[ $plugin_folder ]) )
 		return $cache_plugins[ $plugin_folder ];
-	
+
 	$wp_plugins = array ();
 	$plugin_root = WP_PLUGIN_DIR;
 	if( !empty($plugin_folder) )
@@ -151,13 +151,21 @@ function get_plugins($plugin_folder = '') {
 
 	uasort( $wp_plugins, create_function( '$a, $b', 'return strnatcasecmp( $a["Name"], $b["Name"] );' ));
 
-	$cache_plugins[ $plugin_folder ] = $wp_plugins; 
-	wp_cache_set('plugins', $cache_plugins, 'plugins'); 
+	$cache_plugins[ $plugin_folder ] = $wp_plugins;
+	wp_cache_set('plugins', $cache_plugins, 'plugins');
 
 	return $wp_plugins;
 }
 
-function is_plugin_active($plugin){
+/**
+ * Check whether the plugin is active by checking the active_plugins list.
+ *
+ * @since 2.5.0
+ *
+ * @param string $plugin Base plugin path from plugins directory.
+ * @return bool True, if in the active plugins list. False, not in the list.
+ */
+function is_plugin_active($plugin) {
 	return in_array($plugin, get_option('active_plugins'));
 }
 
@@ -271,26 +279,30 @@ function delete_plugins($plugins, $redirect = '' ) {
 	$plugins_dir = $wp_filesystem->wp_plugins_dir();
 	if ( empty($plugins_dir) )
 		return new WP_Error('fs_no_plugins_dir', __('Unable to locate WordPress Plugin directory.'));
-	
+
 	$plugins_dir = trailingslashit( $plugins_dir );
 
 	$errors = array();
 
 	foreach( $plugins as $plugin_file ) {
+		// Run Uninstall hook
+		if ( is_uninstallable_plugin( $plugin_file ) )
+			uninstall_plugin($plugin_file);
+
 		$this_plugin_dir = trailingslashit( dirname($plugins_dir . $plugin_file) );
 		// If plugin is in its own directory, recursively delete the directory.
 		if ( strpos($plugin_file, '/') && $this_plugin_dir != $plugins_dir ) //base check on if plugin includes directory seperator AND that its not the root plugin folder
 			$deleted = $wp_filesystem->delete($this_plugin_dir, true);
 		else
 			$deleted = $wp_filesystem->delete($plugins_dir . $plugin_file);
-	
+
 		if ( ! $deleted )
 			$errors[] = $plugin_file;
 	}
-	
+
 	if( ! empty($errors) )
 		return new WP_Error('could_not_remove_plugin', sprintf(__('Could not fully remove the plugin(s) %s'), implode(', ', $errors)) );
-	
+
 	return true;
 }
 
@@ -305,7 +317,7 @@ function validate_active_plugins() {
 	}
 
 	//Invalid is any plugin that is deactivated due to error.
-	$invalid = array(); 
+	$invalid = array();
 
 	// If a plugin file does not exist, remove it from the list of active
 	// plugins.
@@ -326,6 +338,63 @@ function validate_plugin($plugin) {
 		return new WP_Error('plugin_not_found', __('Plugin file does not exist.'));
 
 	return 0;
+}
+
+/**
+ * Whether the plugin can be uninstalled.
+ *
+ * @since 2.7
+ *
+ * @param string $plugin Plugin path to check.
+ * @return bool Whether plugin can be uninstalled.
+ */
+function is_uninstallable_plugin($plugin) {
+	$file = plugin_basename($plugin);
+
+	$uninstallable_plugins = (array) get_option('uninstall_plugins');
+	if ( isset( $uninstallable_plugins[$file] ) || file_exists( WP_PLUGIN_DIR . '/' . dirname($file) . '/uninstall.php' ) )
+		return true;
+
+	return false;
+}
+
+/**
+ * Uninstall a single plugin.
+ *
+ * Calls the uninstall hook, if it is available.
+ *
+ * @since 2.7
+ *
+ * @param string $plugin Relative plugin path from Plugin Directory.
+ */
+function uninstall_plugin($plugin) {
+	$file = plugin_basename($plugin);
+
+	$uninstallable_plugins = (array) get_option('uninstall_plugins');
+	if ( file_exists( WP_PLUGIN_DIR . '/' . dirname($file) . '/uninstall.php' ) ) {
+		if ( isset( $uninstallable_plugins[$file] ) ) {
+			unset($uninstallable_plugins[$file]);
+			update_option('uninstall_plugins', $uninstallable_plugins);
+		}
+		unset($uninstallable_plugins);
+
+		define('WP_UNINSTALL_PLUGIN', $file);
+		include WP_PLUGIN_DIR . '/' . dirname($file) . '/uninstall.php';
+
+		return true;
+	}
+
+	if ( isset( $uninstallable_plugins[$file] ) ) {
+		$callable = $uninstallable_plugins[$file];
+		unset($uninstallable_plugins[$file]);
+		update_option('uninstall_plugins', $uninstallable_plugins);
+		unset($uninstallable_plugins);
+
+		include WP_PLUGIN_DIR . '/' . $file;
+
+		add_action( 'uninstall_' . $file, $callable );
+		do_action( 'uninstall_' . $file );
+	}
 }
 
 //

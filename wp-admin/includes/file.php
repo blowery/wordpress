@@ -285,11 +285,11 @@ function wp_handle_sideload( &$file, $overrides = false ) {
 		return $upload_error_handler( $file, $uploads['error'] );
 
 	$filename = wp_unique_filename( $uploads['path'], $file['name'], $unique_filename_callback );
-	
+
 	// Strip the query strings.
 	$filename = str_replace('?','-', $filename);
 	$filename = str_replace('&','-', $filename);
-	
+
 	// Move the file to the uploads dir
 	$new_file = $uploads['path'] . "/$filename";
 	if ( false === @ rename( $file['tmp_name'], $new_file ) ) {
@@ -384,10 +384,11 @@ function unzip_file($file, $to) {
 		}
 
 		// We've made sure the folders are there, so let's extract the file now:
-		if ( ! $file['folder'] )
+		if ( ! $file['folder'] ) {
 			if ( !$fs->put_contents( $to . $file['filename'], $file['content']) )
 				return new WP_Error('copy_failed', __('Could not copy file'), $to . $file['filename']);
 			$fs->chmod($to . $file['filename'], 0644);
+		}
 	}
 
 	return true;
@@ -407,8 +408,10 @@ function copy_dir($from, $to) {
 				return new WP_Error('copy_failed', __('Could not copy file'), $to . $filename);
 			$wp_filesystem->chmod($to . $filename, 0644);
 		} elseif ( 'd' == $fileinfo['type'] ) {
-			if ( !$wp_filesystem->mkdir($to . $filename, 0755) )
-				return new WP_Error('mkdir_failed', __('Could not create directory'), $to . $filename);
+			if ( !$wp_filesystem->is_dir($to . $filename) ) {
+				if ( !$wp_filesystem->mkdir($to . $filename, 0755) )
+					return new WP_Error('mkdir_failed', __('Could not create directory'), $to . $filename);
+			}
 			$result = copy_dir($from . $filename, $to . $filename);
 			if ( is_wp_error($result) )
 				return $result;
@@ -468,7 +471,7 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 
 	if ( 'direct' == $type )
 		return true;
-		
+
 	if( ! $credentials = get_option('ftp_credentials') )
 		$credentials = array();
 	// If defined, set it to that, Else, If POST'd, set it to that, If not, Set it to whatever it previously was(saved details in option)

@@ -1,9 +1,23 @@
 <?php
-// This array constructs the admin menu bar.
-//
-// Menu item name
-// The minimum level the user needs to access the item: between 0 and 10
-// The URL of the item's file
+/**
+ * Build Administration Menu.
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
+
+/**
+ * Constructs the admin menu bar.
+ *
+ * The elements in the array are :
+ *     0: Menu item name
+ *     1: Minimum level or capability required.
+ *     2: The URL of the item's file
+ *
+ * @global array $menu
+ * @name $menu
+ * @var array
+ */
 $menu[0] = array(__('Dashboard'), 'read', 'index.php');
 
 if (strpos($_SERVER['REQUEST_URI'], 'edit-pages.php') !== false)
@@ -27,7 +41,10 @@ $menu[20] = array( sprintf( __('Comments %s'), "<span id='awaiting-mod' class='c
 $menu[30] = array(__('Settings'), 'manage_options', 'options-general.php');
 
 $update_plugins = get_option( 'update_plugins' );
-$update_count = count( $update_plugins->response );
+$update_count = 0;
+if ( isset( $update_plugins->response ) )
+	$update_count = count( $update_plugins->response );
+
 $menu[35] = array( sprintf( __('Plugins %s'), "<span id='update-plugins' class='count-$update_count'><span class='plugin-count'>" . number_format_i18n($update_count) . "</span></span>" ), 'activate_plugins', 'plugins.php');
 if ( current_user_can('edit_users') )
 	$menu[40] = array(__('Users'), 'edit_users', 'users.php');

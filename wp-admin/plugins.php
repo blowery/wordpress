@@ -1,4 +1,12 @@
 <?php
+/**
+ * Plugins administration panel.
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
+
+/** WordPress Administration Bootstrap */
 require_once('admin.php');
 
 $action = '';
@@ -12,7 +20,7 @@ foreach( array('activate-selected', 'deactivate-selected', 'delete-selected', 'c
 if( isset($_GET['action']) )
 	$action = $_GET['action'];
 
-$plugin = $_REQUEST['plugin'];
+$plugin = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
 
 if( !empty($action) ) {
 	switch( $action ) {
@@ -74,21 +82,21 @@ if( !empty($action) ) {
 		case 'delete-selected':
 			if( ! current_user_can('delete_plugins') )
 				wp_die(__('You do not have sufficient permissions to delete plugins for this blog.'));
-			
+
 			check_admin_referer('bulk-manage-plugins');
-			
+
 			$plugins = $_REQUEST['checked']; //$_POST = from the plugin form; $_GET = from the FTP details screen.
 			include(ABSPATH . 'wp-admin/update.php');
 
 			$title = __('Delete Plugin');
 			$parent_file = 'plugins.php';
-			
+
 			if( ! isset($_REQUEST['verify-delete']) ) {
 				wp_enqueue_script('jquery');
 				require_once('admin-header.php');
 				?>
 			<div class="wrap">
-				<h2><?php _e('Delete Plugin(s)'); ?></h2>		
+				<h2><?php _e('Delete Plugin(s)'); ?></h2>
 				<?php
 					$files_to_delete = $plugin_info = array();
 					foreach( (array) $plugins as $plugin ) {
@@ -111,7 +119,7 @@ if( !empty($action) ) {
 				<p><?php _e('Deleting the selected plugins will remove the following plugin(s) and their files:'); ?></p>
 				<p>
 					<ul>
-						<?php 
+						<?php
 						foreach( $plugin_info as $plugin )
 							echo '<li>', sprintf(__('%s by %s'), $plugin['Name'], $plugin['Author']), '</li>';
 						?>
@@ -140,7 +148,7 @@ if( !empty($action) ) {
 							echo '<li>' . str_replace(WP_PLUGIN_DIR, '', $file) . '</li>';
 					?>
 					</ul>
-				</div>				
+				</div>
 			</div>
 				<?php
 				require_once('admin-footer.php');
@@ -231,10 +239,10 @@ foreach( (array)$all_plugins as $plugin_file => $plugin_data) {
 	$plugin_data['Title'] = $plugin_data['Name'];
 	if ( !empty($plugin_data['PluginURI']) && !empty($plugin_data['Name']) )
 		$plugin_data['Title'] = '<a href="' . $plugin_data['PluginURI'] . '" title="'.__( 'Visit plugin homepage' ).'">' . $plugin_data['Name'] . '</a>';
-	
+
 	if ( ! empty($plugin_data['AuthorURI']) )
 		$plugin_data['Author'] = '<a href="' . $plugin_data['AuthorURI'] . '" title="'.__( 'Visit author homepage' ).'">' . $plugin_data['Author'] . '</a>';
-	
+
 	$plugin_data['Description'] = wptexturize( $plugin_data['Description'] );
 
 	// Sanitize all displayed data
@@ -298,17 +306,17 @@ function print_plugins_table($plugins, $context = '') {
 		<td class='name'>{$plugin_data['Title']}</td>
 		<td class='vers'>{$plugin_data['Version']}</td>
 		<td class='desc'><p>{$plugin_data['Description']}</p></td>
-		<td class='togl action-links'>";  
+		<td class='togl action-links'>";
 		if ( !empty($action_links) )
 			echo implode(' | ', $action_links);
-		echo '</td> 
+		echo '</td>
 	</tr>';
 		do_action( 'after_plugin_row', $plugin_file, $plugin_data, $context );
 	}
 ?>
 	</tbody>
 </table>
-<?php 
+<?php
 } //End print_plugins_table()
 ?>
 

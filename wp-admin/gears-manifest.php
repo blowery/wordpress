@@ -1,20 +1,91 @@
 <?php
+/**
+ * Define Gears manifest for Google Gears storage.
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
 
+/** Set ABSPATH for execution */
 define( 'ABSPATH', dirname(dirname(__FILE__)) );
 define( 'WPINC', '/wp-includes' );
 
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function __() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function add_filter() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function attribute_escape() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function apply_filters() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function get_option() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function is_lighttpd_before_150() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function add_action() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function do_action_ref_array() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function get_bloginfo() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function is_admin() {return true;}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function site_url() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function admin_url() {}
+
+/**
+ * @package WordPress
+ * @subpackage Dummy
+ */
 function wp_guess_url() {}
 
 require(ABSPATH . '/wp-includes/script-loader.php');
@@ -46,7 +117,7 @@ foreach ( $wp_styles->registered as $style ) {
 	if ( isset($style->extra['rtl']) && $style->extra['rtl'] ) {
 		if ( is_bool( $style->extra['rtl'] ) )
 			$rtl_href = str_replace( '.css', '-rtl.css', $src );
-		else 
+		else
 			$rtl_href = str_replace( array( '/wp-admin/', '/wp-includes/' ), array( '', '../wp-includes/' ), $style->extra['rtl'] );
 
 		$defaults .= '{ "url" : "' . $rtl_href . '?ver=' . $ver . '" },' . "\n";

@@ -1,4 +1,12 @@
-<?php require_once('../../../wp-load.php');
+<?php
+/**
+ * @package TinyMCE
+ * @author Moxiecode
+ * @copyright Copyright © 2005-2006, Moxiecode Systems AB, All rights reserved.
+ */
+
+/** @ignore */
+require_once('../../../wp-load.php');
 header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -7,7 +15,7 @@ header('Content-Type: text/html; charset=' . get_bloginfo('charset'));
 <meta http-equiv="Content-Type" content="<?php bloginfo('html_type'); ?>; charset=<?php echo get_option('blog_charset'); ?>" />
 <title><?php _e('Rich Editor Help') ?></title>
 <script type="text/javascript" src="tiny_mce_popup.js?ver=311b"></script>
-<?php 
+<?php
 wp_admin_css( 'global', true );
 wp_admin_css( 'wp-admin', true );
 ?>
@@ -204,7 +212,7 @@ wp_admin_css( 'wp-admin', true );
 			"<tr><th>6</th><td><?php _e('Header 6') ?></td><th>9</th><td><?php _e('Address') ?></td></tr>")
 		</script>
 	</table>
-	
+
 	<p><?php _e('The following shortcuts use different access keys: Alt + Shift + letter.') ?></p>
 	<table class="keys" width="100%" style="border: 0 none;">
 		<tr class="top"><th class="key center"><?php _e('Letter') ?></th><th class="left"><?php _e('Action') ?></th><th class="key center"><?php _e('Letter') ?></th><th class="left"><?php _e('Action') ?></th></tr>

@@ -153,6 +153,15 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 	// trailing /index.php/
 	$redirect['path'] = preg_replace('|/index.php/$|', '/', $redirect['path']);
 
+	// Remove trailing spaces from the path
+	$redirect['path'] = preg_replace( '#(%20| )+$#', '', $redirect['path'] );
+
+	// Remove trailing slashes from certain terminating query string args
+	$redirect['query'] = preg_replace( '#((p|page_id|cat|tag)=[^&]*?)(%20| )+$#', '$1', $redirect['query'] );
+
+	// Clean up empty query strings
+	$redirect['query'] = preg_replace( '#&?(p|page_id|cat|tag)=?$#', '', $redirect['query'] );
+
 	// strip /index.php/ when we're not using PATHINFO permalinks
 	if ( !$wp_rewrite->using_index_permalinks() )
 		$redirect['path'] = str_replace('/index.php/', '/', $redirect['path']);
@@ -165,11 +174,12 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 		} else {
 			foreach ( array('single', 'category', 'page', 'day', 'month', 'year') as $type ) {
 				$func = 'is_' . $type;
-				if ( call_user_func($func) )
+				if ( call_user_func($func) ) {
 					$user_ts_type = $type;
 					break;
 				}
 			}
+		}
 		$redirect['path'] = user_trailingslashit($redirect['path'], $user_ts_type);
 	} elseif ( is_home() ) {
 		$redirect['path'] = trailingslashit($redirect['path']);
@@ -183,7 +193,23 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 	if ( strtolower($original['host']) == strtolower($redirect['host']) )
 		$redirect['host'] = $original['host'];
 
-	if ( array($original['host'], $original['port'], $original['path'], $original['query']) !== array($redirect['host'], $redirect['port'], $redirect['path'], $redirect['query']) ) {
+	$compare_original = array($original['host'], $original['path']);
+
+	if ( isset( $original['port'] ) )
+		$compare_original[] = $original['port'];
+
+	if ( isset( $original['query'] ) )
+		$compare_original[] = $original['query'];
+
+	$compare_redirect = array($redirect['host'], $redirect['path']);
+
+	if ( isset( $redirect['port'] ) )
+		$compare_redirect[] = $redirect['port'];
+
+	if ( isset( $redirect['query'] ) )
+		$compare_redirect[] = $redirect['query'];
+
+	if ( $compare_original !== $compare_redirect ) {
 		$redirect_url = $redirect['scheme'] . '://' . $redirect['host'];
 		if ( isset($redirect['port']) )
 		 	$redirect_url .= ':' . $redirect['port'];

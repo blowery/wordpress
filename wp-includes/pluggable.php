@@ -667,7 +667,7 @@ function auth_redirect() {
 			exit();
 		} else {
 			wp_redirect('https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
-			exit();			
+			exit();
 		}
 	}
 
@@ -756,7 +756,7 @@ function wp_redirect($location, $status = 302) {
 
 	$location = apply_filters('wp_redirect', $location, $status);
 	$status = apply_filters('wp_redirect_status', $status, $location);
-	
+
 	if ( !$location ) // allows the wp_redirect filter to cancel a redirect
 		return false;
 
@@ -829,7 +829,7 @@ function wp_safe_redirect($location, $status = 302) {
 
 	// In php 5 parse_url may fail if the URL query part contains http://, bug #38143
 	$test = ( $cut = strpos($location, '?') ) ? substr( $location, 0, $cut ) : $location;
-	
+
 	$lp  = parse_url($test);
 	$wpp = parse_url(get_option('home'));
 
@@ -974,7 +974,7 @@ function wp_notify_moderator($comment_id) {
 	$notify_message .= sprintf( __('Delete it: %s'), admin_url("comment.php?action=cdc&c=$comment_id") ) . "\r\n";
 	$notify_message .= sprintf( __('Spam it: %s'), admin_url("comment.php?action=cdc&dt=spam&c=$comment_id") ) . "\r\n";
 
-	$notify_message .= sprintf( __ngettext('Currently %s comment is waiting for approval. Please visit the moderation panel:', 
+	$notify_message .= sprintf( __ngettext('Currently %s comment is waiting for approval. Please visit the moderation panel:',
  		'Currently %s comments are waiting for approval. Please visit the moderation panel:', $comments_waiting), number_format_i18n($comments_waiting) ) . "\r\n";
 	$notify_message .= admin_url("edit-comments.php?comment_status=moderated") . "\r\n";
 
@@ -1344,9 +1344,10 @@ if ( !function_exists( 'get_avatar' ) ) :
  * @param int|string|object $id_or_email A user ID,  email address, or comment object
  * @param int $size Size of the avatar image
  * @param string $default URL to a default image to use if no avatar is available
+ * @param string $alt Alternate text to use in image tag
  * @return string <img> tag for the user's avatar
 */
-function get_avatar( $id_or_email, $size = '96', $default = '' ) {
+function get_avatar( $id_or_email, $size = '96', $default = '', $alt = 'Avatar' ) {
 	if ( ! get_option('show_avatars') )
 		return false;
 
@@ -1403,12 +1404,12 @@ function get_avatar( $id_or_email, $size = '96', $default = '' ) {
 		if ( !empty( $rating ) )
 			$out .= "&amp;r={$rating}";
 
-		$avatar = "<img alt='' src='{$out}' class='avatar avatar-{$size}' height='{$size}' width='{$size}' />";
+		$avatar = "<img alt='{$alt}' src='{$out}' class='avatar avatar-{$size}' height='{$size}' width='{$size}' />";
 	} else {
-		$avatar = "<img alt='' src='{$default}' class='avatar avatar-{$size} avatar-default' height='{$size}' width='{$size}' />";
+		$avatar = "<img alt='{$alt}' src='{$default}' class='avatar avatar-{$size} avatar-default' height='{$size}' width='{$size}' />";
 	}
 
-	return apply_filters('get_avatar', $avatar, $id_or_email, $size, $default);
+	return apply_filters('get_avatar', $avatar, $id_or_email, $size, $default, $alt);
 }
 endif;
 
@@ -1530,10 +1531,6 @@ function wp_text_diff( $left_string, $right_string, $args = null ) {
 	$defaults = array( 'title' => '', 'title_left' => '', 'title_right' => '' );
 	$args = wp_parse_args( $args, $defaults );
 
-	// PEAR Text_Diff is lame; it includes things from include_path rather than it's own path.
-	// Not sure of the ramifications of disttributing modified code.
-	ini_set('include_path', '.' . PATH_SEPARATOR . ABSPATH . WPINC );
-
 	if ( !class_exists( 'WP_Text_Diff_Renderer_Table' ) )
 		require( ABSPATH . WPINC . '/wp-diff.php' );
 
@@ -1544,15 +1541,13 @@ function wp_text_diff( $left_string, $right_string, $args = null ) {
 	$right_string = str_replace("\r", "\n", $right_string);
 	$left_string  = preg_replace( array( '/\n+/', '/[ \t]+/' ), array( "\n", ' ' ), $left_string );
 	$right_string = preg_replace( array( '/\n+/', '/[ \t]+/' ), array( "\n", ' ' ), $right_string );
-	
+
 	$left_lines  = split("\n", $left_string);
 	$right_lines = split("\n", $right_string);
 
 	$text_diff = new Text_Diff($left_lines, $right_lines);
 	$renderer  = new WP_Text_Diff_Renderer_Table();
 	$diff = $renderer->render($text_diff);
-
-	ini_restore('include_path');
 
 	if ( !$diff )
 		return '';

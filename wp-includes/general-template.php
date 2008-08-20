@@ -2,39 +2,44 @@
 
 /* Note: these tags go anywhere in the template */
 
-function get_header() {
+function get_header( $name = null ) {
 	do_action( 'get_header' );
-	if ( file_exists( STYLESHEETPATH . '/header.php') )
-		load_template( STYLESHEETPATH . '/header.php');
-	elseif ( file_exists( TEMPLATEPATH . '/header.php') )
-		load_template( TEMPLATEPATH . '/header.php');
-	else
+
+	$templates = array();
+	if ( isset($name) )
+		$templates[] = "header-{$name}.php";
+
+	$templates[] = "header.php";
+
+	if ('' == locate_template($templates, true))
 		load_template( get_theme_root() . '/default/header.php');
 }
 
 
-function get_footer() {
+function get_footer( $name = null ) {
 	do_action( 'get_footer' );
-	if ( file_exists( STYLESHEETPATH . '/footer.php') )
-		load_template( STYLESHEETPATH . '/footer.php');
-	elseif ( file_exists( TEMPLATEPATH . '/footer.php') )
-		load_template( TEMPLATEPATH . '/footer.php');
-	else
+
+	$templates = array();
+	if ( isset($name) )
+		$templates[] = "footer-{$name}.php";
+
+	$templates[] = "footer.php";
+
+	if ('' == locate_template($templates, true))
 		load_template( get_theme_root() . '/default/footer.php');
 }
 
 
 function get_sidebar( $name = null ) {
 	do_action( 'get_sidebar' );
-	if ( isset($name) && file_exists( STYLESHEETPATH . "/sidebar-{$name}.php") )
-		load_template( STYLESHEETPATH . "/sidebar-{$name}.php");
-	elseif ( isset($name) && file_exists( TEMPLATEPATH . "/sidebar-{$name}.php") )
-		load_template( TEMPLATEPATH . "/sidebar-{$name}.php");
-	elseif ( file_exists( STYLESHEETPATH . '/sidebar.php') )
-		load_template( STYLESHEETPATH . '/sidebar.php');
-	elseif ( file_exists( TEMPLATEPATH . '/sidebar.php') )
-		load_template( TEMPLATEPATH . '/sidebar.php');
-	else
+
+	$templates = array();
+	if ( isset($name) )
+		$templates[] = "sidebar-{$name}.php";
+
+	$templates[] = "sidebar.php";
+
+	if ('' == locate_template($templates, true))
 		load_template( get_theme_root() . '/default/sidebar.php');
 }
 
@@ -373,7 +378,7 @@ function get_archives_link($url, $text, $format = 'html', $before = '', $after =
 		$link_html = "\t$before<a href='$url' title='$title_text'>$text</a>$after\n";
 
 	$link_html = apply_filters( "get_archives_link", $link_html );
-		
+
 	return $link_html;
 }
 
@@ -1197,10 +1202,10 @@ function wp_admin_css( $file = 'wp-admin', $force_echo = false ) {
 }
 
 /**
- * Enqueues the default ThickBox js and css. 
+ * Enqueues the default ThickBox js and css.
  * If any of the settings need to be changed, this can be done with another js file
  * similar to media-upload.js and theme-preview.js. That file should require array('thickbox')
- * to ensure it is loaded after. 
+ * to ensure it is loaded after.
  */
 function add_thickbox() {
 	wp_enqueue_script( 'thickbox' );
