@@ -1,0 +1,228 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+		"http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<title>Dojo Spinner Widget Test</title>
+
+		<style type="text/css">
+			@import "../../../dojo/resources/dojo.css";
+			@import "../css/dijitTests.css";
+			@import "../../../util/doh/robot/robot.css";
+
+			body .bigFont {
+			        font-size: larger; /* help test widget sizing */
+			}
+
+		</style>
+
+		<!-- required: the default dijit theme: -->
+		<link id="themeStyles" rel="stylesheet" href="../../../dijit/themes/tundra/tundra.css">
+
+		<!-- required: dojo.js -->
+		<script type="text/javascript" src="../../../dojo/dojo.js"
+			djConfig="isDebug: true, parseOnLoad: true"></script>
+
+		<!-- only needed for alternate theme testing: -->
+		<script type="text/javascript" src="../_testCommon.js"></script>
+
+		<script type="text/javascript">
+			dojo.require("dijit.robot");
+			dojo.require("dijit.dijit"); // optimize: load dijit layer
+			dojo.require("dijit.form.NumberSpinner");
+			dojo.require("dojox.robot.recorder");
+			dojo.require("dojo.parser"); // scan page for widgets
+		</script>
+
+		<script>
+			dojo.addOnLoad(function(){
+				var spin1=dijit.byId('integerspinner1');
+				var spin2=dijit.byId('integerspinner2');
+				var spin3=dijit.byId('realspinner1');
+				var delta=1; // redefine with doh.robot.mouseWheelSize when it is available
+
+				doh.register("dijit.form.Spinner",{
+					name: "spinner0",
+					timeout: 15000,
+					setUp:function(){
+						spin1.attr('value', 900);
+					},
+					runTest: function(){
+						// test typematic
+						var d=new doh.Deferred();
+						doh.robot.mouseMove(80, 175, 1083, true);
+						doh.robot.mouseMoveAt(spin1.domNode, 663, 54, 3);
+						doh.robot.mouseClick({left:true,  middle:false,  right:false}, 3);
+						doh.robot.keyDown(dojo.keys.DOWN_ARROW, 30);
+						doh.robot.keyUp(dojo.keys.DOWN_ARROW, 11000);
+						doh.robot.sequence(function(){
+							if(spin1.attr('value')<=800){
+								d.callback(true);
+							}else{
+								d.errback(new Error('Error in typematic test. Expected <=800, got '+spin1.attr('value')));
+							}
+						}, 1000);
+						return d;
+					}
+				});
+
+				doh.register("dijit.form.Spinner",
+				{
+					name:"spinner1",
+					timeout:5500,
+					setUp:function(){
+						spin1.attr('value', 900);
+					},
+					runTest:function(){
+						// get the mouse's delta
+						// note that Spinner spins backwards!
+						delta=-doh.robot.mouseWheelSize;
+						var d=new doh.Deferred();
+						doh.robot.mouseMoveAt(spin1.domNode, 1000);
+						doh.robot.mouseClick({left:true}, 500);
+						// wheel up 10 times
+						// this should increase the value by 10
+						// takes 100ms/click
+						doh.robot.mouseWheel(-10, 1000, 1000);
+						doh.robot.sequence(function(){
+							var v=spin1.attr('value');
+							if(v==(900+10*delta)){
+								d.callback(true);
+							}else{
+								d.errback(new Error("spinner 1: wrong value, expected "+(900+10*delta)+", got "+spin1.attr('value')));							}
+						}, 1000);
+						return d;
+					}
+				});
+
+				doh.register("dijit.form.Spinner",
+				{
+					name:"spinner2",
+					timeout:5500,
+					setUp:function(){
+						spin2.attr('value', 1000);
+					},
+					runTest:function(){
+						// test custom delta with mouse wheel
+						// it should increment 10 per mouse wheel
+						var d=new doh.Deferred();
+						doh.robot.mouseMoveAt(spin2.domNode, 1000);
+						doh.robot.mouseClick({left:true}, 500);
+						// wheel down 9 times
+						// this should decrease the value by 90
+						// takes 100ms/click
+						doh.robot.mouseWheel(9, 1000, 1000);
+						doh.robot.sequence(function(){
+							if(spin2.attr('value')==(1000-90*delta)){
+								d.callback(true);
+							}else{
+								d.errback(new Error("spinner 2: wrong value, expected "+(1000-90*delta)+", got "+spin2.attr('value')));
+							}
+						}, 1000);
+						return d;
+					}
+				});
+
+				doh.register("dijit.form.Spinner",
+				{
+					name:"spinner3",
+					timeout:5500,
+					setUp:function(){
+						spin3.attr('value', 1.0);
+					},
+					runTest:function(){
+						// test real number spinner with mouse wheel
+						// it should increment 0.1 per mouse wheel
+						var d=new doh.Deferred();
+						doh.robot.mouseMoveAt(spin3.domNode, 1000);
+						doh.robot.mouseClick({left:true}, 500);
+						// wheel up 10
+						// this should increase the value by 1.0
+						// takes 100ms/click
+						doh.robot.mouseWheel(-10, 1000, 1000); 
+						doh.robot.sequence(function(){
+							if(spin3.attr('value')==(1.0+1.0*delta)){
+								d.callback(true);
+							}else{
+								d.errback(new Error("spinner 3: wrong value, expected "+(1.0+1.0*delta)+", got "+spin3.attr('value')));
+							}
+						}, 1000);
+						return d;
+					}
+				});
+				doh.run();
+			});
+		</script>
+	</head>
+
+	<body class="tundra">
+		<h1 class="testTitle">Dijit Spinner Test</h1>
+			Try typing values, and use the up/down arrow keys and/or the arrow push
+			buttons to spin
+			<br>
+		<form id="form1" action="" name="example" method="post">
+			<h1>number spinner</h1>
+			<br>
+			initial value=900, no delta specified, no min specified, max=1550, onChange captured, big font<br>
+			<label for="integerspinner1">Spinbox #1: </label><br>
+			<input dojoType="dijit.form.NumberSpinner"
+				onChange="dojo.byId('oc1').value=arguments[0]"
+				value="900"
+				class="bigFont"
+				constraints="{max:1550,places:0}"
+				name="integerspinner1"
+				id="integerspinner1">
+			onChange:<input id="oc1" disabled value="not fired yet!" autocomplete="off">
+			<br>
+			<br>
+			initial value=1000, delta=10, min=9 max=1550<br>
+			<label for="integerspinner2">Spinbox with custom styling (width=50%, 200% Courier font): </label>
+			<input dojoType="dijit.form.NumberSpinner"
+				style="font-size:200%;font-family:Courier;border:1px solid blue;width:50%;"
+				value="1000"
+				smallDelta="10"
+				constraints="{min:9,max:1550,places:0}"
+				name="integerspinner2"
+				id="integerspinner2">
+			<br>
+			<br>
+			<label for="integertextbox3">Spinner line break test: </label>initial value not specified, delta not specified, min not specified, max not specified, signed not specified, separator not specified<br>
+			[verify no line break just after this text]
+			<input dojoType="dijit.form.NumberSpinner" name="integertextbox3" id="integertextbox3">
+			[verify no line break just before this text]
+			<br>
+			<br>
+			Move the cursor left and right within the input field to see the effect on the spinner.
+			<br>
+			initial value=+1.0, smalldelta=0.1, largedelta=1.0, min=-10.9, max=155, places=1, maxLength=20<br>
+			<label for="realspinner1">Real Number Spinbox #1: </label><br>
+			<input dojoType="dijit.form.NumberSpinner"
+				value="1.0"
+				smallDelta="0.1"
+				largeDelta="1.0"
+				constraints="{min:-10.9,max:155,places:1,round:true}"
+				maxLength="20"
+				name="realspinner1"
+				id="realspinner1">
+			<br>
+
+			<script type="text/javascript">
+				function displayData() {
+					var f = document.getElementById("form1");
+					var s = "";
+					for (var i = 0; i < f.elements.length; i++) {
+						var elem = f.elements[i];
+						if (elem.name == "button")  { continue; }
+						s += elem.name + ": " + elem.value + "\n";
+					}
+					alert(s);
+				}
+			</script>
+
+			<div>
+				<button name="button" onclick="displayData(); return false;">view data</button>
+				<input type="submit" name="submit" />
+			</div>
+
+		</form>
+	</body>
+</html>

@@ -1,0 +1,209 @@
+<html>
+<head>
+<title>Basic Charting</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="dojo/resources/dojo.css" />
+<link rel="stylesheet" href="dijit/themes/tundra/tundra.css" /> 
+<script type="text/javascript" src="dojo/dojo.js.uncompressed.js" djConfig="isDebug: false"></script>
+<script type="text/javascript" src="blowery/charting.js"></script>
+<script type="text/javascript">
+
+var stores = [];
+
+function makeStores(){
+  dojo.query("table.roast").forEach(function(n, i){
+    if(!n.id) n.id = "roast" + i;
+    var store = new dojox.data.HtmlStore({dataId: n.id});
+    dojo.style(n, "display", "none");
+    store.fetch({onComplete: makeCharts });
+  });
+}
+
+function makeSeries(store, arr, name, transform){
+  return dojo.map(arr, 
+                  function(n,i){ return { x: i+1, 
+                                          y: transform(store.getValue(n, name)), 
+                                          tooltip: store.getValue(n, name) + "<div>" + store.getValue(n, "Notes") + "</div>"  }; });
+}
+
+function makeXLabels(store, arr) {
+  var labels = [];
+  for(var x = 0; x < 20 * 2; x++) {
+    labels.push({ value: x, text: Math.floor(x/2).toString() +  ":" + (x % 2 ? "30": "00")});
+  }
+  return labels;
+}
+
+function makeCharts(data, request){
+	var div = dojo.doc.createElement("div");
+	dojo.addClass(div, "roastChart");
+        dojo.body().appendChild(div);
+	
+	var chart = new dojox.charting.Chart2D(div);
+	var plot = chart.addPlot("default", {type: "Lines", markers: true, tension: 10});
+	chart.addPlot("grid", { type: "Grid", hMajorLines: true, vMajorLines: false });
+	chart.addAxis("x", { fixLower: "major",
+     	                     fixUpper: "major",
+                             labels: makeXLabels(request.store, data),
+	                     majorTickStep: 2, minorTickStep: 1,
+                             min: 0, max: 19*2});
+	chart.addAxis("y", { min:100, max: 450, majorTickStep: 25, fixLower: "major", fixUpper: "major", natural: true, vertical: true});
+	var series = makeSeries(request.store, data, "Temp", Number);
+  	chart.addSeries("Temp", series);
+	var hg = new dojox.charting.action2d.Highlight(chart, "default");
+	var tt = new dojox.charting.action2d.Tooltip(chart, "default");
+	var mg = new dojox.charting.action2d.Magnify(chart, "default");
+	chart.render();
+}
+
+dojo.addOnLoad(makeStores); 
+ 
+</script>
+
+<style type="text/css">
+.roastChart {
+  width: 800px;
+  height: 600px;
+  margin: 1em auto;
+}
+</style>
+</head>
+<body class="tundra">
+<table border="0" class="roast" id="roast1">
+<thead>
+<tr>
+<th>Time</th>
+<th>Temp</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0:30</td>
+<td>221</td>
+<td>first stage at 360F</td>
+</tr>
+<tr>
+<td>1:00</td>
+<td>235</td>
+<td/>
+</tr>
+<tr>
+<td>1:30</td>
+<td>244</td>
+<td/>
+</tr>
+<tr>
+<td>2:00</td>
+<td>250</td>
+<td/>
+</tr>
+<tr>
+<td>2:30</td>
+<td>255</td>
+<td/>
+</tr>
+<tr>
+<td>3:00</td>
+<td>257</td>
+<td/>
+</tr>
+<tr>
+<td>3:30</td>
+<td>259</td>
+<td/>
+</tr>
+<tr>
+<td>4:00</td>
+<td>262</td>
+<td/>
+</tr>
+<tr>
+<td>4:30</td>
+<td>264</td>
+<td/>
+</tr>
+<tr>
+<td>5:00</td>
+<td>266</td>
+<td>second stage at 470F starts</td>
+</tr>
+<tr>
+<td>5:30</td>
+<td>288</td>
+<td/>
+</tr>
+<tr>
+<td>6:00</td>
+<td>293</td>
+<td/>
+</tr>
+<tr>
+<td>6:30</td>
+<td>304</td>
+<td/>
+</tr>
+<tr>
+<td>7:00</td>
+<td>306</td>
+<td/>
+</tr>
+<tr>
+<td>7:30</td>
+<td>307</td>
+<td/>
+</tr>
+<tr>
+<td>8:00</td>
+<td>309</td>
+<td>third stage at 455F starts</td>
+</tr>
+<tr>
+<td>8:30</td>
+<td>311</td>
+<td>first crack starting? pretty sure.</td>
+</tr>
+<tr>
+<td>9:00</td>
+<td>311</td>
+<td/>
+</tr>
+<tr>
+<td>9:30</td>
+<td>316</td>
+<td/>
+</tr>
+<tr>
+<td>10:00</td>
+<td>318</td>
+<td/>
+</tr>
+<tr>
+<td>10:30</td>
+<td>324</td>
+<td/>
+</tr>
+<tr>
+<td>11:00</td>
+<td>327</td>
+<td>very active cracking noise</td>
+</tr>
+<tr>
+<td>11:30</td>
+<td>335</td>
+<td/>
+</tr>
+<tr>
+<td>12:00</td>
+<td>340</td>
+<td/>
+</tr>
+<tr>
+<td>12:18</td>
+<td>342</td>
+<td>manually stopped. slight sheen on beans?</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

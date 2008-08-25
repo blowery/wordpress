@@ -1,0 +1,43 @@
+/*
+	Copyright (c) 2004-2008, The Dojo Foundation
+	All Rights Reserved.
+
+	Licensed under the Academic Free License version 2.1 or above OR the
+	modified BSD license. For more information on Dojo licensing, see:
+
+	http://dojotoolkit.org/license
+
+*/
+
+
+if(!dojo._hasResource["dojox.lang.aspect.tracer"]){
+dojo._hasResource["dojox.lang.aspect.tracer"]=true;
+dojo.provide("dojox.lang.aspect.tracer");
+(function(){
+var _1=dojox.lang.aspect;
+var _2=function(_3){
+this.method=_3?"group":"log";
+if(_3){
+this.after=this._after;
+}
+};
+dojo.extend(_2,{before:function(){
+var _4=_1.getContext(),_5=_4.joinPoint,_6=Array.prototype.join.call(arguments,", ");
+console[this.method](_4.instance,"=>",_5.targetName+"("+_6+")");
+},afterReturning:function(_7){
+var _8=_1.getContext().joinPoint;
+if(typeof _7!="undefined"){
+
+}else{
+
+}
+},afterThrowing:function(_9){
+
+},_after:function(_a){
+
+}});
+_1.tracer=function(_b){
+return new _2(_b);
+};
+})();
+}
