@@ -1,0 +1,31 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+<title>IE8B2 Arrays vs. StaticNodeList</title>
+<script type="text/javascript">
+function setCount(which, arr){
+  document.getElementById(which + "Count").innerHTML = arr.length;
+}
+
+function runTests(){
+  
+  var tds = document.querySelectorAll("td");
+  var ths = document.querySelectorAll("th");
+  var both = [].concat([ tds, ths ]);
+  setCount("td", tds);
+  setCount("th", ths);
+  setCount("both", both);
+}
+
+</script>
+</head>
+<body onload="runTests()">
+<table>
+<tr><th>Number of TDs</th><td id="tdCount"></td></tr>
+<tr><th>Number of THs</th><td id="thCount"></td></tr>
+<tr><th>Concat'd</th><td id="bothCount"></td></tr>
+</table>
+</body>
+</html>
