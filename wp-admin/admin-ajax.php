@@ -25,7 +25,7 @@ if ( isset($_GET['action']) && 'ajax-tag-search' == $_GET['action'] ) {
 
 	$s = $_GET['q']; // is this slashed already?
 
-	if ( strstr( $s, ',' ) ) {
+	if ( false !== strpos( $s, ',' ) ) {
 		$s = explode( ',', $s );
 		$s = $s[count( $s ) - 1];
 	}
@@ -182,7 +182,7 @@ case 'dim-comment' :
 	if ( $_POST['new'] == $current )
 		die('1');
 
-	if ( 'unapproved' == $current ) {
+	if ( in_array( $current, array( 'unapproved', 'spam' ) ) ) {
 		check_ajax_referer( "approve-comment_$id" );
 		if ( wp_set_comment_status( $comment->comment_ID, 'approve' ) )
 			die('1');
@@ -424,6 +424,69 @@ case 'add-comment' :
 	}
 	$x->send();
 	break;
+case 'replyto-comment' :
+	check_ajax_referer( $action );
+
+	$comment_post_ID = (int) $_POST['comment_post_ID'];
+	if ( !current_user_can( 'edit_post', $comment_post_ID ) )
+		die('-1');
+
+	$status = $wpdb->get_var( $wpdb->prepare("SELECT post_status FROM $wpdb->posts WHERE ID = %d", $comment_post_ID) );
+
+	if ( empty($status) )
+		die('1');
+	elseif ( in_array($status->post_status, array('draft', 'pending') ) )
+		die( __('Error: you are replying to comment on a draft post.') );
+
+	$user = wp_get_current_user();
+	if ( $user->ID ) {
+		$comment_author       = $wpdb->escape($user->display_name);
+		$comment_author_email = $wpdb->escape($user->user_email);
+		$comment_author_url   = $wpdb->escape($user->user_url);
+		$comment_content      = trim($_POST['comment']);
+		if ( current_user_can('unfiltered_html') ) {
+			if ( wp_create_nonce('unfiltered-html-comment_' . $comment_post_ID) != $_POST['_wp_unfiltered_html_comment'] ) {
+				kses_remove_filters(); // start with a clean slate
+				kses_init_filters(); // set up the filters
+			}
+		}
+	} else {
+		die( __('Sorry, you must be logged in to reply to a comment.') );
+	}
+
+	if ( '' == $comment_content )
+		die( __('Error: please type a comment.') );
+
+	$comment_parent = absint($_POST['comment_ID']);
+	$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email', 'comment_author_url', 'comment_content', 'comment_type', 'comment_parent', 'user_ID');
+
+	$comment_id = wp_new_comment( $commentdata );
+	$comment = get_comment($comment_id);
+	if ( ! $comment ) die('1');
+
+	$mode = ( isset($_POST['mode']) && 'single' == $_POST['mode'] ) ? 'single' : 'detail';
+	$position = ( isset($_POST['position']) && (int) $_POST['position']) ? (int) $_POST['position'] : '-1';
+	$checkbox = ( isset($_POST['checkbox']) && true == $_POST['checkbox'] ) ? 1 : 0;
+
+	if ( get_option('show_avatars') && 'single' != $mode )
+		add_filter( 'comment_author', 'floated_admin_avatar' );
+
+	$x = new WP_Ajax_Response();
+
+	ob_start();
+		_wp_comment_row( $comment->comment_ID, $mode, false, $checkbox );
+		$comment_list_item = ob_get_contents();
+	ob_end_clean();
+
+	$x->add( array(
+		'what' => 'comment',
+		'id' => $comment->comment_ID,
+		'data' => $comment_list_item,
+		'position' => $position
+	));
+
+	$x->send();
+	break;
 case 'add-meta' :
 	check_ajax_referer( 'add-meta' );
 	$c = 0;
@@ -628,13 +691,17 @@ case 'closed-postboxes' :
 	check_ajax_referer( 'closedpostboxes', 'closedpostboxesnonce' );
 	$closed = isset( $_POST['closed'] )? $_POST['closed'] : '';
 	$closed = explode( ',', $_POST['closed'] );
+	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
+	$hidden = explode( ',', $_POST['hidden'] );
 	$page = isset( $_POST['page'] )? $_POST['page'] : '';
 	if ( !preg_match( '/^[a-z-]+$/', $page ) ) {
 		die(-1);
 	}
-	if (!is_array($closed)) break;
 	$current_user = wp_get_current_user();
-	update_usermeta($current_user->ID, 'closedpostboxes_'.$page, $closed);
+	if ( is_array($closed) )
+		update_usermeta($current_user->ID, 'closedpostboxes_'.$page, $closed);
+	if ( is_array($hidden) )
+		update_usermeta($current_user->ID, 'meta-box-hidden_'.$page, $hidden);
 break;
 case 'get-permalink':
 	check_ajax_referer( 'getpermalink', 'getpermalinknonce' );
@@ -648,6 +715,11 @@ case 'sample-permalink':
 	$slug = isset($_POST['new_slug'])? $_POST['new_slug'] : '';
 	die(get_sample_permalink_html($post_id, $title, $slug));
 break;
+case 'meta-box-order':
+	check_ajax_referer( 'meta-box-order' );
+	update_user_option( $GLOBALS['current_user']->ID, "meta-box-order_$_POST[page]", $_POST['order'] );
+	die('1');
+	break;
 default :
 	do_action( 'wp_ajax_' . $_POST['action'] );
 	die('0');

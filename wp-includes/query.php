@@ -707,7 +707,7 @@ class WP_Query {
 				$this->is_author = true;
 			}
 
-			if ( ($this->is_date || $this->is_author || $this->is_category || $this->is_tag ) )
+			if ( ($this->is_date || $this->is_author || $this->is_category || $this->is_tag || $this->is_tax ) )
 				$this->is_archive = true;
 		}
 
@@ -778,7 +778,7 @@ class WP_Query {
 		if ( !empty($qv['post_status']) )
 			$qv['post_status'] = preg_replace('|[^a-z0-9_,-]|', '', $qv['post_status']);
 
-		if ( $this->is_posts_page && !$qv['withcomments'] )
+		if ( $this->is_posts_page && ( ! isset($qv['withcomments']) || ! $qv['withcomments'] ) )
 			$this->is_comment_feed = false;
 
 		$this->is_singular = $this->is_single || $this->is_page || $this->is_attachment;
@@ -832,10 +832,15 @@ class WP_Query {
 		$join = '';
 		$search = '';
 		$groupby = '';
+		$fields = "$wpdb->posts.*";
 		$post_status_join = false;
+		$page = 1;
 
 		if ( !isset($q['caller_get_posts']) )
 			$q['caller_get_posts'] = false;
+
+		if ( !isset($q['suppress_filters']) )
+			$q['suppress_filters'] = false;
 
 		if ( !isset($q['post_type']) ) {
 			if ( $this->is_search )
@@ -1046,12 +1051,17 @@ class WP_Query {
 		}
 
 		if ( !empty($q['category__not_in']) ) {
-			$ids = get_objects_in_term($q['category__not_in'], 'category');
-			if ( is_wp_error( $ids ) )
-				return $ids;
-			if ( is_array($ids) && count($ids > 0) ) {
-				$out_posts = "'" . implode("', '", $ids) . "'";
-				$whichcat .= " AND $wpdb->posts.ID NOT IN ($out_posts)";
+			if ( $wpdb->has_cap( 'subqueries' ) ) {
+				$cat_string = "'" . implode("', '", $q['category__not_in']) . "'";
+				$whichcat .= " AND $wpdb->posts.ID NOT IN (SELECT $wpdb->term_relationships.object_id FROM $wpdb->term_relationships WHERE $wpdb->term_relationships.term_taxonomy_id IN ($cat_string) )";
+			} else {
+				$ids = get_objects_in_term($q['category__not_in'], 'category');
+				if ( is_wp_error( $ids ) )
+					return $ids;
+				if ( is_array($ids) && count($ids > 0) ) {
+					$out_posts = "'" . implode("', '", $ids) . "'";
+					$whichcat .= " AND $wpdb->posts.ID NOT IN ($out_posts)";
+				}
 			}
 		}
 
@@ -1367,8 +1377,10 @@ class WP_Query {
 
 		// Apply filters on where and join prior to paging so that any
 		// manipulations to them are reflected in the paging by day queries.
-		$where = apply_filters('posts_where', $where);
-		$join = apply_filters('posts_join', $join);
+		if ( !$q['suppress_filters'] ) {
+			$where = apply_filters('posts_where', $where);
+			$join = apply_filters('posts_join', $join);
+		}
 
 		// Paging
 		if ( empty($q['nopaging']) && !$this->is_singular ) {
@@ -1400,9 +1412,11 @@ class WP_Query {
 				$cgroupby = '';
 			}
 
-			$cjoin = apply_filters('comment_feed_join', $cjoin);
-			$cwhere = apply_filters('comment_feed_where', $cwhere);
-			$cgroupby = apply_filters('comment_feed_groupby', $cgroupby);
+			if ( !$q['suppress_filters'] ) {
+				$cjoin = apply_filters('comment_feed_join', $cjoin);
+				$cwhere = apply_filters('comment_feed_where', $cwhere);
+				$cgroupby = apply_filters('comment_feed_groupby', $cgroupby);
+			}
 
 			$this->comments = (array) $wpdb->get_results("SELECT $distinct $wpdb->comments.* FROM $wpdb->comments $cjoin $cwhere $cgroupby ORDER BY comment_date_gmt DESC LIMIT " . get_option('posts_per_rss'));
 			$this->comment_count = count($this->comments);
@@ -1420,28 +1434,33 @@ class WP_Query {
 				$where = "AND 0";
 		}
 
+		$orderby = $q['orderby'];
+
 		// Apply post-paging filters on where and join.  Only plugins that
 		// manipulate paging queries should use these hooks.
-
-		$where = apply_filters('posts_where_paged', $where);
-		$groupby = apply_filters('posts_groupby', $groupby);
-		$join = apply_filters('posts_join_paged', $join);
-		$orderby = apply_filters('posts_orderby', $q['orderby']);
-		$distinct = apply_filters('posts_distinct', $distinct);
-		$fields = apply_filters('posts_fields', "$wpdb->posts.*");
-		$limits = apply_filters( 'post_limits', $limits );
+		if ( !$q['suppress_filters'] ) {
+			$where = apply_filters('posts_where_paged', $where);
+			$groupby = apply_filters('posts_groupby', $groupby);
+			$join = apply_filters('posts_join_paged', $join);
+			$orderby = apply_filters('posts_orderby', $orderby);
+			$distinct = apply_filters('posts_distinct', $distinct);
+			$fields = apply_filters('posts_fields', $fields);
+			$limits = apply_filters( 'post_limits', $limits );
+		}
 
 		// Announce current selection parameters.  For use by caching plugins.
 		do_action( 'posts_selection', $where . $groupby . $orderby . $limits . $join );
 
 		// Filter again for the benefit of caching plugins.  Regular plugins should use the hooks above.
-		$where = apply_filters('posts_where_request', $where);
-		$groupby = apply_filters('posts_groupby_request', $groupby);
-		$join = apply_filters('posts_join_request', $join);
-		$orderby = apply_filters('posts_orderby_request', $orderby);
-		$distinct = apply_filters('posts_distinct_request', $distinct);
-		$fields = apply_filters('posts_fields_request', $fields);
-		$limits = apply_filters( 'post_limits_request', $limits );
+		if ( !$q['suppress_filters'] ) {
+			$where = apply_filters('posts_where_request', $where);
+			$groupby = apply_filters('posts_groupby_request', $groupby);
+			$join = apply_filters('posts_join_request', $join);
+			$orderby = apply_filters('posts_orderby_request', $orderby);
+			$distinct = apply_filters('posts_distinct_request', $distinct);
+			$fields = apply_filters('posts_fields_request', $fields);
+			$limits = apply_filters( 'post_limits_request', $limits );
+		}
 
 		if ( ! empty($groupby) )
 			$groupby = 'GROUP BY ' . $groupby;
@@ -1451,12 +1470,14 @@ class WP_Query {
 		if ( !empty($limits) )
 			$found_rows = 'SQL_CALC_FOUND_ROWS';
 
-		$request = " SELECT $found_rows $distinct $fields FROM $wpdb->posts $join WHERE 1=1 $where $groupby $orderby $limits";
-		$this->request = apply_filters('posts_request', $request);
+		$this->request = " SELECT $found_rows $distinct $fields FROM $wpdb->posts $join WHERE 1=1 $where $groupby $orderby $limits";
+		if ( !$q['suppress_filters'] )
+			$this->request = apply_filters('posts_request', $this->request);
 
 		$this->posts = $wpdb->get_results($this->request);
 		// Raw results filter.  Prior to status checks.
-		$this->posts = apply_filters('posts_results', $this->posts);
+		if ( !$q['suppress_filters'] )
+			$this->posts = apply_filters('posts_results', $this->posts);
 
 		if ( !empty($this->posts) && $this->is_comment_feed && $this->is_singular ) {
 			$cjoin = apply_filters('comment_feed_join', '');
@@ -1538,7 +1559,8 @@ class WP_Query {
 			}
 		}
 
-		$this->posts = apply_filters('the_posts', $this->posts);
+		if ( !$q['suppress_filters'] )
+			$this->posts = apply_filters('the_posts', $this->posts);
 
 		update_post_caches($this->posts);
 
@@ -1747,7 +1769,7 @@ function setup_postdata($post) {
 	if ( is_single() || is_page() || is_feed() )
 		$more = 1;
 	$content = $post->post_content;
-	if ( preg_match('/<!--nextpage-->/', $content) ) {
+	if ( strpos( $content, '<!--nextpage-->' ) ) {
 		if ( $page > 1 )
 			$more = 1;
 		$multipage = 1;

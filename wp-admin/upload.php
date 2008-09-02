@@ -9,7 +9,7 @@
 /** WordPress Administration Bootstrap */
 require_once('admin.php');
 add_thickbox();
-wp_enqueue_script('media-upload');
+wp_enqueue_script( 'media-upload' );
 
 if (!current_user_can('upload_files'))
 	wp_die(__('You do not have permission to upload files.'));
@@ -51,8 +51,10 @@ wp_enqueue_script( 'admin-forms' );
 
 list($post_mime_types, $avail_post_mime_types) = wp_edit_attachments_query();
 
-if ( is_singular() )
+if ( is_singular() ) {
 	wp_enqueue_script( 'admin-comments' );
+	wp_enqueue_script( 'jquery-table-hotkeys' );
+}
 
 require_once('admin-header.php');
 
@@ -263,4 +265,7 @@ endif; // posts;
 
 </div>
 
-<?php include('admin-footer.php'); ?>
+<?php 
+wp_comment_reply();
+include('admin-footer.php');
+?>

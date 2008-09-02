@@ -10,7 +10,7 @@
 require_once('admin.php');
 
 // Handle bulk actions
-if ( isset($_GET['action']) && $_GET['action'] != 'Actions' ) {
+if ( !empty($_GET['action']) && $_GET['action'] != 'Actions' ) {
 	switch ( $_GET['action'] ) {
 		case 'delete':
 			if ( isset($_GET['post']) ) {
@@ -53,8 +53,11 @@ wp_enqueue_script('admin-forms');
 
 list($post_stati, $avail_post_stati) = wp_edit_posts_query();
 
-if ( 1 == count($posts) && is_singular() )
+if ( 1 == count($posts) && is_singular() ) {
 	wp_enqueue_script( 'admin-comments' );
+	wp_enqueue_script( 'jquery-table-hotkeys' );
+}
+
 require_once('admin-header.php');
 
 if ( !isset( $_GET['paged'] ) )
@@ -254,6 +257,7 @@ if ( 1 == count($posts) && is_singular() ) :
 <thead>
   <tr>
     <th scope="col"><?php _e('Comment') ?></th>
+    <th scope="col"><?php _e('Author') ?></th>
     <th scope="col"><?php _e('Submitted') ?></th>
   </tr>
 </thead>
@@ -266,7 +270,7 @@ if ( 1 == count($posts) && is_singular() ) :
 </table>
 
 <?php
-
+wp_comment_reply();
 endif; // comments
 endif; // posts;
 

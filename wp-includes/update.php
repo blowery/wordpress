@@ -14,7 +14,7 @@
  * isn't installing.
  *
  * @package WordPress
- * @since 2.3
+ * @since 2.3.0
  * @uses $wp_version Used to check against the newest WordPress version.
  *
  * @return mixed Returns null if update is unsupported. Returns false if check is too soon.
@@ -23,7 +23,7 @@ function wp_version_check() {
 	if ( defined('WP_INSTALLING') )
 		return;
 
-	global $wp_version;
+	global $wp_version, $wpdb;
 	$php_version = phpversion();
 
 	$current = get_option( 'update_core' );
@@ -40,7 +40,12 @@ function wp_version_check() {
 	$new_option->last_checked = time(); // this gets set whether we get a response or not, so if something is down or misconfigured it won't delay the page load for more than 3 seconds, twice a day
 	$new_option->version_checked = $wp_version;
 
-	$url = "http://api.wordpress.org/core/version-check/1.2/?version=$wp_version&php=$php_version&locale=$locale";
+	if ( method_exists( $wpdb, 'db_version' ) )
+		$mysql_version = preg_replace('/[^0-9.].*/', '', $wpdb->db_version($wpdb->users));
+	else
+		$mysql_version = 'N/A';
+
+	$url = "http://api.wordpress.org/core/version-check/1.2/?version=$wp_version&php=$php_version&locale=$locale&mysql=$mysql_version";
 
 	$options = array('timeout' => 3);
 	$options['headers'] = array(
@@ -83,7 +88,7 @@ add_action( 'init', 'wp_version_check' );
  * isn't installing.
  *
  * @package WordPress
- * @since 2.3
+ * @since 2.3.0
  * @uses $wp_version Used to notidy the WordPress version.
  *
  * @return mixed Returns null if update is unsupported. Returns false if check is too soon.

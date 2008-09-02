@@ -103,7 +103,7 @@ function retrieve_password() {
 	if ( empty( $_POST['user_login'] ) && empty( $_POST['user_email'] ) )
 		$errors->add('empty_username', __('<strong>ERROR</strong>: Enter a username or e-mail address.'));
 
-	if ( strstr($_POST['user_login'], '@') ) {
+	if ( strpos($_POST['user_login'], '@') ) {
 		$user_data = get_user_by_email(trim($_POST['user_login']));
 		if ( empty($user_data) )
 			$errors->add('invalid_email', __('<strong>ERROR</strong>: There is no user registered with that email address.'));
@@ -407,17 +407,34 @@ break;
 
 case 'login' :
 default:
-	if ( isset( $_REQUEST['redirect_to'] ) )
-		$redirect_to = $_REQUEST['redirect_to'];
-	else
-		$redirect_to = admin_url();
+	$secure_cookie = '';
 
-	if ( is_ssl() && force_ssl_login() && !force_ssl_admin() && ( 0 !== strpos($redirect_to, 'https') ) && ( 0 === strpos($redirect_to, 'http') ) )
+	// If the user wants ssl but the session is not ssl, force a secure cookie.
+	if ( !empty($_POST['log']) && !force_ssl_admin() ) {
+		$user_name = sanitize_user($_POST['log']);
+		if ( $user = get_userdatabylogin($user_name) ) {
+			if ( get_user_option('use_ssl', $user->ID) ) {
+				$secure_cookie = true;
+				force_ssl_admin(true);
+			}
+		}
+	}
+
+	if ( isset( $_REQUEST['redirect_to'] ) ) {
+		$redirect_to = $_REQUEST['redirect_to'];
+		// Redirect to https if user wants ssl
+		if ( $secure_cookie && false !== strpos($redirect_to, 'wp-admin') )
+			$redirect_to = preg_replace('|^http://|', 'https://', $redirect_to);
+	} else {
+		$redirect_to = admin_url();
+	}
+
+	if ( !$secure_cookie && is_ssl() && force_ssl_login() && !force_ssl_admin() && ( 0 !== strpos($redirect_to, 'https') ) && ( 0 === strpos($redirect_to, 'http') ) )
 		$secure_cookie = false;
-	else
-		$secure_cookie = '';
 
 	$user = wp_signon('', $secure_cookie);
+
+	$redirect_to = apply_filters('login_redirect', $redirect_to, isset( $_REQUEST['redirect_to'] ) ? $_REQUEST['redirect_to'] : '', $user);
 
 	if ( !is_wp_error($user) ) {
 		// If the user can't edit posts, send them to their profile.

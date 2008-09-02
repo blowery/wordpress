@@ -17,7 +17,8 @@ function _wp_translate_postdata( $update = false ) {
 	$_POST['post_content'] = $_POST['content'];
 	$_POST['post_excerpt'] = $_POST['excerpt'];
 	$_POST['post_parent'] = isset($_POST['parent_id'])? $_POST['parent_id'] : '';
-	$_POST['to_ping'] = $_POST['trackback_url'];
+	if ( isset($_POST['trackback_url']) )
+		$_POST['to_ping'] = $_POST['trackback_url'];
 
 	if (!empty ( $_POST['post_author_override'] ) ) {
 		$_POST['post_author'] = (int) $_POST['post_author_override'];
@@ -29,7 +30,7 @@ function _wp_translate_postdata( $update = false ) {
 		}
 	}
 
-	if ( $_POST['post_author'] != $_POST['user_ID'] ) {
+	if ( isset($_POST['user_ID']) && ($_POST['post_author'] != $_POST['user_ID']) ) {
 		if ( 'page' == $_POST['post_type'] ) {
 			if ( !current_user_can( 'edit_others_pages' ) ) {
 				return new WP_Error( 'edit_others_pages', $update ?
@@ -66,7 +67,7 @@ function _wp_translate_postdata( $update = false ) {
 			if ( $previous_status != 'publish' OR !current_user_can( 'edit_published_pages') )
 				$_POST['post_status'] = 'pending';
 	} else {
-		if ( 'publish' == $_POST['post_status'] && !current_user_can( 'publish_posts' ) ) :
+		if ( isset($_POST['post_status']) && ('publish' == $_POST['post_status'] && !current_user_can( 'publish_posts' )) ) :
 			// Stop attempts to publish new posts, but allow already published posts to be saved if appropriate.
 			if ( $previous_status != 'publish' OR !current_user_can( 'edit_published_posts') )
 				$_POST['post_status'] = 'pending';
@@ -690,4 +691,81 @@ function wp_create_post_autosave( $post_id ) {
 
 	// Otherwise create the new autosave as a special post revision
 	return _wp_put_post_revision( $_POST, true );
+}
+
+/**
+ * wp_teeny_mce() - adds a trimmed down version of the tinyMCE editor used on the Write -> Post screen.
+ *
+ * @package WordPress
+ * @since 2.6
+ */
+function wp_teeny_mce( $args = null ) {
+	if ( !user_can_richedit() )
+		return;
+
+	$defaults = array(
+		'buttons1' => 'bold,italic,underline,blockquote,separator,strikethrough,bullist,numlist,undo,redo,link,unlink'
+	);
+	$args = wp_parse_args( $args, $defaults );
+	if ( is_array( $args['buttons1'] ) )
+		$args['buttons1'] = join( ',', $args['buttons1'] );
+
+	$language = ( '' == get_locale() ) ? 'en' : strtolower( substr(get_locale(), 0, 2) );
+
+?>
+
+<script type="text/javascript" src="<?php echo clean_url( site_url( 'wp-includes/js/tinymce/tiny_mce.js' ) ); ?>"></script>
+<script type="text/javascript">
+/* <![CDATA[ */
+<?php
+	// Add TinyMCE languages
+	@include_once( ABSPATH . WPINC . '/js/tinymce/langs/wp-langs.php' );
+
+	if ( isset($strings) )
+		echo $strings;
+
+?>
+	(function() {
+		var base = tinymce.baseURL, sl = tinymce.ScriptLoader, ln = "<?php echo $language; ?>";
+
+		sl.markDone(base + '/langs/' + ln + '.js');
+		sl.markDone(base + '/themes/advanced/langs/' + ln + '.js');
+		sl.markDone(base + '/themes/advanced/langs/' + ln + '_dlg.js');
+	})();
+	
+	var wpTeenyMCEInit = function() {
+	tinyMCE.init({
+		mode: "textareas",
+		editor_selector: "mceEditor",
+		language : "<?php echo $language; ?>",
+		width: "100%",
+		theme : "advanced",
+		theme_advanced_buttons1 : "<?php echo $args['buttons1']; ?>",
+		theme_advanced_buttons2 : "",
+		theme_advanced_buttons3 : "",
+		theme_advanced_toolbar_location : "top",
+		theme_advanced_toolbar_align : "left",
+		theme_advanced_statusbar_location : "bottom",
+		theme_advanced_resizing : true,
+		theme_advanced_resize_horizontal : false,
+		skin : "wp_theme",
+		dialog_type : "modal",
+		relative_urls : false,
+		remove_script_host : false,
+		convert_urls : false,
+		apply_source_formatting : false,
+		remove_linebreaks : true,
+		accessibility_focus : false,
+		tab_focus : ":next",
+		plugins : "safari,inlinepopups",
+		entities : "38,amp,60,lt,62,gt",
+		force_p_newlines : true,
+		save_callback : 'switchEditors.saveCallback'
+	});
+	};
+	wpTeenyMCEInit();
+/* ]]> */
+</script>
+
+<?php
 }

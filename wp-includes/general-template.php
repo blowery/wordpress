@@ -942,8 +942,8 @@ function user_can_richedit() {
 function wp_default_editor() {
 	$r = user_can_richedit() ? 'tinymce' : 'html'; // defaults
 	if ( $user = wp_get_current_user() ) { // look for cookie
-		if ( isset($_COOKIE['wordpress_editor_' . $user->ID]) && in_array($_COOKIE['wordpress_editor_' . $user->ID], array('tinymce', 'html', 'test') ) )
-			$r = $_COOKIE['wordpress_editor_' . $user->ID];
+		$ed = get_user_setting('editor', 'tinymce');
+		$r = ( in_array($ed, array('tinymce', 'html', 'test') ) ) ? $ed : $r;
 	}
 	return apply_filters( 'wp_default_editor', $r ); // filter
 }
@@ -969,11 +969,11 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 		<?php }
 	}
 
-	if ( $media_buttons ) { ?>
+/*	if ( $media_buttons ) { ?>
 		<div id="media-buttons" class="hide-if-no-js">
 		<?php do_action( 'media_buttons' ); ?>
 		</div>
-	<?php } ?>
+	<?php } */ ?>
 	</div>
 
 	<div id="quicktags">
@@ -981,46 +981,37 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 	<script type="text/javascript">edToolbar()</script>
 	</div>
 
-    <?php if ( 'html' != $wp_default_editor ) : ?>
-    <script type="text/javascript">
-    // <![CDATA[
-        if ( typeof tinyMCE != "undefined" )
-            document.getElementById("quicktags").style.display="none";
-    // ]]>
-    </script>
-    <?php endif; // 'html' != $wp_default_editor
-
-	$the_editor = apply_filters('the_editor', "<div id='editorcontainer'><textarea class='' $rows cols='40' name='$id' tabindex='$tab_index' id='$id'>%s</textarea></div>\n");
+	<?php $the_editor = apply_filters('the_editor', "<div id='editorcontainer'><textarea $rows cols='40' name='$id' tabindex='$tab_index' id='$id'>%s</textarea></div>\n");
 	$the_editor_content = apply_filters('the_editor_content', $content);
 
 	printf($the_editor, $the_editor_content);
 
 	?>
-    <script type="text/javascript">
-    // <![CDATA[
-    edCanvas = document.getElementById('<?php echo $id; ?>');
-    <?php if ( $prev_id && user_can_richedit() ) : ?>
-    // If tinyMCE is defined.
-    if ( typeof tinyMCE != 'undefined' ) {
-    // This code is meant to allow tabbing from Title to Post (TinyMCE).
-        document.getElementById('<?php echo $prev_id; ?>').onkeydown = function (e) {
-            e = e || window.event;
-            if (e.keyCode == 9 && !e.shiftKey && !e.controlKey && !e.altKey) {
-                if ( tinyMCE.activeEditor ) {
-                    if ( (jQuery("#post_ID").val() < 1) && (jQuery("#title").val().length > 0) ) { autosave(); }
-                    e = null;
-                    if ( tinyMCE.activeEditor.isHidden() ) return true;
-                    tinyMCE.activeEditor.focus();
-                    return false;
-                }
-                return true;
-            }
-        }
-    }
-    <?php endif; ?>
-    // ]]>
-    </script>
-    <?php
+	<script type="text/javascript">
+	// <![CDATA[
+	edCanvas = document.getElementById('<?php echo $id; ?>');
+	<?php if ( user_can_richedit() && $prev_id ) { ?>
+	// If tinyMCE is defined.
+	if ( typeof tinyMCE != 'undefined' ) {
+		// This code is meant to allow tabbing from Title to Post (TinyMCE).
+		document.getElementById('<?php echo $prev_id; ?>').onkeydown = function (e) {
+			e = e || window.event;
+			if (e.keyCode == 9 && !e.shiftKey && !e.controlKey && !e.altKey) {
+				if ( tinyMCE.activeEditor ) {
+					if ( (jQuery("#post_ID").val() < 1) && (jQuery("#title").val().length > 0) ) { autosave(); }
+					e = null;
+					if ( tinyMCE.activeEditor.isHidden() ) return true;
+					tinyMCE.activeEditor.focus();
+					return false;
+				}
+				return true;
+			}
+		}
+	}
+	<?php } ?>
+	// ]]>
+	</script>
+	<?php
 }
 
 function get_search_query() {

@@ -878,7 +878,7 @@ class wp_xmlrpc_server extends IXR_Server {
 			"link"					=> $link,
 			"post_id"				=> $comment->comment_post_ID,
 			"post_title"			=> get_the_title($comment->comment_post_ID),
-			"author"				=> $author->comment_author,
+			"author"				=> $comment->comment_author,
 			"author_url"			=> $comment->comment_author_url,
 			"author_email"			=> $comment->comment_author_email,
 			"author_ip"				=> $comment->comment_author_IP,
@@ -1088,6 +1088,8 @@ class wp_xmlrpc_server extends IXR_Server {
 					return new IXR_Error( 403, __( 'A valid email address is required' ) );
 			}
 		}
+
+		$comment['comment_parent'] = isset($content_struct['comment_parent']) ? absint($content_struct['comment_parent']) : 0;
 
 		$comment['comment_content'] = $content_struct['content'];
 

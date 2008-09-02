@@ -484,26 +484,13 @@ if ( !function_exists('wp_validate_auth_cookie') ) :
  * @param string $scheme Optional. The cookie scheme to use: auth, secure_auth, or logged_in
  * @return bool|int False if invalid cookie, User ID if valid.
  */
-function wp_validate_auth_cookie($cookie = '', $scheme = 'auth') {
-	if ( empty($cookie) ) {
-		if ( is_ssl() ) {
-			$cookie_name = SECURE_AUTH_COOKIE;
-			$scheme = 'secure_auth';
-		} else {
-			$cookie_name = AUTH_COOKIE;
-			$scheme = 'auth';
-		}
-
-		if ( empty($_COOKIE[$cookie_name]) )
-			return false;
-		$cookie = $_COOKIE[$cookie_name];
+function wp_validate_auth_cookie($cookie = '', $scheme = '') {
+	if ( ! $cookie_elements = wp_parse_auth_cookie($cookie, $scheme) ) {
+		do_action('auth_cookie_malformed', $cookie, $scheme);
+		return false;
 	}
 
-	$cookie_elements = explode('|', $cookie);
-	if ( count($cookie_elements) != 3 )
-		return false;
-
-	list($username, $expiration, $hmac) = $cookie_elements;
+	extract($cookie_elements, EXTR_OVERWRITE);
 
 	$expired = $expiration;
 
@@ -512,18 +499,26 @@ function wp_validate_auth_cookie($cookie = '', $scheme = 'auth') {
 		$expired += 3600;
 
 	// Quick check to see if an honest cookie has expired
-	if ( $expired < time() )
+	if ( $expired < time() ) {
+		do_action('auth_cookie_expired', $cookie_elements);
 		return false;
+	}
 
 	$key = wp_hash($username . '|' . $expiration, $scheme);
 	$hash = hash_hmac('md5', $username . '|' . $expiration, $key);
 
-	if ( $hmac != $hash )
+	if ( $hmac != $hash ) {
+		do_action('auth_cookie_bad_hash', $cookie_elements);
 		return false;
+	}
 
 	$user = get_userdatabylogin($username);
-	if ( ! $user )
+	if ( ! $user ) {
+		do_action('auth_cookie_bad_username', $cookie_elements);
 		return false;
+	}
+
+	do_action('auth_cookie_valid', $cookie_elements, $user);
 
 	return $user->ID;
 }
@@ -551,6 +546,53 @@ function wp_generate_auth_cookie($user_id, $expiration, $scheme = 'auth') {
 	$cookie = $user->user_login . '|' . $expiration . '|' . $hash;
 
 	return apply_filters('auth_cookie', $cookie, $user_id, $expiration, $scheme);
+}
+endif;
+
+if ( !function_exists('wp_parse_auth_cookie') ) :
+/**
+ * Parse a cookie into its components
+ *
+ * @since 2.7
+ *
+ * @param string $cookie
+ * @param string $scheme Optional. The cookie scheme to use: auth, secure_auth, or logged_in
+ * @return array Authentication cookie components
+ */
+function wp_parse_auth_cookie($cookie = '', $scheme = '') {
+	if ( empty($cookie) ) {
+		switch ($scheme){
+			case 'auth':
+				$cookie_name = AUTH_COOKIE;
+				break;
+			case 'secure_auth':
+				$cookie_name = SECURE_AUTH_COOKIE;
+				break;
+			case "logged_in":
+				$cookie_name = LOGGED_IN_COOKIE;
+				break;
+			default:
+				if ( is_ssl() ) {
+					$cookie_name = SECURE_AUTH_COOKIE;
+					$scheme = 'secure_auth';
+				} else {
+					$cookie_name = AUTH_COOKIE;
+					$scheme = 'auth';
+				}
+	    }
+
+		if ( empty($_COOKIE[$cookie_name]) )
+			return false;
+		$cookie = $_COOKIE[$cookie_name];
+	}
+
+	$cookie_elements = explode('|', $cookie);
+	if ( count($cookie_elements) != 3 )
+		return false;
+
+	list($username, $expiration, $hmac) = $cookie_elements;
+
+	return compact('username', 'expiration', 'hmac', 'scheme');
 }
 endif;
 
@@ -607,6 +649,8 @@ if ( !function_exists('wp_clear_auth_cookie') ) :
  * @since 2.5
  */
 function wp_clear_auth_cookie() {
+	do_action('clear_auth_cookie');
+
 	setcookie(AUTH_COOKIE, ' ', time() - 31536000, ADMIN_COOKIE_PATH, COOKIE_DOMAIN);
 	setcookie(SECURE_AUTH_COOKIE, ' ', time() - 31536000, ADMIN_COOKIE_PATH, COOKIE_DOMAIN);
 	setcookie(AUTH_COOKIE, ' ', time() - 31536000, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN);
@@ -661,7 +705,7 @@ function auth_redirect() {
 		$secure = false;
 
 	// If https is required and request is http, redirect
-	if ( $secure && !is_ssl() ) {
+	if ( $secure && !is_ssl() && false !== strpos($_SERVER['REQUEST_URI'], 'wp-admin') ) {
 		if ( 0 === strpos($_SERVER['REQUEST_URI'], 'http') ) {
 			wp_redirect(preg_replace('|^http://|', 'https://', $_SERVER['REQUEST_URI']));
 			exit();
@@ -671,8 +715,20 @@ function auth_redirect() {
 		}
 	}
 
-	if ( wp_validate_auth_cookie() )
+	if ( $user_id = wp_validate_auth_cookie() ) {
+		// If the user wants ssl but the session is not ssl, redirect.
+		if ( !$secure && get_user_option('use_ssl', $user_id) && false !== strpos($_SERVER['REQUEST_URI'], 'wp-admin') ) {
+			if ( 0 === strpos($_SERVER['REQUEST_URI'], 'http') ) {
+				wp_redirect(preg_replace('|^http://|', 'https://', $_SERVER['REQUEST_URI']));
+				exit();
+			} else {
+				wp_redirect('https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']);
+				exit();
+			}
+		}
+
 		return;  // The cookie is good so we're done
+	}
 
 	// The cookie is no good so force login
 	nocache_headers();
@@ -1307,8 +1363,50 @@ function wp_generate_password($length = 12, $special_chars = true) {
 
 	$password = '';
 	for ( $i = 0; $i < $length; $i++ )
-		$password .= substr($chars, mt_rand(0, strlen($chars) - 1), 1);
+		$password .= substr($chars, wp_rand(0, strlen($chars) - 1), 1);
 	return $password;
+}
+endif;
+
+if ( !function_exists('wp_rand') ) :
+ /**
+ * Generates a random number
+ *
+ * @since 2.6.2
+ *
+ * @param int $min Lower limit for the generated number (optional, default is 0)
+ * @param int $max Upper limit for the generated number (optional, default is 4294967295)
+ * @return int A random number between min and max
+ */
+function wp_rand( $min = 0, $max = 0 ) {
+	global $rnd_value;
+
+	$seed = get_option('random_seed');
+
+	// Reset $rnd_value after 14 uses
+	// 32(md5) + 40(sha1) + 40(sha1) / 8 = 14 random numbers from $rnd_value
+	if ( strlen($rnd_value) < 8 ) {
+		$rnd_value = md5( uniqid(microtime() . mt_rand(), true ) . $seed );
+		$rnd_value .= sha1($rnd_value);
+		$rnd_value .= sha1($rnd_value . $seed);
+		$seed = md5($seed . $rnd_value);
+		update_option('random_seed', $seed);
+	}
+
+	// Take the first 8 digits for our value
+	$value = substr($rnd_value, 0, 8);
+
+	// Strip the first eight, leaving the remainder for the next call to wp_rand().
+	$rnd_value = substr($rnd_value, 8);
+
+	$value = abs(hexdec($value));
+
+	// Reduce the value to be within the min - max range
+	// 4294967295 = 0xffffffff = max random number
+	if ( $max != 0 )
+		$value = $min + (($max - $min + 1) * ($value / (4294967295 + 1)));
+
+	return abs(intval($value)); 
 }
 endif;
 

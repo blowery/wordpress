@@ -6,9 +6,12 @@
  * @subpackage Administration
  */
 ?>
+
+<br class="clear" /></div><!-- wpbody-content -->
 </div><!-- wpbody -->
-</div><!-- wpcontent -->
+<br class="clear" /></div><!-- wpcontent -->
 </div><!-- wpwrap -->
+
 <div id="footer">
 <p><?php
 do_action('in_admin_footer', '');

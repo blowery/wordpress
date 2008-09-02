@@ -34,7 +34,6 @@ case 'editcomment' :
 	$title = __('Edit Comment');
 
 	wp_enqueue_script('comment');
-
 	require_once('admin-header.php');
 
 	$comment_id = absint( $_GET['c'] );
