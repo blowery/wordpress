@@ -1056,7 +1056,30 @@ table.form-table td .updated {
 	position: relative;
 	min-width: 195px;
 }
-
+#normal-sortables .postbox .submitbox {
+	clear: both;
+	position: relative;
+}
+#normal-sortables .postbox p {
+	display: inline;
+}
+#normal-sortables .postbox .curtime {
+	display: block;
+}
+#normal-sortables .postbox p strong {
+	display: inline;
+}
+#normal-sortables .postbox #private-checkbox, #normal-sortables .postbox #sticky-checkbox {
+	padding-left: 30px;
+}
+#normal-sortables .postbox .submit {
+	position: absolute;
+	top: -1em;
+	right: 0;
+	background: none;
+	border: 0;
+	padding: 0;
+}
 
 #mediadiv img {
 	float: left;
@@ -1233,6 +1256,7 @@ table.form-table td .updated {
 #titlediv {
 	margin-bottom: 20px;
 }
+#titlediv label { cursor: text; }
 
 #titlediv div.inside {
 	margin: 0;
@@ -1521,19 +1545,19 @@ p#big-add-button .button {
 	padding: 3px 30px;
 }
 
-p#post-search {
+p.search-box {
 	position: absolute;
 	right: 0;
 	top: -64px;
 	margin: 0;
 }
 
-#post-search .button, #widget-search .button {
+p.search-box .button, #widget-search .button {
 	padding: 3px;
 	font-size: 13px;
 }
 
-#post-search-input {
+.search-input {
 	margin-right: 2px;
 	border-width: 1px;
 	border-style: solid;
@@ -1834,6 +1858,36 @@ p#post-search-prep {
 	font-size: 11px;
 	padding: 2px;
 }
+
+#inbox-filter ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+
+#inbox-filter ul li {
+	position: relative;
+}
+
+#inbox-filter ul input.checkbox {
+	float: left;
+}
+
+#inbox-filter ul p {
+	float: left;
+	margin: 0;
+	margin-left: -40px;
+	width: 100%;
+	position: relative;
+	left: 50px;
+}
+
+#inbox-message {
+	margin: 0 0 0 7.5em;
+	padding: 5px;
+}
+
 
 /* media popup 0819 */
 #sidemenu {

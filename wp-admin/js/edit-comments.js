@@ -84,10 +84,6 @@ $(document).ready(function(){
 	setCommentsList();
 });
 
-})(jQuery);
-
-(function($){
-
 commentReply = {
 
 	open : function(c, p) {
@@ -195,8 +191,10 @@ commentReply = {
 			$('#the-comment-list').append(r.data);
 		}
 
+		$('#comment-'+r.id+' .hide-if-no-js').removeClass('hide-if-no-js');
+
 		$('#comment-'+r.id)
-			.animate( { backgroundColor:"#CFEBF7" }, 600 )
+			.animate( { backgroundColor:"#CCEEBB" }, 600 )
 			.animate( { backgroundColor:"transparent" }, 600 );
 		
 		setCommentsList();
@@ -235,6 +233,7 @@ commentReply = {
 $(document).ready(function(){
 	if ( typeof QTags != 'undefined' )
 		ed_reply = new QTags('ed_reply', 'replycontent', 'replycontainer', 'more');
+
 	if ( typeof $.table_hotkeys != 'undefined' ) {
 		var make_hotkeys_redirect = function(which) {
 			return function() {
@@ -243,13 +242,26 @@ $(document).ready(function(){
 				if (l.length)
 					window.location = l[0].href.replace(/\&hotkeys_highlight_(first|last)=1/g, '')+'&hotkeys_highlight_'+first_last+'=1';
 			}
+		};
+		var edit_comment = function(event, current_row) {
+			window.location = $('span.edit a', current_row).attr('href');
+		};
+		var toggle_all = function() {
+			var master_checkbox = $('form#comments-form .check-column :checkbox:first');
+			master_checkbox.attr('checked', master_checkbox.attr('checked')? '' : 'checked');
+			checkAll('form#comments-form');
 		}
-		$.table_hotkeys($('table.widefat'), ['a', 'u', 's', 'd', 'r'],
-			{	highlight_first: adminCommentsL10n.hotkeys_highlight_first,
-				highlight_last: adminCommentsL10n.hotkeys_highlight_last,
-				prev_page_link_cb: make_hotkeys_redirect('prev'),
-				next_page_link_cb: make_hotkeys_redirect('next'),				
+		var make_bulk = function(value) {
+			return function(event, _) {
+				$('option[value='+value+']').attr('selected', 'selected');
+				$('form#comments-form')[0].submit();
 			}
+		};
+		$.table_hotkeys($('table.widefat'),['a', 'u', 's', 'd', 'r', ['e', edit_comment],
+				['shift+a', make_bulk('approve')], ['shift+s', make_bulk('markspam')],
+				['shift+d', make_bulk('delete')], ['shift+x', toggle_all]],
+				{highlight_first: adminCommentsL10n.hotkeys_highlight_first, highlight_last: adminCommentsL10n.hotkeys_highlight_last,
+				prev_page_link_cb: make_hotkeys_redirect('prev'), next_page_link_cb: make_hotkeys_redirect('next')}
 		);
 	}
 });

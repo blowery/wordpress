@@ -44,7 +44,7 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->base_url = $guessurl;
 	$scripts->default_version = get_bloginfo( 'version' );
 
-	$scripts->add( 'common', '/wp-admin/js/common.js', array('jquery', 'user-settings'), '20080318' );
+	$scripts->add( 'common', '/wp-admin/js/common.js', array('jquery', 'user-settings'), '20080905' );
 	$scripts->add( 'sack', '/wp-includes/js/tw-sack.js', false, '1.6.1' );
 
 	$scripts->add( 'quicktags', '/wp-includes/js/quicktags.js', false, '20080823' );
@@ -158,7 +158,7 @@ function wp_default_scripts( &$scripts ) {
 			'good' => __('Medium'),
 			'strong' => __('Strong')
 		) );
-		$scripts->add( 'admin-comments', '/wp-admin/js/edit-comments.js', array('wp-lists', 'jquery-ui-draggable', 'jquery-ui-resizable', 'quicktags'), '20080828' );
+		$scripts->add( 'admin-comments', '/wp-admin/js/edit-comments.js', array('wp-lists', 'jquery-ui-draggable', 'jquery-ui-resizable', 'quicktags'), '20080905' );
 		$scripts->localize( 'admin-comments', 'adminCommentsL10n', array(
 			'pending' => __('%i% pending'), // must look like: "# blah blah"
 			'hotkeys_highlight_first' => isset($_GET['hotkeys_highlight_first']),
@@ -234,7 +234,7 @@ function wp_default_scripts( &$scripts ) {
 			'count' => __('Word count: %d')
 		));
 
-		$scripts->add( 'wp-gears', '/wp-admin/js/wp-gears.js', false, '20080721' );
+		$scripts->add( 'wp-gears', '/wp-admin/js/wp-gears.js', false, '20080905' );
 		$scripts->localize( 'wp-gears', 'wpGearsL10n', array(
 			'updateCompleted' => __('Update completed.'),
 			'error' => __('Error:')

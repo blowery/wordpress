@@ -1,7 +1,27 @@
 <?php
+/**
+ * General template tags that can go anywhere in a template.
+ *
+ * @package WordPress
+ * @subpackage Template
+ */
 
-/* Note: these tags go anywhere in the template */
-
+/**
+ * Load header template.
+ *
+ * Includes the header template for a theme or if a name is specified then a
+ * specialised header will be included. If the theme contains no header.php file
+ * then the header from the default theme will be included.
+ *
+ * For the parameter, if the file is called "header-special.php" then specify
+ * "special".
+ *
+ * @uses locate_template()
+ * @since 1.5.0
+ * @uses do_action() Calls 'get_header' action.
+ *
+ * @param string $name The name of the specialised header.
+ */
 function get_header( $name = null ) {
 	do_action( 'get_header' );
 
@@ -15,7 +35,22 @@ function get_header( $name = null ) {
 		load_template( get_theme_root() . '/default/header.php');
 }
 
-
+/**
+ * Load footer template.
+ *
+ * Includes the footer template for a theme or if a name is specified then a
+ * specialised footer will be included. If the theme contains no footer.php file
+ * then the footer from the default theme will be included.
+ *
+ * For the parameter, if the file is called "footer-special.php" then specify
+ * "special".
+ *
+ * @uses locate_template()
+ * @since 1.5.0
+ * @uses do_action() Calls 'get_footer' action.
+ *
+ * @param string $name The name of the specialised footer.
+ */
 function get_footer( $name = null ) {
 	do_action( 'get_footer' );
 
@@ -29,7 +64,22 @@ function get_footer( $name = null ) {
 		load_template( get_theme_root() . '/default/footer.php');
 }
 
-
+/**
+ * Load sidebar template.
+ *
+ * Includes the sidebar template for a theme or if a name is specified then a
+ * specialised sidebar will be included. If the theme contains no sidebar.php
+ * file then the sidebar from the default theme will be included.
+ *
+ * For the parameter, if the file is called "sidebar-special.php" then specify
+ * "special".
+ *
+ * @uses locate_template()
+ * @since 1.5.0
+ * @uses do_action() Calls 'get_sidebar' action.
+ *
+ * @param string $name The name of the specialised sidebar.
+ */
 function get_sidebar( $name = null ) {
 	do_action( 'get_sidebar' );
 
@@ -43,7 +93,15 @@ function get_sidebar( $name = null ) {
 		load_template( get_theme_root() . '/default/sidebar.php');
 }
 
-
+/**
+ * Display the Log In/Out link.
+ *
+ * Displays a link, which allows the user to navigate to the Login page to login
+ * or logout depending on whether or not they are currently logged in.
+ *
+ * @since 1.5.0
+ * @uses apply_filters() Calls 'loginout' hook on HTML link content.
+ */
 function wp_loginout() {
 	if ( ! is_user_logged_in() )
 		$link = '<a href="' . site_url('wp-login.php', 'login') . '">' . __('Log in') . '</a>';
@@ -53,7 +111,18 @@ function wp_loginout() {
 	echo apply_filters('loginout', $link);
 }
 
-
+/**
+ * Display the Registration or Admin link.
+ *
+ * Display a link which allows the user to navigate to the registration page if
+ * not logged in and registration is enabled or to the dashboard if logged in.
+ * 
+ * @since 1.5.0
+ * @uses apply_filters() Calls 'register' hook on register / admin link content.
+ *
+ * @param string $before Text to output before the link (defaults to <li>).
+ * @param string $after Text to output after the link (defaults to </li>).
+ */
 function wp_register( $before = '<li>', $after = '</li>' ) {
 
 	if ( ! is_user_logged_in() ) {
@@ -68,21 +137,60 @@ function wp_register( $before = '<li>', $after = '</li>' ) {
 	echo apply_filters('register', $link);
 }
 
-
+/**
+ * Theme container function for the 'wp_meta' action.
+ *
+ * The 'wp_meta' action can have several purposes, depending on how you use it,
+ * but one purpose might have been to allow for theme switching.
+ *
+ * @since 1.5.0
+ * @link http://trac.wordpress.org/ticket/1458 Explanation of 'wp_meta' action.
+ * @uses do_action() Calls 'wp_meta' hook.
+ */
 function wp_meta() {
 	do_action('wp_meta');
 }
 
-
+/**
+ * Display information about the blog.
+ *
+ * @see get_bloginfo() For possible values for the parameter.
+ * @since 0.71
+ *
+ * @param string $show What to display.
+ */
 function bloginfo($show='') {
 	echo get_bloginfo($show, 'display');
 }
 
 /**
- * Note: some of these values are DEPRECATED. Meaning they could be
- * taken out at any time and shouldn't be relied upon. Options
- * without "// DEPRECATED" are the preferred and recommended ways
- * to get the information.
+ * Retrieve information about the blog.
+ *
+ * Some show parameter values are deprecated and will be removed in future
+ * versions. Care should be taken to check the function contents and know what
+ * the deprecated blog info options are. Options without "// DEPRECATED" are
+ * the preferred and recommended ways to get the information.
+ *
+ * The possible values for the 'show' parameter are listed below.
+ * <ol>
+ * <li><strong>url<strong> - Blog URI to homepage.</li>
+ * <li><strong>wpurl</strong> - Blog URI path to WordPress.</li>
+ * <li><strong>description</strong> - Secondary title</li>
+ * </ol>
+ *
+ * The feed URL options can be retrieved from 'rdf_url' (RSS 0.91),
+ * 'rss_url' (RSS 1.0), 'rss2_url' (RSS 2.0), or 'atom_url' (Atom feed). The
+ * comment feeds can be retrieved from the 'comments_atom_url' (Atom comment
+ * feed) or 'comments_rss2_url' (RSS 2.0 comment feed).
+ *
+ * There are many other options and you should check the function contents:
+ * {@source 32 37}
+ *
+ * @since 0.71
+ *
+ * @param string $show Blog info to retrieve.
+ * @param string $filter How to filter what is retrieved.
+ * @return string Mostly string values, might be empty.
  */
 function get_bloginfo($show = '', $filter = 'raw') {
 
@@ -173,7 +281,17 @@ function get_bloginfo($show = '', $filter = 'raw') {
 	return $output;
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 1.0.0
+ *
+ * @param unknown_type $sep
+ * @param unknown_type $display
+ * @return unknown
+ */
 function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 	global $wpdb, $wp_locale, $wp_query;
 
@@ -279,7 +397,18 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 0.71
+ * @uses $wpdb
+ *
+ * @param unknown_type $prefix
+ * @param unknown_type $display
+ * @return unknown
+ */
 function single_post_title($prefix = '', $display = true) {
 	global $wpdb;
 	$p = get_query_var('p');
@@ -298,7 +427,17 @@ function single_post_title($prefix = '', $display = true) {
 	}
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 0.71
+ *
+ * @param unknown_type $prefix
+ * @param unknown_type $display
+ * @return unknown
+ */
 function single_cat_title($prefix = '', $display = true ) {
 	$cat = intval( get_query_var('cat') );
 	if ( !empty($cat) && !(strtoupper($cat) == 'ALL') ) {
@@ -314,7 +453,17 @@ function single_cat_title($prefix = '', $display = true ) {
 	}
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 2.3.0
+ *
+ * @param unknown_type $prefix
+ * @param unknown_type $display
+ * @return unknown
+ */
 function single_tag_title($prefix = '', $display = true ) {
 	if ( !is_tag() )
 		return;
@@ -335,7 +484,17 @@ function single_tag_title($prefix = '', $display = true ) {
 	}
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 0.71
+ *
+ * @param unknown_type $prefix
+ * @param unknown_type $display
+ * @return unknown
+ */
 function single_month_title($prefix = '', $display = true ) {
 	global $wp_locale;
 
@@ -361,8 +520,22 @@ function single_month_title($prefix = '', $display = true ) {
 	echo $result;
 }
 
-
-/* link navigation hack by Orien http://icecode.com/ */
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 1.0.0
+ * @author Orien
+ * @link http://icecode.com/ link navigation hack by Orien
+ *
+ * @param unknown_type $url
+ * @param unknown_type $text
+ * @param unknown_type $format
+ * @param unknown_type $before
+ * @param unknown_type $after
+ * @return unknown
+ */
 function get_archives_link($url, $text, $format = 'html', $before = '', $after = '') {
 	$text = wptexturize($text);
 	$title_text = attribute_escape($text);
@@ -382,7 +555,15 @@ function get_archives_link($url, $text, $format = 'html', $before = '', $after =
 	return $link_html;
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 1.2.0
+ *
+ * @param unknown_type $args
+ */
 function wp_get_archives($args = '') {
 	global $wpdb, $wp_locale;
 
@@ -548,14 +729,31 @@ function wp_get_archives($args = '') {
 	}
 }
 
-
-// Used in get_calendar
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 1.5.0
+ * @usedby get_calendar()
+ *
+ * @param int $num Number of day.
+ * @return int
+ */
 function calendar_week_mod($num) {
 	$base = 7;
 	return ($num - $base*floor($num/$base));
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 1.0.0
+ *
+ * @param unknown_type $initial
+ */
 function get_calendar($initial = true) {
 	global $wpdb, $m, $monthnum, $year, $wp_locale, $posts;
 
@@ -748,6 +946,12 @@ function get_calendar($initial = true) {
 	wp_cache_set( 'get_calendar', $cache, 'calendar' );
 }
 
+/**
+ * Purge the cached results of get_calendar.
+ * 
+ * @see get_calendar
+ * @since 2.1.0
+ */
 function delete_get_calendar_cache() {
 	wp_cache_delete( 'get_calendar', 'calendar' );
 }
@@ -757,7 +961,16 @@ add_action( 'update_option_start_of_week', 'delete_get_calendar_cache' );
 add_action( 'update_option_gmt_offset', 'delete_get_calendar_cache' );
 add_action( 'update_option_start_of_week', 'delete_get_calendar_cache' );
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 1.0.1
+ * @uses $allowedtags
+ *
+ * @return unknown
+ */
 function allowed_tags() {
 	global $allowedtags;
 	$allowed = '';
@@ -773,17 +986,32 @@ function allowed_tags() {
 	return htmlentities($allowed);
 }
 
-
 /***** Date/Time tags *****/
 
-
+/**
+ * Outputs the date in iso8601 format for xml files.
+ *
+ * @since 1.0.0
+ */
 function the_date_xml() {
 	global $post;
 	echo mysql2date('Y-m-d', $post->post_date);
-	//echo ""+$post->post_date;
 }
 
-
+/**
+ * Display or Retrieve the date the post was written.
+ *
+ * Will only output the date if the current post's date is different from the
+ * previous one output.
+ *
+ * @since 0.71
+ *
+ * @param string $d Optional. PHP date format defaults to the date_format option if not specified.
+ * @param string $before Optional. Output before the date.
+ * @param string $after Optional. Output after the date.
+ * @param bool $echo Optional, default is display. Whether to echo the date or return it.
+ * @return string|null Null if displaying, string if retrieving.
+ */
 function the_date($d='', $before='', $after='', $echo = true) {
 	global $post, $day, $previousday;
 	$the_date = '';
@@ -803,12 +1031,26 @@ function the_date($d='', $before='', $after='', $echo = true) {
 		return $the_date;
 }
 
-
+/**
+ * Display the date on which the post was last modified.
+ *
+ * @since 2.1.0
+ *
+ * @param string $d Optional. PHP date format.
+ * @return string
+ */
 function the_modified_date($d = '') {
 	echo apply_filters('the_modified_date', get_the_modified_date($d), $d);
 }
 
-
+/**
+ * Retrieve the date on which the post was last modified.
+ *
+ * @since 2.1.0
+ *
+ * @param string $d Optional. PHP date format. Defaults to the "date_format" option
+ * @return string
+ */
 function get_the_modified_date($d = '') {
 	if ( '' == $d )
 		$the_time = get_post_modified_time(get_option('date_format'));
@@ -817,12 +1059,25 @@ function get_the_modified_date($d = '') {
 	return apply_filters('get_the_modified_date', $the_time, $d);
 }
 
-
+/**
+ * Display the time at which the post was written.
+ *
+ * @since 0.71
+ *
+ * @param string $d Either 'G', 'U', or php date format.
+ */
 function the_time( $d = '' ) {
 	echo apply_filters('the_time', get_the_time( $d ), $d);
 }
 
-
+/**
+ * Retrieve the time at which the post was written.
+ *
+ * @since 1.5.0
+ *
+ * @param string $d Either 'G', 'U', or php date format defaults to the value specified in the time_format option.
+ * @return string
+ */
 function get_the_time( $d = '' ) {
 	if ( '' == $d )
 		$the_time = get_post_time(get_option('time_format'));
@@ -831,7 +1086,15 @@ function get_the_time( $d = '' ) {
 	return apply_filters('get_the_time', $the_time, $d);
 }
 
-
+/**
+ * Retrieve the time at which the post was written.
+ *
+ * @since 2.0.0
+ *
+ * @param string $d Either 'G', 'U', or php date format.
+ * @param bool $gmt Whether of not to return the gmt time.
+ * @return string
+ */
 function get_post_time( $d = 'U', $gmt = false ) { // returns timestamp
 	global $post;
 	if ( $gmt )
@@ -843,12 +1106,25 @@ function get_post_time( $d = 'U', $gmt = false ) { // returns timestamp
 	return apply_filters('get_post_time', $time, $d, $gmt);
 }
 
-
+/**
+ * Display the time at which the post was last modified.
+ *
+ * @since 2.0.0
+ *
+ * @param string $d Either 'G', 'U', or php date format defaults to the value specified in the time_format option.
+ */
 function the_modified_time($d = '') {
 	echo apply_filters('the_modified_time', get_the_modified_time($d), $d);
 }
 
-
+/**
+ * Retrieve the time at which the post was last modified.
+ *
+ * @since 2.0.0
+ *
+ * @param string $d Either 'G', 'U', or php date format defaults to the value specified in the time_format option.
+ * @return string
+ */
 function get_the_modified_time($d = '') {
 	if ( '' == $d )
 		$the_time = get_post_modified_time(get_option('time_format'));
@@ -857,8 +1133,16 @@ function get_the_modified_time($d = '') {
 	return apply_filters('get_the_modified_time', $the_time, $d);
 }
 
-
-function get_post_modified_time( $d = 'U', $gmt = false ) { // returns timestamp
+/**
+ * Retrieve the time at which the post was last modified.
+ *
+ * @since 2.0.0
+ *
+ * @param string $d Either 'G', 'U', or php date format.
+ * @param bool $gmt Whether of not to return the gmt time.
+ * @return string Returns timestamp
+ */
+function get_post_modified_time( $d = 'U', $gmt = false ) {
 	global $post;
 
 	if ( $gmt )
@@ -870,7 +1154,13 @@ function get_post_modified_time( $d = 'U', $gmt = false ) { // returns timestamp
 	return apply_filters('get_the_modified_time', $time, $d, $gmt);
 }
 
-
+/**
+ * Display the weekday on which the post was written.
+ *
+ * @since 0.71
+ * @uses $wp_locale
+ * @uses $post
+ */
 function the_weekday() {
 	global $wp_locale, $post;
 	$the_weekday = $wp_locale->get_weekday(mysql2date('w', $post->post_date));
@@ -878,7 +1168,17 @@ function the_weekday() {
 	echo $the_weekday;
 }
 
-
+/**
+ * Display the weekday on which the post was written.
+ *
+ * Will only output the weekday if the current post's weekday is different from
+ * the previous one output.
+ *
+ * @since 0.71
+ *
+ * @param string $before output before the date.
+ * @param string $after output after the date.
+  */
 function the_weekday_date($before='',$after='') {
 	global $wp_locale, $post, $day, $previousweekday;
 	$the_weekday_date = '';
@@ -892,29 +1192,70 @@ function the_weekday_date($before='',$after='') {
 	echo $the_weekday_date;
 }
 
+/**
+ * Fire the wp_head action
+ *
+ * @since 1.2.0
+ * @uses do_action() Calls 'wp_head' hook.
+ */
 function wp_head() {
 	do_action('wp_head');
 }
 
+/**
+ * Fire the wp_footer action
+ *
+ * @since 1.5.1
+ * @uses do_action() Calls 'wp_footer' hook.
+ */
 function wp_footer() {
 	do_action('wp_footer');
 }
 
+/**
+ * Display the link to the Really Simple Discovery service endpoint.
+ *
+ * @link http://archipelago.phrasewise.com/rsd
+ * @since 2.0.0
+ */
 function rsd_link() {
 	echo '<link rel="EditURI" type="application/rsd+xml" title="RSD" href="' . get_bloginfo('wpurl') . "/xmlrpc.php?rsd\" />\n";
 }
 
+/**
+ * Display the link to the Windows Live Writer manifest file.
+ *
+ * @link http://msdn.microsoft.com/en-us/library/bb463265.aspx
+ * @since 2.3.1
+ */
 function wlwmanifest_link() {
 	echo '<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="'
 		. get_bloginfo('wpurl') . '/wp-includes/wlwmanifest.xml" /> ' . "\n";
 }
 
+/**
+ * Display a noindex meta tag if required by the blog configuration.
+ *
+ * If a blog is marked as not being public then the noindex meta tag will be
+ * output to tell web robots not to index the page content.
+ *
+ * @since 2.1.0
+ */
 function noindex() {
 	// If the blog is not public, tell robots to go away.
 	if ( '0' == get_option('blog_public') )
 		echo "<meta name='robots' content='noindex,nofollow' />\n";
 }
 
+/**
+ * Determine if TinyMCE is available.
+ *
+ * Checks to see if the user has deleted the tinymce files to slim down there WordPress install.
+ *
+ * @since 2.1.0
+ *
+ * @return bool Whether of not TinyMCE exists.
+ */
 function rich_edit_exists() {
 	global $wp_rich_edit_exists;
 	if ( !isset($wp_rich_edit_exists) )
@@ -922,6 +1263,16 @@ function rich_edit_exists() {
 	return $wp_rich_edit_exists;
 }
 
+/**
+ * Whether or not the user should have a WYSIWIG editor.
+ *
+ * Checks that the user requires a WYSIWIG editor and that the editor is
+ * supported in the users browser.
+ *
+ * @since 2.0.0
+ *
+ * @return bool
+ */
 function user_can_richedit() {
 	global $wp_rich_edit, $pagenow;
 
@@ -939,6 +1290,16 @@ function user_can_richedit() {
 	return apply_filters('user_can_richedit', $wp_rich_edit);
 }
 
+/**
+ * Find out which editor should be displayed by default.
+ *
+ * Works out which of the two editors to display as the current editor for a
+ * user.
+ *
+ * @since 2.5.0
+ *
+ * @return string Either 'tinymce', or 'html', or 'test'
+ */
 function wp_default_editor() {
 	$r = user_can_richedit() ? 'tinymce' : 'html'; // defaults
 	if ( $user = wp_get_current_user() ) { // look for cookie
@@ -948,6 +1309,17 @@ function wp_default_editor() {
 	return apply_filters( 'wp_default_editor', $r ); // filter
 }
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 2.1.0
+ *
+ * @param unknown_type $content
+ * @param unknown_type $id
+ * @param unknown_type $prev_id
+ */
 function the_editor($content, $id = 'content', $prev_id = 'title', $media_buttons = true, $tab_index = 2) {
 	$rows = get_option('default_post_edit_rows');
 	if (($rows < 3) || ($rows > 100))
@@ -1014,14 +1386,40 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 	<?php
 }
 
+/**
+ * Retrieve the contents of the search WordPress query variable.
+ *
+ * @since 2.3.0
+ *
+ * @return string
+ */
 function get_search_query() {
 	return apply_filters( 'get_search_query', stripslashes( get_query_var( 's' ) ) );
 }
 
+/**
+ * Display the contents of the search query variable.
+ * 
+ * The search query string is passed through {@link attribute_escape()}
+ * to ensure that it is safe for placing in an html attribute.
+ *
+ * @uses attribute_escape
+ * @since 2.1.0
+ */
 function the_search_query() {
 	echo attribute_escape( apply_filters( 'the_search_query', get_search_query() ) );
 }
 
+/**
+ * Display the language attributes for the html tag.
+ *
+ * Builds up a set of html attributes containing the text direction and language
+ * information for the page.
+ *
+ * @since 2.1.0
+ *
+ * @param string $doctype The type of html document (xhtml|html).
+ */
 function language_attributes($doctype = 'html') {
 	$attributes = array();
 	$output = '';
@@ -1042,6 +1440,16 @@ function language_attributes($doctype = 'html') {
 	echo $output;
 }
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * {@internal Missing Long Description}}
+ *
+ * @since 2.1.0
+ *
+ * @param unknown_type $args
+ * @return unknown
+ */
 function paginate_links( $args = '' ) {
 	$defaults = array(
 		'base' => '%_%', // http://example.com/all_posts.php%_% : %_% is replaced by format (below)
@@ -1122,6 +1530,22 @@ function paginate_links( $args = '' ) {
 	return $r;
 }
 
+/**
+ * Registers an admin colour scheme css file.
+ *
+ * Allows a plugin to register a new admin colour scheme. For example:
+ * <code>
+ * wp_admin_css_color('classic', __('Classic'), admin_url("css/colors-classic.css"),
+ * array('#07273E', '#14568A', '#D54E21', '#2683AE'));
+ * </code>
+ *
+ * @since 2.5.0
+ *
+ * @param string $key The unique key for this theme.
+ * @param string $name The name of the theme.
+ * @param string $url The url of the css file containing the colour scheme.
+ * @param array @colors An array of CSS color definitions which are used to give the user a feel for the theme.
+ */
 function wp_admin_css_color($key, $name, $url, $colors = array()) {
 	global $_wp_admin_css_colors;
 
@@ -1132,13 +1556,14 @@ function wp_admin_css_color($key, $name, $url, $colors = array()) {
 }
 
 /**
- * wp_admin_css_uri() - Outputs the URL of a WordPress admin CSS file
+ * Display the URL of a WordPress admin CSS file.
  *
  * @see WP_Styles::_css_href and its style_loader_src filter.
  *
+ * @since 2.3.0
+ *
  * @param string $file file relative to wp-admin/ without its ".css" extension.
  */
-
 function wp_admin_css_uri( $file = 'wp-admin' ) {
 	if ( defined('WP_INSTALLING') ) {
 		$_file = "./$file.css";
@@ -1151,20 +1576,21 @@ function wp_admin_css_uri( $file = 'wp-admin' ) {
 }
 
 /**
- * wp_admin_css() - Enqueues or directly prints a stylesheet link to the specified CSS file.
+ * Enqueues or directly prints a stylesheet link to the specified CSS file.
  *
- * "Intelligently" decides to enqueue or to print the CSS file.
- * If the wp_print_styles action has *not* yet been called, the CSS file will be enqueued.
- * If the wp_print_styles action *has* been called, the CSS link will be printed.
- * Printing may be forced by passing TRUE as the $force_echo (second) parameter.
+ * "Intelligently" decides to enqueue or to print the CSS file. If the
+ * 'wp_print_styles' action has *not* yet been called, the CSS file will be
+ * enqueued. If the wp_print_styles action *has* been called, the CSS link will
+ * be printed. Printing may be forced by passing TRUE as the $force_echo
+ * (second) parameter.
  *
- * For backward compatibility with WordPress 2.3 calling method:
- * If the $file (first) parameter does not correspond to a registered CSS file, we assume $file is a
- * file relative to wp-admin/ without its ".css" extension.  A stylesheet link to that generated URL is printed.
+ * For backward compatibility with WordPress 2.3 calling method: If the $file
+ * (first) parameter does not correspond to a registered CSS file, we assume
+ * $file is a file relative to wp-admin/ without its ".css" extension. A
+ * stylesheet link to that generated URL is printed.
  *
  * @package WordPress
- * @since 2.3
- *
+ * @since 2.3.0
  * @uses $wp_styles WordPress Styles Object
  *
  * @param string $file Style handle name or file name (without ".css" extension) relative to wp-admin/
@@ -1193,10 +1619,13 @@ function wp_admin_css( $file = 'wp-admin', $force_echo = false ) {
 }
 
 /**
- * Enqueues the default ThickBox js and css.
- * If any of the settings need to be changed, this can be done with another js file
- * similar to media-upload.js and theme-preview.js. That file should require array('thickbox')
- * to ensure it is loaded after.
+ * Enqueues the default ThickBox js and css. 
+ * 
+ * If any of the settings need to be changed, this can be done with another js
+ * file similar to media-upload.js and theme-preview.js. That file should
+ * require array('thickbox') to ensure it is loaded after.
+ *
+ * @since 2.5.0
  */
 function add_thickbox() {
 	wp_enqueue_script( 'thickbox' );
@@ -1204,26 +1633,43 @@ function add_thickbox() {
 }
 
 /**
- * Outputs the XHTML generator that is generated on the wp_head hook.
+ * Display the XHTML generator that is generated on the wp_head hook.
+ *
+ * @since 2.5.0
  */
-function wp_generator()
-{
+function wp_generator() {
 	the_generator( apply_filters( 'wp_generator_type', 'xhtml' ) );
 }
 
 /**
- * Outputs the generator XML or Comment for RSS, ATOM, etc.
- * @param {String} $type The type of generator to return.
+ * Display the generator XML or Comment for RSS, ATOM, etc.
+ *
+ * Returns the correct generator type for the requested output format. Allows
+ * for a plugin to filter generators overall the the_generator filter.
+ *
+ * @since 2.5.0
+ * @uses apply_filters() Calls 'the_generator' hook.
+ *
+ * @param string $type The type of generator to output - (html|xhtml|atom|rss2|rdf|comment|export).
  */
-function the_generator ( $type ) {
-	echo apply_filters('the_generator',get_the_generator($type),$type) . "\n";
+function the_generator( $type ) {
+	echo apply_filters('the_generator', get_the_generator($type), $type) . "\n";
 }
 
 /**
  * Creates the generator XML or Comment for RSS, ATOM, etc.
- * @param {String} $type The type of generator to return.
+ *
+ * Returns the correct generator type for the requested output format. Allows
+ * for a plugin to filter generators on an individual basis using the
+ * 'get_the_generator_{$type}' filter.
+ *
+ * @since 2.5.0
+ * @uses apply_filters() Calls 'get_the_generator_$type' hook.
+ *
+ * @param string $type The type of generator to return - (html|xhtml|atom|rss2|rdf|comment|export).
+ * @return string The HTML content for the generator.
  */
-function get_the_generator ( $type ) {
+function get_the_generator( $type ) {
 	switch ($type) {
 		case 'html':
 			$gen = '<meta name="generator" content="WordPress ' . get_bloginfo( 'version' ) . '">' . "\n";
@@ -1249,4 +1695,5 @@ function get_the_generator ( $type ) {
 	}
 	return apply_filters( "get_the_generator_{$type}", $gen, $type );
 }
+
 ?>

@@ -73,9 +73,10 @@ if ( is_singular() ) {
 	$post_mime_type_label = _c('Media|manage media header');
 	if ( isset($_GET['post_mime_type']) && in_array( $_GET['post_mime_type'], array_keys($post_mime_types) ) )
         $post_mime_type_label = $post_mime_types[$_GET['post_mime_type']][1];
-	if ( $post_listing_pageable && !is_archive() && !is_search() )
-		$h2_noun = is_paged() ? sprintf(__( 'Previous %s' ), $post_mime_type_label) : sprintf(__('Latest %s'), $post_mime_type_label);
-	else
+   	//TODO: Unreachable code: $post_listing_pageable is undefined, Similar code in edit.php
+	//if ( $post_listing_pageable && !is_archive() && !is_search() ) 
+	//	$h2_noun = is_paged() ? sprintf(__( 'Previous %s' ), $post_mime_type_label) : sprintf(__('Latest %s'), $post_mime_type_label);
+	//else
 		$h2_noun = $post_mime_type_label;
 	// Use $_GET instead of is_ since they can override each other
 	$h2_author = '';
@@ -138,9 +139,9 @@ if (isset($_GET['message'])) : ?>
 endif;
 ?>
 
-<p id="post-search">
-	<label class="hidden" for="post-search-input"><?php _e( 'Search Media' ); ?>:</label>
-	<input type="text" id="post-search-input" name="s" value="<?php the_search_query(); ?>" />
+<p id="media-search" class="search-box" >
+	<label class="hidden" for="media-search-input"><?php _e( 'Search Media' ); ?></label>
+	<input type="text" id="media-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Media' ); ?>" class="button" />
 </p>
 
@@ -257,7 +258,7 @@ if ( 1 == count($posts) && is_singular() ) :
 </table>
 
 <?php
-
+wp_comment_reply();
 endif; // comments
 endif; // posts;
 
@@ -266,6 +267,6 @@ endif; // posts;
 </div>
 
 <?php 
-wp_comment_reply();
+
 include('admin-footer.php');
 ?>

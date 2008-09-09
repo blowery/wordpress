@@ -1,6 +1,6 @@
 <?php
 /**
- * Define Gears manifest for Google Gears storage.
+ * Defines the Gears manifest file for Google Gears offline storage.
  *
  * @package WordPress
  * @subpackage Administration
@@ -11,80 +11,67 @@ define( 'ABSPATH', dirname(dirname(__FILE__)) );
 define( 'WPINC', '/wp-includes' );
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function __() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function add_filter() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function attribute_escape() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function apply_filters() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function get_option() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function is_lighttpd_before_150() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function add_action() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function do_action_ref_array() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function get_bloginfo() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function is_admin() {return true;}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function site_url() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function admin_url() {}
 
 /**
- * @package WordPress
- * @subpackage Dummy
+ * @ignore
  */
 function wp_guess_url() {}
 
@@ -208,7 +195,6 @@ header( 'Content-Type: application/x-javascript; charset=UTF-8' );
 { "url" : "../wp-includes/js/tinymce/plugins/fullscreen/fullscreen.htm?ver=311b" },
 { "url" : "../wp-includes/js/tinymce/plugins/inlinepopups/template.htm?ver=311b" },
 { "url" : "../wp-includes/js/tinymce/plugins/wpeditimage/editimage.html?ver=311f" },
-{ "url" : "../wp-includes/js/tinymce/wp-mce-help.php?ver=311b" },
 
 { "url" : "../wp-includes/js/tinymce/themes/advanced/skins/wp_theme/ui.css?ver=311b" },
 { "url" : "../wp-includes/js/tinymce/themes/advanced/skins/wp_theme/content.css?ver=311b" },
@@ -276,6 +262,5 @@ header( 'Content-Type: application/x-javascript; charset=UTF-8' );
 { "url" : "../wp-includes/images/crystal/spreadsheet.png" },
 { "url" : "../wp-includes/images/rss.png" },
 { "url" : "../wp-includes/js/thickbox/loadingAnimation.gif" },
-{ "url" : "../wp-includes/js/thickbox/tb-close.png" },
-{ "url" : "../wp-includes/js/swfupload/swfupload_f9.swf" }
+{ "url" : "../wp-includes/js/thickbox/tb-close.png" }
 ]}
