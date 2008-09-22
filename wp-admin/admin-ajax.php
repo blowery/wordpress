@@ -12,6 +12,7 @@
  * @since unknown
  */
 define('DOING_AJAX', true);
+define('WP_ADMIN', true);
 
 require_once('../wp-load.php');
 require_once('includes/admin.php');
@@ -703,6 +704,18 @@ case 'closed-postboxes' :
 	if ( is_array($hidden) )
 		update_usermeta($current_user->ID, 'meta-box-hidden_'.$page, $hidden);
 break;
+case 'hidden-columns' :
+	check_ajax_referer( 'hiddencolumns', 'hiddencolumnsnonce' );
+	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
+	$hidden = explode( ',', $_POST['hidden'] );
+	$page = isset( $_POST['page'] )? $_POST['page'] : '';
+	if ( !preg_match( '/^[a-z-]+$/', $page ) ) {
+		die(-1);
+	}
+	$current_user = wp_get_current_user();
+	if ( is_array($hidden) )
+		update_usermeta($current_user->ID, "manage-$page-columns-hidden", $hidden);
+break;
 case 'get-permalink':
 	check_ajax_referer( 'getpermalink', 'getpermalinknonce' );
 	$post_id = isset($_POST['post_id'])? intval($_POST['post_id']) : 0;
@@ -715,10 +728,93 @@ case 'sample-permalink':
 	$slug = isset($_POST['new_slug'])? $_POST['new_slug'] : '';
 	die(get_sample_permalink_html($post_id, $title, $slug));
 break;
+case 'inline-save':
+	check_ajax_referer( 'inlineeditnonce', '_inline_edit' );
+	
+	if ( ! isset($_POST['post_ID']) )
+		exit;
+	
+	inline_save_row( $_POST );
+	
+	$post = array();
+	if ( 'page' == $_POST['post_type'] ) {
+		$post[] = get_post($_POST['post_ID']);
+		page_rows($post);
+	} elseif ( 'post' == $_POST['post_type'] ) {
+		$mode = $_POST['post_view'];
+		$post[] = get_post($_POST['post_ID']);
+		post_rows($post);
+	}
+	die();
+	break;
 case 'meta-box-order':
 	check_ajax_referer( 'meta-box-order' );
 	update_user_option( $GLOBALS['current_user']->ID, "meta-box-order_$_POST[page]", $_POST['order'] );
 	die('1');
+	break;
+case 'find_posts':
+	check_ajax_referer( 'find-posts' );
+
+	if ( empty($_POST['ps']) )
+		exit;
+
+	$what = isset($_POST['pages']) ? 'page' : 'post';
+	$s = stripslashes($_POST['ps']);
+	preg_match_all('/".*?("|$)|((?<=[\\s",+])|^)[^\\s",+]+/', $s, $matches);
+	$search_terms = array_map(create_function('$a', 'return trim($a, "\\"\'\\n\\r ");'), $matches[0]);
+
+	$searchand = $search = '';
+	foreach( (array) $search_terms as $term) {
+		$term = addslashes_gpc($term);
+		$search .= "{$searchand}(($wpdb->posts.post_title LIKE '%{$term}%') OR ($wpdb->posts.post_content LIKE '%{$term}%'))";
+		$searchand = ' AND ';
+	}
+	$term = $wpdb->escape($s);
+	if ( count($search_terms) > 1 && $search_terms[0] != $s )
+		$search .= " OR ($wpdb->posts.post_title LIKE '%{$term}%') OR ($wpdb->posts.post_content LIKE '%{$term}%')";
+
+	$posts = $wpdb->get_results( "SELECT ID, post_title, post_status, post_date FROM $wpdb->posts WHERE post_type = '$what' AND $search ORDER BY post_date_gmt DESC LIMIT 50" );
+
+	if ( ! $posts )
+		exit( __('No posts found.') );
+
+	$html = '<table class="widefat"><thead><tr><th class="found-radio"><br /></th><th>'.__('Title').'</th><th>'.__('Time').'</th><th>'.__('Status').'</th></tr></thead><tbody>';
+	foreach ( $posts as $post ) {
+
+		switch ( $post->post_status ) {
+			case 'publish' :
+			case 'private' :
+				$stat = __('Published');
+				break;
+			case 'future' :
+				$stat = __('Scheduled');
+				break;
+			case 'pending' :
+				$stat = __('Pending Review');
+				break;
+			case 'draft' :
+				$stat = __('Unpublished');
+				break;
+		}
+		
+		if ( '0000-00-00 00:00:00' == $post->post_date ) {
+			$time = '';
+		} else {
+			$time = mysql2date(__('Y/m/d'), $post->post_date);
+		}
+
+		$html .= '<tr class="found-posts"><td class="found-radio"><input type="radio" id="found-'.$post->ID.'" name="found_post_id" value="'.$post->ID.'"></td>';
+		$html .= '<td><label for="found-'.$post->ID.'">'.wp_specialchars($post->post_title, true).'</label></td><td>'.wp_specialchars($time, true).'</td><td>'.wp_specialchars($stat, true).'</td></tr>'."\n\n";
+	}
+	$html .= '</tbody></table>';
+
+	$x = new WP_Ajax_Response();
+	$x->add( array(
+		'what' => $what,
+		'data' => $html
+	));
+	$x->send();
+
 	break;
 default :
 	do_action( 'wp_ajax_' . $_POST['action'] );

@@ -531,7 +531,7 @@ function get_edit_comment_link( $comment_id = 0 ) {
 	return apply_filters( 'get_edit_comment_link', $location );
 }
 
-function edit_comment_link( $link = 'Edit This', $before = '', $after = '' ) {
+function edit_comment_link( $link = 'Edit This', $before = '', $after = '', $echo = true ) {
 	global $comment, $post;
 
 	if ( $post->post_type == 'attachment' ) {
@@ -544,7 +544,11 @@ function edit_comment_link( $link = 'Edit This', $before = '', $after = '' ) {
 	}
 
 	$link = '<a href="' . get_edit_comment_link( $comment->comment_ID ) . '" title="' . __( 'Edit comment' ) . '">' . $link . '</a>';
-	echo $before . apply_filters( 'edit_comment_link', $link, $comment->comment_ID ) . $after;
+	$link = $before . apply_filters( 'edit_comment_link', $link, $comment->comment_ID ) . $after;
+	if ( $echo )
+		echo $link;
+	else
+		return $link;
 }
 
 function get_edit_bookmark_link( $link = 0 ) {
@@ -595,7 +599,7 @@ function get_adjacent_post($in_same_cat = false, $excluded_categories = '', $pre
 
 		if ( $in_same_cat ) {
 			$cat_array = wp_get_object_terms($post->ID, 'category', 'fields=ids');
-			$join .= " AND tt.taxonomy = 'category' AND tt.term_id IN (" . implode($cat_array, ',') . ')';
+			$join .= " AND tt.taxonomy = 'category' AND tt.term_id IN (" . implode(',', $cat_array) . ")";
 		}
 
 		$posts_in_ex_cats_sql = "AND tt.taxonomy = 'category'";
@@ -646,8 +650,11 @@ function adjacent_post_link($format, $link, $in_same_cat = false, $excluded_cate
 		$title = $previous ? __('Previous Post') : __('Next Post');
 
 	$title = apply_filters('the_title', $title, $post);
+	$date = mysql2date(get_option('date_format'), $post->post_date);
+	
 	$string = '<a href="'.get_permalink($post).'">';
 	$link = str_replace('%title', $title, $link);
+	$link = str_replace('%date', $date, $link);
 	$link = $string . $link . '</a>';
 
 	$format = str_replace('%link', $link, $format);

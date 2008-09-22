@@ -57,40 +57,79 @@ $user_ID = (int) $user_ID;
 <?php
 function page_submit_meta_box($post) {
 	global $action;
+
+	$can_publish = current_user_can('publish_pages');
 ?>
 <div class="submitbox" id="submitpage">
 
 <div class="inside-submitbox">
-<p><strong><label for='post_status'><?php _e('Publish Status') ?></label></strong></p>
-<p>
-<select name='post_status' tabindex='4' id='post_status'>
-<?php // Show publish in dropdown if user can publish or if they can re-publish this page ('edit_published_pages')
-// 'publish' option will be selected for published AND private posts (checkbox overrides dropdown)
-if ( current_user_can('publish_pages') OR ( $post->post_status == 'publish' AND current_user_can('edit_page', $post->ID) ) ) :
+
+<div class="insidebox"><label for='post_status'><?php _e('This page is') ?></label>
+<strong><span id="post-status-display">
+<?php
+switch ( $post->post_status ) {
+	case 'publish':
+	case 'private':
+		_e('Published');
+		break;
+	case 'future':
+		_e('Scheduled');
+		break;
+	case 'pending':
+		_e('Pending Review');
+		break;
+	case 'draft':
+		_e('Unpublished');
+		break;
+}
 ?>
+</span></strong>
+<?php if ( 'publish' == $post->post_status || 'private' == $post->post_status ) { ?>
+<a href="#edit_post_status" class="edit-post-status hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
+
+<div id="post-status-select" class="hide-if-js">
+<input type="hidden" name="hidden_post_status" id="hidden_post_status" value="<?php echo $post->post_status; ?>" />
+<?php _e('Change page status'); ?><br />
+<select name='post_status' id='post_status' tabindex='4'>
+<?php
+// only show the publish menu item if they are allowed to publish posts or they are allowed to edit this post (accounts for 'edit_published_posts' capability)
+if ( $can_publish OR ( $post->post_status == 'publish' AND current_user_can('edit_page', $post->ID) ) ) : ?>
 <option<?php selected( $post->post_status, 'publish' ); selected( $post->post_status, 'private' );?> value='publish'><?php _e('Published') ?></option>
-<?php endif; ?>
 <?php if ( 'future' == $post->post_status ) : ?>
-<option<?php selected( $post->post_status, 'future' ); ?> value='future'><?php _e('Pending') ?></option>
+<option<?php selected( $post->post_status, 'future' ); ?> value='future'><?php _e('Scheduled') ?></option>
+<?php endif; ?>
 <?php endif; ?>
 <option<?php selected( $post->post_status, 'pending' ); ?> value='pending'><?php _e('Pending Review') ?></option>
 <option<?php selected( $post->post_status, 'draft' ); ?> value='draft'><?php _e('Unpublished') ?></option>
 </select>
-</p>
-<?php if ( current_user_can( 'publish_posts' ) ) : ?>
-<p><label for="post_status_private" class="selectit"><input id="post_status_private" name="post_status" type="checkbox" value="private" <?php checked($post->post_status, 'private'); ?> tabindex='4' /> <?php _e('Keep this page private') ?></label></p>
-<?php endif; ?>
+<a href="#post_status" class="save-post-status hide-if-no-js button"><?php _e('OK'); ?></a>
+<a href="#post_status" class="cancel-post-status hide-if-no-js"><?php _e('Cancel'); ?></a>
+</div>
+</div>
+
+<?php } else { ?>
+</div>
+
+<?php if ( $can_publish && 'pending' != $post->post_status ) { ?>
+<div  class="insidebox"><input name="pending" type="submit" class="button" id="pending" tabindex="6" accesskey="r" value="<?php _e('Submit for Review') ?>" /></div>
+<?php } ?>
+
+<?php } ?>
+
+<?php if ( ('edit' == $action) && current_user_can('delete_page', $post->ID) ) { ?>
+	<div class="insidebox" id="deletebutton"><a class="submitdelete" href="<?php echo wp_nonce_url("page.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this page '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )); ?>') ) {return true;}return false;"><?php _e('Delete&nbsp;page'); ?></a></div>
+<?php } ?>
 
 <?php
 if ( 0 != $post->ID ) {
 	if ( 'future' == $post->post_status ) { // scheduled for publishing at a future date
-		$stamp = __('Scheduled for:<br />%1$s at %2$s');
+		$stamp = __('Scheduled for: %1$s at %2$s');
 	} else if ( 'publish' == $post->post_status ) { // already published
-		$stamp = __('Published on:<br />%1$s at %2$s');
+		$stamp = __('Published on: %1$s at %2$s');
 	} else if ( '0000-00-00 00:00:00' == $post->post_date ) { // draft, 1 or more saves, no date specified
 		$stamp = __('Publish immediately');
 	} else { // draft, 1 or more saves, date specified
-		$stamp = __('Publish on:<br />%1$s at %2$s');
+		$stamp = __('Publish on: %1$s at %2$s');
 	}
 	$date = mysql2date(get_option('date_format'), $post->post_date);
 	$time = mysql2date(get_option('time_format'), $post->post_date);
@@ -100,47 +139,43 @@ if ( 0 != $post->ID ) {
 	$time = mysql2date(get_option('time_format'), current_time('mysql'));
 }
 ?>
-<p class="curtime"><?php printf($stamp, $date, $time); ?>
+<?php if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
+<div class="insidebox curtime"><span id="timestamp"><?php printf($stamp, $date, $time); ?></span>
 &nbsp;<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a></p>
 
-<div id='timestampdiv' class='hide-if-js'><?php touch_time(($action == 'edit'),1,4); ?></div>
+<div id="timestampdiv" class="hide-if-js"><?php touch_time(($action == 'edit'),1,4); ?></div></div>
+<?php endif; ?>
 
 </div>
 
 <p class="submit">
 <?php do_action('page_submitbox_start'); ?>
-<input type="submit" name="save" class="button button-highlighted" value="<?php _e('Save'); ?>" tabindex="4" />
-<?php
-if ( !in_array( $post->post_status, array('publish', 'future') ) || 0 == $post->ID ) {
+<?php if ( 'publish' == $post->post_status || 'private' == $post->post_status )
+	$savebtn = attribute_escape( __('Save') );
+else
+	$savebtn = attribute_escape( __('Save Draft') );
 ?>
+<input type="submit" name="save" id="save-post" value="<?php echo $savebtn; ?>" tabindex="4" class="button button-highlighted" />
+
+<?php if ( 'publish' == $post->post_status ) { ?>
+<a class="preview button" href="<?php echo clean_url(get_permalink($post->ID)); ?>" target="_blank" tabindex="4"><?php _e('View this Page'); ?></a>
+<?php } else { ?>
+<a class="preview button" href="<?php echo clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>" target="_blank" tabindex="4"><?php _e('Preview'); ?></a>
+<?php } ?>
+
+<?php
+if ( !in_array( $post->post_status, array('publish', 'future') ) || 0 == $post->ID ) { ?>
 <?php if ( current_user_can('publish_pages') ) : ?>
 	<input name="publish" type="submit" class="button" id="publish" tabindex="5" accesskey="p" value="<?php _e('Publish') ?>" />
 <?php else : ?>
 	<input name="publish" type="submit" class="button" id="publish" tabindex="5" accesskey="p" value="<?php _e('Submit for Review') ?>" />
 <?php endif; ?>
-<?php
-}
-
-if ( ('edit' == $action) && current_user_can('delete_page', $post->ID) )
-	echo "<a class='submitdelete' href='" . wp_nonce_url("page.php?action=delete&amp;post=$post->ID", 'delete-page_' . $post->ID) . "' onclick=\"if ( confirm('" . js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this page '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )) . "') ) { return true;}return false;\">" . __('Delete&nbsp;page') . "</a>";
-?>
-<br class="clear" />
-
-<!-- moved under the editor
-<?php if ( 0 != $post->ID ) : ?>
-<?php if ( $last_id = get_post_meta($post->ID, '_edit_last', true) ) {
-	$last_user = get_userdata($last_id);
-	printf(__('Last edited by %1$s on %2$s at %3$s'), wp_specialchars( $last_user->display_name ), mysql2date(get_option('date_format'), $post->post_modified), mysql2date(get_option('time_format'), $post->post_modified));
-} else {
-	printf(__('Last edited on %1$s at %2$s'), mysql2date(get_option('date_format'), $post->post_modified), mysql2date(get_option('time_format'), $post->post_modified));
-}
-?>
-<br class="clear" />
-<?php endif; ?>
--->
+<?php } ?>
 
 </p>
+<div class="clear"></div>
 </div>
+
 <?php
 }
 add_meta_box('pagesubmitdiv', __('Publish'), 'page_submit_meta_box', 'page', 'side', 'core');
@@ -179,11 +214,13 @@ add_meta_box('pagecommentstatusdiv', __('Comments &amp; Pings'), 'page_comments_
 
 function page_password_meta_box($post){
 ?>
-<p><label class="hidden" for="post_password"><?php _e('Password Protect This Page') ?></label><input name="post_password" type="text" size="25" id="post_password" value="<?php echo ( isset( $post->post_password ) ? attribute_escape( $post->post_password ) : '' ); ?>" /></p>
+<p><label for="post_status_private" class="selectit"><input id="post_status_private" name="post_status" type="checkbox" value="private" <?php checked($post->post_status, 'private'); ?> tabindex='4' /> <?php _e('Keep this page private') ?></label></p>
+<h4><?php _e( 'Page Password' ); ?></h4>
+<p><label class="hidden" for="post_password"><?php _e('Password Protect This Page') ?></label><input name="post_password" type="text" size="25" id="post_password" value="<?php the_post_password(); ?>" /></p>
 <p><?php _e('Setting a password will require people who visit your blog to enter the above password to view this page and its comments.'); ?></p>
 <?php
 }
-add_meta_box('pagepassworddiv', __('Password Protect This Page'), 'page_password_meta_box', 'page', 'normal', 'core');
+add_meta_box('pagepassworddiv', __('Privacy Options'), 'page_password_meta_box', 'page', 'normal', 'core');
 
 function page_slug_meta_box($post){
 ?>
@@ -249,20 +286,25 @@ endif;
 ?>
 
 <div class="wrap">
+
+<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
+<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
+
+<div id="edit-settings" class="hide-if-js hide-if-no-js">
+<div id="edit-settings-wrap">
+<h5><?php _e('Show on screen') ?></h5>
+<div class="metabox-prefs">
+<?php meta_box_prefs('page') ?>
+<br class="clear" />
+</div></div>
+</div>
+
 <h2><?php
 	if ( !isset($post_ID) || 0 == $post_ID )
 		printf( __( '<a href="%s">Pages</a> / Write New Page' ), 'edit-pages.php' );
 	else
 		printf( __( '<a href="%s">Pages</a> / Edit Page' ), 'edit-pages.php' );
 ?></h2>
-
-<div id="previewview">
-<?php if ( 'publish' == $post->post_status ) { ?>
-<a class="button" href="<?php echo clean_url(get_permalink($post->ID)); ?>" target="_blank"  tabindex="4"><?php _e('View this Page'); ?></a>
-<?php } elseif ( 'edit' == $action ) { ?>
-<a class="button" href="<?php echo clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>" target="_blank" tabindex="4"><?php _e('Preview this Page'); ?></a>
-<?php } ?>
-</div>
 
 <?php
 wp_nonce_field($nonce_action);
@@ -316,18 +358,6 @@ if ( current_user_can('publish_pages') OR ( $post->post_status == 'publish' AND 
 
 <div id="poststuff">
 
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Show Settings') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Settings') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php meta_box_prefs('page') ?>
-<br class="clear" />
-</div></div>
-</div>
-
 <div id="side-info-column" class="inner-sidebar">
 
 <?php
@@ -358,7 +388,7 @@ endif; ?>
 
 <div id="<?php echo user_can_richedit() ? 'postdivrich' : 'postdiv'; ?>" class="postarea">
 
-<div id="add-media-button"><a id="add-media-link" href="<?php echo clean_url( admin_url( 'media-upload.php?post_id=' . ( $post_ID ? $post_ID : $temp_ID ) . '&amp;type=image&amp;TB_iframe=true' ) ); ?>" class="thickbox button"><?php _e( 'Add Media' ); ?></a></div>
+<div id="add-media-button"><a id="add-media-link" href="<?php echo clean_url( admin_url( 'media-upload.php?post_id=' . ( $post_ID ? $post_ID : $temp_ID ) . '&amp;type=image&amp;TB_iframe=true' ) ); ?>" class="thickbox button"><?php _e( 'Insert Media' ); ?></a></div>
 
 <h3><?php _e('Page') ?></h3>
 <?php the_editor($post->post_content); ?>

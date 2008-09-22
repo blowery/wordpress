@@ -155,6 +155,7 @@ add_filter('pre_comment_content', 'wp_rel_nofollow', 15);
 add_filter('comment_email', 'antispambot');
 add_filter('option_tag_base', '_wp_filter_taxonomy_base');
 add_filter('option_category_base', '_wp_filter_taxonomy_base');
+add_filter( 'the_posts', '_close_comments_for_old_posts' );
 
 //Atom SSL support
 add_filter('atom_service_url','atom_service_url_filter');
@@ -165,6 +166,7 @@ add_action('wp_head', 'wlwmanifest_link');
 add_action('wp_head', 'locale_stylesheet');
 add_action('publish_future_post', 'check_and_publish_future_post', 10, 1);
 add_action('wp_head', 'noindex', 1);
+add_action('wp_head', 'wp_print_styles', 9);
 add_action('wp_head', 'wp_print_scripts');
 add_action('wp_head', 'wp_generator');
 if(!defined('DOING_CRON'))

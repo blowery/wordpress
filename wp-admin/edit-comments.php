@@ -69,6 +69,14 @@ $search_dirty = ( isset($_GET['s']) ) ? $_GET['s'] : '';
 $search = attribute_escape( $search_dirty );
 ?>
 
+<form class="search-form" action="" method="get">
+	<p id="comment-search" class="search-box">
+		<label class="hidden" for="comment-search-input"><?php _e( 'Search Comments' ); ?></label>
+		<input type="text" id="comment-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
+		<input type="submit" value="<?php _e( 'Search Comments' ); ?>" class="button" />
+	</p>
+</form>
+
 <?php
 if ( isset( $_GET['approved'] ) || isset( $_GET['deleted'] ) || isset( $_GET['spam'] ) ) {
 	$approved = isset( $_GET['approved'] ) ? (int) $_GET['approved'] : 0;
@@ -127,12 +135,6 @@ echo implode(' | </li>', $status_links) . '</li>';
 unset($status_links);
 ?>
 </ul>
-
-<p id="comment-search" class="search-box">
-	<label class="hidden" for="comment-search-input"><?php _e( 'Search Comments' ); ?></label>
-	<input type="text" id="comment-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Comments' ); ?>" class="button" />
-</p>
 
 <input type="hidden" name="mode" value="<?php echo $mode; ?>" />
 <input type="hidden" name="comment_status" value="<?php echo $comment_status; ?>" />
@@ -194,7 +196,6 @@ if ( $page_links )
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" name="doaction" value="<?php _e('Apply'); ?>" class="button-secondary apply" />
-<?php do_action('manage_comments_nav', $comment_status); ?>
 <?php wp_nonce_field('bulk-comments'); ?>
 <?php if ( isset($_GET['apage']) ) { ?>
 	<input type="hidden" name="apage" value="<?php echo absint( $_GET['apage'] ); ?>" />
@@ -204,6 +205,7 @@ if ( 'spam' == $comment_status ) {
 	wp_nonce_field('bulk-spam-delete'); ?>
 <input type="submit" name="delete_all_spam" value="<?php _e('Delete All Spam'); ?>" class="button-secondary apply" />
 <?php } ?>
+<?php do_action('manage_comments_nav', $comment_status); ?>
 </div>
 
 <br class="clear" />

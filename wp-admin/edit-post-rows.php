@@ -8,25 +8,16 @@
 
 if ( ! defined('ABSPATH') ) die();
 ?>
-<table class="widefat">
+<table class="widefat post">
 	<thead>
 	<tr>
-
-<?php $posts_columns = wp_manage_posts_columns(); ?>
-<?php foreach($posts_columns as $post_column_key => $column_display_name) {
-	if ( 'cb' === $post_column_key )
-		$class = ' class="check-column"';
-	elseif ( 'comments' === $post_column_key )
-		$class = ' class="num"';
-	else
-		$class = '';
-?>
-	<th scope="col"<?php echo $class; ?>><?php echo $column_display_name; ?></th>
-<?php } ?>
-
+<?php print_column_headers('post'); ?>
 	</tr>
 	</thead>
 	<tbody>
+	  
+<?php inline_edit_row( 'post' ) ?>	  
+
 <?php
 if ( have_posts() ) {
 	post_rows();

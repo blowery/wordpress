@@ -141,14 +141,16 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'jquery-ui-resizable', '/wp-includes/js/jquery/ui.resizable.js', array('jquery-ui-core'), '1.5.2' );
 	$scripts->add( 'jquery-ui-dialog', '/wp-includes/js/jquery/ui.dialog.js', array('jquery-ui-resizable', 'jquery-ui-draggable'), '1.5.2' );
 
+	$scripts->add( 'comment-reply', '/wp-includes/js/comment-reply.js', false, '20080828');
+
 	if ( is_admin() ) {
 		$scripts->add( 'ajaxcat', '/wp-admin/js/cat.js', array( 'wp-lists' ), '20071101' );
 		$scripts->localize( 'ajaxcat', 'catL10n', array(
 			'add' => attribute_escape(__('Add')),
 			'how' => __('Separate multiple categories with commas.')
 		) );
-		$scripts->add( 'admin-categories', '/wp-admin/js/categories.js', array('wp-lists'), '20071031' );
-		$scripts->add( 'admin-tags', '/wp-admin/js/tags.js', array('wp-lists'), '20071031' );
+		$scripts->add( 'admin-categories', '/wp-admin/js/categories.js', array('wp-lists', 'columns'), '20071031' );
+		$scripts->add( 'admin-tags', '/wp-admin/js/tags.js', array('wp-lists', 'columns'), '20080918' );
 		$scripts->add( 'admin-custom-fields', '/wp-admin/js/custom-fields.js', array('wp-lists'), '20070823' );
 		$scripts->add( 'password-strength-meter', '/wp-admin/js/password-strength-meter.js', array('jquery'), '20080824' );
 		$scripts->localize( 'password-strength-meter', 'pwsL10n', array(
@@ -164,7 +166,7 @@ function wp_default_scripts( &$scripts ) {
 			'hotkeys_highlight_first' => isset($_GET['hotkeys_highlight_first']),
 			'hotkeys_highlight_last' => isset($_GET['hotkeys_highlight_last']),
 		) );
-		$scripts->add( 'admin-users', '/wp-admin/js/users.js', array('wp-lists'), '20070823' );
+		$scripts->add( 'admin-users', '/wp-admin/js/users.js', array('wp-lists', 'columns'), '20080918' );
 		$scripts->add( 'admin-forms', '/wp-admin/js/forms.js', array('jquery'), '20080729');
 		$scripts->add( 'xfn', '/wp-admin/js/xfn.js', false, '3517' );
 		$scripts->add( 'upload', '/wp-admin/js/upload.js', array('jquery'), '20070518' );
@@ -241,6 +243,11 @@ function wp_default_scripts( &$scripts ) {
 		));
 
 		$scripts->add( 'theme-preview', '/wp-admin/js/theme-preview.js', array( 'thickbox', 'jquery' ), '20080625' );
+		
+		$scripts->add( 'inline-edit', '/wp-admin/js/inline-edit.js', array( 'jquery', 'jquery-form', 'suggest' ), '20080920' );
+		$scripts->localize( 'inline-edit', 'inlineEditL10n', array(
+			'edit' => __('Double-click to edit')
+		) );
 
 		$scripts->add( 'plugin-install', '/wp-admin/js/plugin-install.js', array( 'thickbox', 'jquery' ), '20080803' );
 		$scripts->localize( 'plugin-install', 'plugininstallL10n', array(
@@ -254,6 +261,16 @@ function wp_default_scripts( &$scripts ) {
 			'url' => SITECOOKIEPATH,
 			'uid' => $userid,
 			'time' => time()
+		) );
+
+		$scripts->add( 'posts', '/wp-admin/js/posts.js', array('columns'), '20080910' );
+		$scripts->add( 'pages', '/wp-admin/js/pages.js', array('columns'), '20080910' );
+		$scripts->add( 'links', '/wp-admin/js/links.js', array('columns'), '20080913' );
+		$scripts->add( 'media', '/wp-admin/js/media.js', array('columns'), '20080915' );
+
+		$scripts->add( 'columns', '/wp-admin/js/columns.js', false, '20080910' );
+		$scripts->localize( 'columns', 'columnsL10n', array(
+			'requestFile' => admin_url('admin-ajax.php'),
 		) );
 	}
 }
@@ -301,8 +318,8 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'dashboard', '/wp-admin/css/dashboard.css' );
 	$styles->add( 'install', '/wp-admin/css/install.css', array(), '20080708' );
 	$styles->add( 'theme-editor', '/wp-admin/css/theme-editor.css' );
-	$styles->add( 'press-this', '/wp-admin/css/press-this.css', array(), '20080710' );
-	$styles->add( 'press-this-ie', '/wp-admin/css/press-this-ie.css', array(), '20080710' );
+	$styles->add( 'press-this', '/wp-admin/css/press-this.css', array(), '20080915' );
+	$styles->add( 'press-this-ie', '/wp-admin/css/press-this-ie.css', array(), '20080915' );
 	$styles->add_data( 'press-this-ie', 'conditional', 'gte IE 6' );
 	$styles->add( 'thickbox', '/wp-includes/js/thickbox/thickbox.css', array(), '20080613' );
 	$styles->add( 'login', '/wp-admin/css/login.css' );

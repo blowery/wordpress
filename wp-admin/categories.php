@@ -13,7 +13,7 @@ $title = __('Categories');
 
 wp_reset_vars(array('action', 'cat'));
 
-if ( $_GET['action'] == 'delete' && isset($_GET['delete']) )
+if ( isset( $_GET['action'] ) && $_GET['action'] == 'delete' && isset($_GET['delete']) )
 	$action = 'bulk-delete';
 
 switch($action) {
@@ -119,30 +119,47 @@ $messages[4] = __('Category not added.');
 $messages[5] = __('Category not updated.');
 ?>
 
-<?php if (isset($_GET['message'])) : ?>
-<div id="message" class="updated fade"><p><?php echo $messages[$_GET['message']]; ?></p></div>
+<form class="search-form" action="" method="get">
+	<p id="category-search" class="search-box">
+		<label class="hidden" for="category-search-input"><?php _e('Search Categories'); ?></label>
+		<input type="text" id="category-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
+		<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
+	</p>
+</form>
+
+<?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
+<div id="message" class="updated fade"><p><?php echo $messages[$msg]; ?></p></div>
 <?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('message'), $_SERVER['REQUEST_URI']);
 endif; ?>
 
 <div class="wrap">
-<form id="posts-filter" action="" method="get">
-	<h2><?php printf( current_user_can('manage_categories') ? __('Categories (<a href="%s">Add New</a>)') : __('Manage Tags'), '#addcat' ); ?></h2>
 
-<p id="category-search" class="search-box">
-	<label class="hidden" for="category-search-input"><?php _e('Search Categories'); ?></label>
-	<input type="text" id="category-search-input" class="search-input" name="s" value="<?php echo attribute_escape(stripslashes($_GET['s'])); ?>" />
-	<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
-</p>
+<form id="adv-settings" action="" method="get">
+<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
+<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
+
+<div id="edit-settings" class="hide-if-js hide-if-no-js">
+<div id="edit-settings-wrap">
+<h5><?php _e('Show on screen') ?></h5>
+<div class="metabox-prefs">
+<?php manage_columns_prefs('category') ?>
+<br class="clear" />
+</div></div>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+</div></form>
+
+	<h2><?php printf( current_user_can('manage_categories') ? __('Categories (<a href="%s">Add New</a>)') : __('Manage Tags'), '#addcat' ); ?></h2>
 
 <br class="clear" />
 
+<form id="posts-filter" action="" method="get">
 <div class="tablenav">
 
 <?php
-$pagenum = absint( $_GET['pagenum'] );
+$pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
 if ( empty($pagenum) )
 	$pagenum = 1;
-if( !$catsperpage || $catsperpage < 0 )
+if( ! isset( $catsperpage ) || $catsperpage < 0 )
 	$catsperpage = 20;
 
 $page_links = paginate_links( array(
@@ -173,10 +190,7 @@ if ( $page_links )
 <table class="widefat">
 	<thead>
 	<tr>
-		<th scope="col" class="check-column"><input type="checkbox" /></th>
-        <th scope="col"><?php _e('Name') ?></th>
-        <th scope="col"><?php _e('Description') ?></th>
-        <th scope="col" class="num"><?php _e('Posts') ?></th>
+<?php print_column_headers('category'); ?>
 	</tr>
 	</thead>
 	<tbody id="the-list" class="list:cat">
@@ -185,6 +199,7 @@ cat_rows(0, 0, 0, $pagenum, $catsperpage);
 ?>
 	</tbody>
 </table>
+
 </form>
 
 <div class="tablenav">

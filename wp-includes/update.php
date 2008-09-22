@@ -3,7 +3,7 @@
  * A simple set of functions to check our version 1.0 update service.
  *
  * @package WordPress
- * @since 2.3
+ * @since 2.3.0
  */
 
 /**
@@ -84,8 +84,7 @@ add_action( 'init', 'wp_version_check' );
  *
  * The WordPress version, PHP version, and Locale is sent along with a list of
  * all plugins installed. Checks against the WordPress server at
- * api.wordpress.org. Will only check if PHP has fsockopen enabled and WordPress
- * isn't installing.
+ * api.wordpress.org. Will only check if WordPress isn't installing.
  *
  * @package WordPress
  * @since 2.3.0
@@ -165,6 +164,84 @@ function wp_update_plugins() {
 	update_option( 'update_plugins', $new_option );
 }
 
+/**
+ * Check theme versions against the latest versions hosted on WordPress.org.
+ *
+ * A list of all themes installed in sent to WP. Checks against the 
+ * WordPress server at api.wordpress.org. Will only check if WordPress isn't
+ * installing.
+ *
+ * @package WordPress
+ * @since 2.7.0
+ * @uses $wp_version Used to notidy the WordPress version.
+ *
+ * @return mixed Returns null if update is unsupported. Returns false if check is too soon.
+ */
+function wp_update_themes( ) {
+	global $wp_version;
+
+	if( defined( 'WP_INSTALLING' ) )
+		return false;
+
+	if( !function_exists( 'get_themes' ) )
+		require_once( ABSPATH . 'wp-includes/theme.php' );
+
+	$installed_themes = get_themes( );
+	$current_theme = get_option( 'update_themes' );
+
+	$new_option = '';
+	$new_option->last_checked = time( );
+	$time_not_changed = isset( $current->last_checked ) && 43200 > ( time( ) - $current->last_checked );
+
+	if( $time_not_changed )
+		return false;
+
+	$themes = array( );
+	$themes['current_theme'] = $current_theme;
+	foreach( (array) $installed_themes as $theme_title => $theme ) {
+		$themes[$theme['Template']] = array( );
+
+		foreach( (array) $theme as $key => $value ) {
+			$themes[$theme['Template']][$key] = $value;
+		}
+	}
+
+	$options = array(
+		'method'		=> 'POST',
+		'timeout'		=> 3,
+		'body'			=> 'themes=' . urlencode( serialize( $themes ) )
+	);
+	$options['headers'] = array(
+		'Content-Type'		=> 'application/x-www-form-urlencoded; charset=' . get_option( 'blog_charset' ),
+		'Content-Length'	=> strlen( $options['body'] ),
+		'User-Agent'		=> 'WordPress/' . $wp_version . '; ' . get_bloginfo( 'url' )
+	);
+
+	$raw_response = wp_remote_request( 'http://api.wordpress.org/themes/update-check/1.0/', $options );
+
+	if( is_wp_error( $raw_response ) )
+		return false;
+
+	if( 200 != $raw_response['response']['code'] )
+		return false;
+
+	$response = unserialize( $raw_response['body'] );
+	if( $response )
+		$new_option->response = $response;
+
+	update_option( 'update_themes', $new_option );
+}
+
+/**
+ * Check the last time plugins were run before checking plugin versions.
+ *
+ * This might have been backported to WordPress 2.6.1 for performance reasons.
+ * This is used for the wp-admin to check only so often instead of every page
+ * load.
+ *
+ * @since 2.7.0
+ * @access private
+ */
 function _maybe_update_plugins() {
 	$current = get_option( 'update_plugins' );
 	if ( isset( $current->last_checked ) && 43200 > ( time() - $current->last_checked ) )
@@ -172,11 +249,35 @@ function _maybe_update_plugins() {
 	wp_update_plugins();
 }
 
+/**
+ * Check themes versions only after a duration of time.
+ *
+ * This is for performance reasons to make sure that on the theme version
+ * checker is not run on every page load.
+ *
+ * @since 2.7.0
+ * @access private
+ */
+function _maybe_update_themes( ) {
+	$current = get_option( 'update_themes' );
+	if( isset( $current->last_checked ) && 43200 > ( time( ) - $current->last_checked ) )
+		return;
+
+	wp_update_themes( );
+}
+
 add_action( 'load-plugins.php', 'wp_update_plugins' );
 add_action( 'admin_init', '_maybe_update_plugins' );
 add_action( 'wp_update_plugins', 'wp_update_plugins' );
 
+add_action( 'admin_init', '_maybe_update_themes' );
+add_action( 'wp_update_themes', 'wp_update_themes' );
+
 if ( !wp_next_scheduled('wp_update_plugins') )
 	wp_schedule_event(time(), 'twicedaily', 'wp_update_plugins');
+
+
+if ( !wp_next_scheduled('wp_update_themes') )
+	wp_schedule_event(time(), 'twicedaily', 'wp_update_themes');
 
 ?>

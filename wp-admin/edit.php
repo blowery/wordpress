@@ -10,7 +10,7 @@
 require_once('admin.php');
 
 // Handle bulk actions
-if ( !empty($_GET['action']) && $_GET['action'] != 'Actions' ) {
+if ( isset($_GET['action']) && $_GET['action'] != -1 && isset($_GET['doaction']) ) {
 	switch ( $_GET['action'] ) {
 		case 'delete':
 			if ( isset($_GET['post']) ) {
@@ -50,6 +50,8 @@ if ( !empty($_GET['action']) && $_GET['action'] != 'Actions' ) {
 $title = __('Posts');
 $parent_file = 'edit.php';
 wp_enqueue_script('admin-forms');
+wp_enqueue_script('inline-edit');
+wp_enqueue_script('posts');
 
 list($post_stati, $avail_post_stati) = wp_edit_posts_query();
 
@@ -69,9 +71,30 @@ else
 	$mode = attribute_escape($_GET['mode']);
 ?>
 
+<form class="search-form" action="" method="get">
+	<p id="post-search" class="search-box">
+		<label class="hidden" for="post-search-input"><?php _e( 'Search Posts' ); ?></label>
+		<input type="text" id="post-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
+		<input type="submit" value="<?php _e( 'Search Posts' ); ?>" class="button" />
+	</p>
+</form>
+
 <div class="wrap">
 
-<form id="posts-filter" action="" method="get">
+<form id="adv-settings" action="" method="get">
+<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
+<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
+
+<div id="edit-settings" class="hide-if-js hide-if-no-js">
+<div id="edit-settings-wrap">
+<h5><?php _e('Show on screen') ?></h5>
+<div class="metabox-prefs">
+<?php manage_columns_prefs('post') ?>
+<br class="clear" />
+</div></div>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+</div></form>
+
 <h2><?php
 if ( is_single() ) {
 	printf(__('Comments on %s'), apply_filters( "the_title", $post->post_title));
@@ -103,6 +126,7 @@ if ( is_single() ) {
 }
 ?></h2>
 
+<form id="posts-filter" action="" method="get">
 <ul class="subsubsub">
 <?php
 $status_links = array();
@@ -130,20 +154,13 @@ unset( $status_links );
 
 <?php if ( isset($_GET['post_status'] ) ) : ?>
 <input type="hidden" name="post_status" value="<?php echo attribute_escape($_GET['post_status']) ?>" />
-<?php
-endif;
+<?php endif;
 
 if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET['posted']; ?>
 <div id="message" class="updated fade"><p><strong><?php _e('Your post has been saved.'); ?></strong> <a href="<?php echo get_permalink( $_GET['posted'] ); ?>"><?php _e('View post'); ?></a> | <a href="<?php echo get_edit_post_link( $_GET['posted'] ); ?>"><?php _e('Edit post'); ?></a></p></div>
 <?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('posted'), $_SERVER['REQUEST_URI']);
 endif;
 ?>
-
-<p id="post-search" class="search-box">
-	<label class="hidden" for="post-search-input"><?php _e( 'Search Posts' ); ?></label>
-	<input type="text" id="post-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Posts' ); ?>" class="button" />
-</p>
 
 <input type="hidden" name="mode" value="<?php echo $mode; ?>" />
 
@@ -168,9 +185,9 @@ if ( $page_links )
 
 <div class="alignleft">
 <select name="action">
-<option value="" selected><?php _e('Actions'); ?></option>
-<option value="delete"><?php _e('Delete'); ?></option>
+<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" class="button-secondary action" />
 <?php wp_nonce_field('bulk-posts'); ?>

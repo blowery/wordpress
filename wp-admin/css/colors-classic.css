@@ -1,5 +1,6 @@
 
-#sidemenu-bg {
+#sidemenu-bg,
+.find-box-search {
 	background-color: #14568A;
 	border-color: #c6d9e9;
 }
@@ -12,7 +13,9 @@ a.page-numbers:hover {
 	border-color: #999;
 }
 
-body, .form-table .pre {
+body,
+.form-table .pre,
+.find-box-inside {
 	background-color: #fff;
 	color: #333;
 }
@@ -230,7 +233,8 @@ ul#widget-list li.widget-list-item h4.widget-title {
 	background-color: #a6d2e5 !important;
 }
 
-.submitbox #autosave .error, ul.view-switch li.current a {
+.submitbox #autosave .error, ul.view-switch li.current a,
+#side-info-column #category-tabs .ui-tabs-selected a {
 	color: #333;
 }
 
@@ -301,7 +305,9 @@ ul#widget-list li.widget-list-item h4.widget-title {
 	border-bottom-color: #ccc;
 }
 
-.widefat thead, .thead {
+.widefat thead,
+.thead,
+.find-box-head {
 	background-color: #464646;
 	color: #d7d7d7;
 }
@@ -324,7 +330,7 @@ h3.dashboard-widget-title small a:hover {
 	color: #5a5a5a;
 }
 
-#poststuff #edButtonPreview, #poststuff #edButtonHTML, #the-comment-list p.comment-author strong a, #media-upload a.del-link, #media-upload a.delete, a {
+#poststuff #edButtonPreview, #poststuff #edButtonHTML, #the-comment-list p.comment-author strong a, #media-upload a.del-link, #media-upload a.delete, .ui-sortable .postbox h3:hover span, a {
 	color: #2e7ca0;
 }
 
@@ -488,6 +494,10 @@ input.readonly {
 
 #poststuff .postbox {
 	background-color: #FFF;
+}
+
+.curtime #timestamp {
+	background-image: url(../images/date-button.gif);
 }
 
 #quicktags #ed_link {
@@ -780,10 +790,6 @@ table.diff .diff-addedline ins {
 	color: #CFEBF6;
 }
 
-.submitbox .submitdelete {
-	color: #fff;
-}
-
 #edit-settings-wrap,
 #show-settings {
 	background-color: #14568A;
@@ -800,7 +806,8 @@ table.diff .diff-addedline ins {
 	border-bottom-color: #14568A;
 }
 
-#replydiv {
+#replydiv,
+.inline-editor .quick-edit-div {
 	border-color: #EBEBEB #CCC #CCC #EBEBEB;
 	background-color: #fff;
 }
@@ -815,7 +822,48 @@ table.diff .diff-addedline ins {
 	background-color: #f8f8f8;
 }
 
-/* table vim shorcuts */
+/* table vim shortcuts */
 .vim-current {
 	background-color: #CFEBF7 !important;
+}
+
+/* Install Plugins */
+.star-average, .star.star-rating {
+	background-color: #fc0;
+}
+
+div.star.select:hover {
+	background-color: #d00;
+}
+
+#plugin-information .fyi ul,
+.find-box {
+	background-color: #eaf3fa;
+}
+
+#plugin-information .fyi h2.mainheader {
+	background-color: #cee1ef;
+}
+
+/* inline editor */
+.inline-editor input,
+.inline-editor textarea {
+	border-color: #ddd;
+}
+
+.inline-editor div.title {
+	background-color: #CFEBF7;
+}
+
+.inline-editor ul.cat-checklist {
+	background-color: #FFFFFF;
+}
+
+.inline-editor .categories .catshow,
+.inline-editor .categories .cathide {
+	color: #2583AD;
+}
+
+.inline-editor .quick-edit-save {
+	background-color: #CFEBF7;
 }

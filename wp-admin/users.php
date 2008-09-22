@@ -114,7 +114,7 @@ case 'delete':
 
 	check_admin_referer('bulk-users');
 
-	if ( empty($_REQUEST['users']) ) {
+	if ( empty($_REQUEST['users']) && empty($_REQUEST['user']) ) {
 		wp_redirect($redirect);
 		exit();
 	}
@@ -122,7 +122,10 @@ case 'delete':
 	if ( !current_user_can('delete_users') )
 		$errors = new WP_Error('edit_users', __('You can&#8217;t delete users.'));
 
-	$userids = $_REQUEST['users'];
+	if ( empty($_REQUEST['users']) )
+		$userids = array(intval($_REQUEST['user']));
+	else
+		$userids = $_REQUEST['users'];
 
 	include ('admin-header.php');
 ?>
@@ -207,53 +210,72 @@ default:
 	
 	// Query the users
 	$wp_user_search = new WP_User_Search($usersearch, $userspage, $role);
-
+	
+	$messages = array();
 	if ( isset($_GET['update']) ) :
 		switch($_GET['update']) {
 		case 'del':
 		case 'del_many':
-		?>
-			<?php $delete_count = isset($_GET['delete_count']) ? (int) $_GET['delete_count'] : 0; ?>
-			<div id="message" class="updated fade"><p><?php printf(__ngettext('%s user deleted', '%s users deleted', $delete_count), $delete_count); ?></p></div>
-		<?php
+			$delete_count = isset($_GET['delete_count']) ? (int) $_GET['delete_count'] : 0;
+			$messages[] = '<div id="message" class="updated fade"><p>' . sprintf(__ngettext('%s user deleted', '%s users deleted', $delete_count), $delete_count) . '</p></div>';
 			break;
 		case 'add':
-		?>
-			<div id="message" class="updated fade"><p><?php _e('New user created.'); ?></p></div>
-		<?php
+			$messages[] = '<div id="message" class="updated fade"><p>' . __('New user created.') . '</p></div>';
 			break;
 		case 'promote':
-		?>
-			<div id="message" class="updated fade"><p><?php _e('Changed roles.'); ?></p></div>
-		<?php
+			$messages[] = '<div id="message" class="updated fade"><p>' . __('Changed roles.') . '</p></div>';
 			break;
 		case 'err_admin_role':
-		?>
-			<div id="message" class="error"><p><?php _e("The current user's role must have user editing capabilities."); ?></p></div>
-			<div id="message" class="updated fade"><p><?php _e('Other user roles have been changed.'); ?></p></div>
-		<?php
+			$messages[] = '<div id="message" class="error"><p>' . __("The current user's role must have user editing capabilities.") . '</p></div>';
+			$messages[] = '<div id="message" class="updated fade"><p>' . __('Other user roles have been changed.') . '</p></div>';
 			break;
 		case 'err_admin_del':
-		?>
-			<div id="message" class="error"><p><?php _e("You can't delete the current user."); ?></p></div>
-			<div id="message" class="updated fade"><p><?php _e('Other users have been deleted.'); ?></p></div>
-		<?php
+			$messages[] = '<div id="message" class="error"><p>' . __("You can't delete the current user.") . '</p></div>';
+			$messages[] = '<div id="message" class="updated fade"><p>' . __('Other users have been deleted.') . '</p></div>';
 			break;
 		}
 	endif; ?>
+
+<form class="search-form" action="" method="get">
+	<p id="user-search" class="search-box">
+	<label class="hidden" for="user-search-input"><?php _e( 'Search Users' ); ?></label>
+	<input type="text" id="user-search-input" class="search-input" name="usersearch" value="<?php echo attribute_escape($wp_user_search->search_term); ?>" />
+	<input type="submit" value="<?php _e( 'Search Users' ); ?>" class="button" />
+	</p>
+</form>
 
 <?php if ( isset($errors) && is_wp_error( $errors ) ) : ?>
 	<div class="error">
 		<ul>
 		<?php
-			foreach ( $errors->get_error_messages() as $message )
-				echo "<li>$message</li>";
+			foreach ( $errors->get_error_messages() as $err )
+				echo "<li>$err</li>\n";
 		?>
 		</ul>
 	</div>
-<?php endif; ?>
+<?php endif; 
+
+if ( ! empty($messages) ) {
+	foreach ( $messages as $msg )
+		echo $msg;
+} ?>
 
 <div class="wrap">
+
+<form id="adv-settings" action="" method="get">
+<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
+<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
+
+<div id="edit-settings" class="hide-if-js hide-if-no-js">
+<div id="edit-settings-wrap">
+<h5><?php _e('Show on screen') ?></h5>
+<div class="metabox-prefs">
+<?php manage_columns_prefs('user') ?>
+<br class="clear" />
+</div></div>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+</div></form>
+
 <form id="posts-filter" action="" method="get">
 	<?php if ( $wp_user_search->is_search() ) : ?>
 		<h2><?php printf( current_user_can('create_users') ? __('Users Matching "%2$s" (<a href="%1$s">Add New</a>)') : __('Add New'), '#add-new-user', wp_specialchars($wp_user_search->search_term) ); ?></h2>
@@ -266,7 +288,6 @@ default:
 $role_links = array();
 $avail_roles = array();
 $users_of_blog = get_users_of_blog();
-//var_dump($users_of_blog);
 foreach ( (array) $users_of_blog as $b_user ) {
 	$b_roles = unserialize($b_user->meta_value);
 	foreach ( (array) $b_roles as $b_role => $val ) {
@@ -281,7 +302,7 @@ $current_role = false;
 $class = empty($role) ? ' class="current"' : '';
 $role_links[] = "<li><a href=\"users.php\"$class>" . __('All Users') . "</a>";
 foreach ( $wp_roles->get_names() as $this_role => $name ) {
-	if ( !isset($avail_roles[$role]) )
+	if ( !isset($avail_roles[$this_role]) )
 		continue;
 
 	$class = '';
@@ -299,12 +320,6 @@ echo implode(' |</li>', $role_links) . '</li>';
 unset($role_links);
 ?>
 </ul>
-
-	<p id="user-search" class="search-box">
-	<label class="hidden" for="user-search-input"><?php _e( 'Search Users' ); ?></label>
-	<input type="text" id="user-search-input" class="search-input" name="usersearch" value="<?php echo attribute_escape($wp_user_search->search_term); ?>" />
-	<input type="submit" value="<?php _e( 'Search Users' ); ?>" class="button" />
-	</p>
 
 <div class="tablenav">
 
@@ -349,12 +364,7 @@ unset($role_links);
 <table class="widefat">
 <thead>
 <tr class="thead">
-	<th scope="col" class="check-column"><input type="checkbox" /></th>
-	<th><?php _e('Username') ?></th>
-	<th><?php _e('Name') ?></th>
-	<th><?php _e('E-mail') ?></th>
-	<th><?php _e('Role') ?></th>
-	<th class="num"><?php _e('Posts') ?></th>
+<?php print_column_headers('user') ?>
 </tr>
 </thead>
 <tbody id="users" class="list:user user-list">

@@ -46,8 +46,8 @@ $menu[5] = array( __('Content'), 'edit_posts', 'edit.php', 'wp-menu-open' );
 	$submenu['edit.php'][20] = array( __('Links'), 'manage_links', 'link-manager.php' );
 	$submenu['edit.php'][25] = array( __('Pages'), 'edit_pages', 'edit-pages.php' );
 
-$menu[10] = array( __('Templates'), 'switch_themes', 'themes.php' );
-	$submenu['themes.php'][5]  = array(__('Themes'), 'switch_themes', 'themes.php');
+$menu[10] = array( __('Themes'), 'switch_themes', 'themes.php' );
+	$submenu['themes.php'][5]  = array(__('Directory'), 'switch_themes', 'themes.php');
 	$submenu['themes.php'][10] = array(__('Theme Editor'), 'edit_themes', 'theme-editor.php');
 
 $menu[15] = array( __('Utilities'), 'read', 'users.php' ); // placeholder - should be inbox
@@ -64,9 +64,10 @@ $menu[20] = array(__('Settings'), 'manage_options', 'options-general.php');
 	$submenu['options-general.php'][15] = array(__('Writing'), 'manage_options', 'options-writing.php');
 	$submenu['options-general.php'][20] = array(__('Reading'), 'manage_options', 'options-reading.php');
 	$submenu['options-general.php'][25] = array(__('Discussion'), 'manage_options', 'options-discussion.php');
-	$submenu['options-general.php'][30] = array(__('Privacy'), 'manage_options', 'options-privacy.php');
-	$submenu['options-general.php'][35] = array(__('Permalinks'), 'manage_options', 'options-permalink.php');
-	$submenu['options-general.php'][40] = array(__('Miscellaneous'), 'manage_options', 'options-misc.php');
+	$submenu['options-general.php'][30] = array(__('Media'), 'manage_options', 'options-media.php');
+	$submenu['options-general.php'][35] = array(__('Privacy'), 'manage_options', 'options-privacy.php');
+	$submenu['options-general.php'][40] = array(__('Permalinks'), 'manage_options', 'options-permalink.php');
+	$submenu['options-general.php'][45] = array(__('Miscellaneous'), 'manage_options', 'options-misc.php');
 
 $menu[25] = array( __('Plugins'), 'activate_plugins', 'plugins.php' );
 	$submenu['plugins.php'][5]  = array( __('Plugins'), 'activate_plugins', 'plugins.php' );
@@ -123,7 +124,9 @@ foreach ( $menu as $id => $data ) {
 			unset($submenu[$old_parent][$index]);
 		}
 		unset($submenu[$old_parent]);
-		$_wp_submenu_nopriv[$new_parent] = $_wp_submenu_nopriv[$old_parent];
+
+		if ( isset($_wp_submenu_nopriv[$old_parent]) )
+			$_wp_submenu_nopriv[$new_parent] = $_wp_submenu_nopriv[$old_parent];
 	}
 }
 

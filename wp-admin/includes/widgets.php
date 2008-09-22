@@ -1,6 +1,19 @@
 <?php
+/**
+ * WordPress Widgets Administration API
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
 
-// $_search is unsanitized
+/**
+ * Display list of widgets, either all or matching search.
+ *
+ * @since unknown
+ *
+ * @param unknown_type $show
+ * @param unknown_type $_search Optional. Search for widgets. Should be unsanitized.
+ */
 function wp_list_widgets( $show = 'all', $_search = false ) {
 	global $wp_registered_widgets, $sidebars_widgets, $wp_registered_widget_controls;
 	if ( $_search ) {
@@ -46,9 +59,11 @@ function wp_list_widgets( $show = 'all', $_search = false ) {
 			if ( ( 'unused' == $show && $sidebar ) || ( 'used' == $show && !$sidebar ) )
 				continue;
 
+			if ( ! isset( $widget['params'][0] ) )
+				$widget['params'][0] = array();
 			ob_start();
-				$args = wp_list_widget_controls_dynamic_sidebar( array( 0 => array( 'widget_id' => $widget['id'], 'widget_name' => $widget['name'], '_display' => 'template', '_show' => $show ), 1 => $widget['params'][0] ) );
-				$sidebar_args = call_user_func_array( 'wp_widget_control', $args );
+			$args = wp_list_widget_controls_dynamic_sidebar( array( 0 => array( 'widget_id' => $widget['id'], 'widget_name' => $widget['name'], '_display' => 'template', '_show' => $show ), 1 => $widget['params'][0] ) );
+			$sidebar_args = call_user_func_array( 'wp_widget_control', $args );
 			$widget_control_template = ob_get_contents();
 			ob_end_clean();
 
@@ -148,8 +163,13 @@ function wp_list_widgets( $show = 'all', $_search = false ) {
 <?php
 }
 
-
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $sidebar
+ */
 function wp_list_widget_controls( $sidebar ) {
 	add_filter( 'dynamic_sidebar_params', 'wp_list_widget_controls_dynamic_sidebar' );
 ?>
@@ -163,7 +183,14 @@ function wp_list_widget_controls( $sidebar ) {
 <?php
 }
 
-
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $params
+ * @return unknown
+ */
 function wp_list_widget_controls_dynamic_sidebar( $params ) {
 	global $wp_registered_widgets;
 	static $i = 0;
@@ -182,15 +209,22 @@ function wp_list_widget_controls_dynamic_sidebar( $params ) {
 	return $params;
 }
 
-/*
- * Meta widget used to display the control form for a widget.  Called from dynamic_sidebar()
+/**
+ * Meta widget used to display the control form for a widget.
+ *
+ * Called from dynamic_sidebar().
+ *
+ * @since unknown
+ *
+ * @param unknown_type $sidebar_args
+ * @return unknown
  */
 function wp_widget_control( $sidebar_args ) {
 	global $wp_registered_widgets, $wp_registered_widget_controls, $sidebars_widgets, $edit_widget;
 	$widget_id = $sidebar_args['widget_id'];
 	$sidebar_id = isset($sidebar_args['id']) ? $sidebar_args['id'] : false;
 
-	$control = $wp_registered_widget_controls[$widget_id];
+	$control = isset($wp_registered_widget_controls[$widget_id]) ? $wp_registered_widget_controls[$widget_id] : 0;
 	$widget  = $wp_registered_widgets[$widget_id];
 
 	$key = $sidebar_id ? array_search( $widget_id, $sidebars_widgets[$sidebar_id] ) : 'no-key'; // position of widget in sidebar
@@ -198,6 +232,13 @@ function wp_widget_control( $sidebar_args ) {
 	$edit = -1 <  $edit_widget && is_numeric($key) && $edit_widget === $key; // (bool) are we currently editing this widget
 
 	$id_format = $widget['id'];
+
+	if ( ! isset( $sidebar_args['_show'] ) )
+		$sidebar_args['_show'] = '';
+
+	if ( ! isset( $sidebar_args['_display'] ) )
+		$sidebar_args['_display'] = '';
+
 	// We aren't showing a widget control, we're outputing a template for a mult-widget control
 	if ( 'all' == $sidebar_args['_show'] && 'template' == $sidebar_args['_display'] && isset($control['params'][0]['number']) ) {
 		// number == -1 implies a template where id numbers are replaced by a generic '%i%'
@@ -276,6 +317,14 @@ function wp_widget_control( $sidebar_args ) {
 	return $sidebar_args;
 }
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $string
+ * @return unknown
+ */
 function wp_widget_control_ob_filter( $string ) {
 	if ( false === $beg = strpos( $string, '%BEG_OF_TITLE%' ) )
 		return '';

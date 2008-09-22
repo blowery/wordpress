@@ -1,7 +1,5 @@
-jQuery( function($) {
-	$('#users').wpList();
-
-	columns.init('user');
+jQuery(document).ready( function($) {
+	columns.init('post');
 
 	// Edit Settings
 	$('#show-settings-link').click(function () {

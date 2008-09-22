@@ -386,7 +386,7 @@ function unzip_file($file, $to) {
 	if ( 0 == count($archive_files) )
 		return new WP_Error('empty_archive', __('Empty archive'));
 
-	$path = explode('/', $to);
+	$path = explode('/', untrailingslashit($to));
 	for ( $i = count($path); $i > 0; $i-- ) { //>0 = first element is empty allways for paths starting with '/'
 		$tmppath = implode('/', array_slice($path, 0, $i) );
 		if ( $fs->is_dir($tmppath) ) { //Found the highest folder that exists, Create from here(ie +1)
@@ -401,13 +401,16 @@ function unzip_file($file, $to) {
 
 	$to = trailingslashit($to);
 	foreach ($archive_files as $file) {
-		$path = explode('/', $file['filename']);
-		for ( $i = count($path) - 1; $i >= 0; $i-- ) { //>=0 as the first element contains data, count()-1, as we do not want the file component
+		$path = $file['folder'] ? $file['filename'] : dirname($file['filename']);
+		$path = explode('/', $path);
+		for ( $i = count($path); $i >= 0; $i-- ) { //>=0 as the first element contains data
+			if ( empty($path[$i]) )
+				continue;
 			$tmppath = $to . implode('/', array_slice($path, 0, $i) );
 			if ( $fs->is_dir($tmppath) ) {//Found the highest folder that exists, Create from here
-				for ( $i = $i + 1; $i < count($path); $i++ ) { //< count() no file component please.
+				for ( $i = $i + 1; $i <= count($path); $i++ ) { //< count() no file component please.
 					$tmppath = $to . implode('/', array_slice($path, 0, $i) );
-					if ( ! $fs->mkdir($tmppath, 0755) )
+					if ( ! $fs->is_dir($tmppath) && ! $fs->mkdir($tmppath, 0755) )
 						return new WP_Error('mkdir_failed', __('Could not create directory'), $tmppath);
 				}
 				break; //Exit main for loop
@@ -503,12 +506,15 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 	if ( 'direct' == $type )
 		return true;
 
-	if( ! $credentials = get_option('ftp_credentials') )
-		$credentials = array();
+	$credentials = get_option('ftp_credentials', array());
 	// If defined, set it to that, Else, If POST'd, set it to that, If not, Set it to whatever it previously was(saved details in option)
 	$credentials['hostname'] = defined('FTP_HOST') ? FTP_HOST : (!empty($_POST['hostname']) ? $_POST['hostname'] : $credentials['hostname']);
 	$credentials['username'] = defined('FTP_USER') ? FTP_USER : (!empty($_POST['username']) ? $_POST['username'] : $credentials['username']);
 	$credentials['password'] = defined('FTP_PASS') ? FTP_PASS : (!empty($_POST['password']) ? $_POST['password'] : $credentials['password']);
+	
+	// Check to see if we are setting the public/private keys for ssh
+	$credentials['public_key'] = defined('FTP_PUBKEY') ? FTP_PUBKEY : (!empty($_POST['public_key']) ? $_POST['public_key'] : $credentials['public_key']);
+	$credentials['private_key'] = defined('FTP_PRIKEY') ? FTP_PRIKEY : (!empty($_POST['private_key']) ? $_POST['private_key'] : $credentials['private_key']);		
 	
 	if ( strpos($credentials['hostname'], ':') )
 		list( $credentials['hostname'], $credentials['port'] ) = explode(':', $credentials['hostname'], 2);
@@ -517,12 +523,12 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 		$credentials['connection_type'] = 'ssh';
 	else if ( defined('FTP_SSL') || (isset($_POST['connection_type']) && 'ftps' == $_POST['connection_type']) )
 		$credentials['connection_type'] = 'ftps';
-	else
+	else if ( !isset($credentials['connection_type']) || (isset($_POST['connection_type']) && 'ftp' == $_POST['connection_type']) )
 		$credentials['connection_type'] = 'ftp';
 
 	if ( ! $error && !empty($credentials['password']) && !empty($credentials['username']) && !empty($credentials['hostname']) ) {
 		$stored_credentials = $credentials;
-		unset($stored_credentials['password']);
+		unset($stored_credentials['password'], $stored_credentials['private_key'], $stored_credentials['public_key']);
 		update_option('ftp_credentials', $stored_credentials);
 		return $credentials;
 	}
@@ -539,10 +545,22 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 		echo '<div id="message" class="error"><p>' . $error_string . '</p></div>';
 	}
 ?>
+<script type="text/javascript">
+<!--
+jQuery(function($){
+	jQuery("#ssh").click(function () {
+		jQuery("#ssh_keys").show();
+	});
+	jQuery("#ftp, #ftps").click(function () {
+		jQuery("#ssh_keys").hide();
+	});	
+});
+-->
+</script>
 <form action="<?php echo $form_post ?>" method="post">
 <div class="wrap">
-<h2><?php _e('FTP Connection Information') ?></h2>
-<p><?php _e('To perform the requested action, FTP connection information is required.') ?></p>
+<h2><?php _e('Connection Information') ?></h2>
+<p><?php _e('To perform the requested action, connection information is required.') ?></p>
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><label for="hostname"><?php _e('Hostname') ?></label></th>
@@ -556,13 +574,17 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 <th scope="row"><label for="password"><?php _e('Password') ?></label></th>
 <td><input name="password" type="password" id="password" value=""<?php if( defined('FTP_PASS') ) echo ' disabled="disabled"' ?> size="40" /><?php if( defined('FTP_PASS') && !empty($password) ) echo '<em>'.__('(Password not shown)').'</em>'; ?></td>
 </tr>
+<tr id="ssh_keys" valign="top" style="<?php if ( 'ssh' != $connection_type ) echo 'display:none' ?>">
+<th scope="row"><label id="keys" for="keys"><?php _e('Authentication Keys') ?></label></th>
+<td><label for="public_key"><?php _e('Public Key:') ?></label ><input name="public_key" type="text" id="public_key" value=""<?php if( defined('FTP_PUBKEY') ) echo ' disabled="disabled"' ?> size="40" /> <label for="private_key"><?php _e('Private Key:') ?></label> <input name="private_key" type="text" id="private_key" value=""<?php if( defined('FTP_PRIKEY') ) echo ' disabled="disabled"' ?> size="40" /><br/><div><?php _e('Enter the location on the server where the keys are located. If a passphrase is needed, enter that in the password field above.') ?></div></td>
+</tr>
 <tr valign="top">
 <th scope="row"><?php _e('Connection Type') ?></th>
 <td>
 <fieldset><legend class="hidden"><?php _e('Connection Type') ?> </legend>
-<p><label><input name="connection_type"  type="radio" value="ftp" <?php checked('ftp', $connection_type); ?>	/> <?php _e('FTP') ?></label><br />
-<label><input name="connection_type" type="radio" value="ftps" <?php checked('ftps', $connection_type); ?> /> <?php _e('FTPS (SSL)') ?></label><br />
-<?php if ( extension_loaded('ssh2') ) { ?><label><input name="connection_type" type="radio" value="ssh" <?php checked('ssh', $connection_type); ?> /> <?php _e('SSH') ?></label><?php } ?></p>
+<p><label><input id="ftp" name="connection_type"  type="radio" value="ftp" <?php checked('ftp', $connection_type); if ( defined('FTP_SSL') || defined('FTP_SSH') ) echo ' disabled="disabled"'; ?>/> <?php _e('FTP') ?></label><br />
+<label><input id="ftps" name="connection_type" type="radio" value="ftps" <?php checked('ftps', $connection_type); if ( defined('FTP_SSH') || defined('FTP_SSH') ) echo ' disabled="disabled"';  ?>/> <?php _e('FTPS (SSL)') ?></label><br />
+<?php if ( extension_loaded('ssh2') ) { ?><label><input id="ssh" name="connection_type" type="radio" value="ssh" <?php checked('ssh', $connection_type);  if ( defined('FTP_SSL') || defined('FTP_SSH') ) echo ' disabled="disabled"'; ?>/> <?php _e('SSH') ?></label><?php } ?></p>
 </fieldset>
 </td>
 </tr>

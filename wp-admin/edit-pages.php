@@ -10,10 +10,10 @@
 require_once('admin.php');
 
 // Handle bulk deletes
-if ( isset($_GET['action']) && isset($_GET['delete']) ) {
+if ( isset($_GET['action']) && isset($_GET['post']) && isset($_GET['doaction']) ) {
 	check_admin_referer('bulk-pages');
 	if ( $_GET['action'] == 'delete' ) {
-		foreach( (array) $_GET['delete'] as $post_id_del ) {
+		foreach( (array) $_GET['post'] as $post_id_del ) {
 			$post_del = & get_post($post_id_del);
 
 			if ( !current_user_can('delete_page', $post_id_del) )
@@ -44,6 +44,8 @@ if ( isset($_GET['action']) && isset($_GET['delete']) ) {
 $title = __('Pages');
 $parent_file = 'edit.php';
 wp_enqueue_script('admin-forms');
+wp_enqueue_script('inline-edit');
+wp_enqueue_script('pages');
 
 $post_stati  = array(	//	array( adj, noun )
 		'publish' => array(__('Published'), __('Published pages'), __ngettext_noop('Published (%s)', 'Published (%s)')),
@@ -74,8 +76,30 @@ if ( is_singular() ) {
 require_once('admin-header.php');
 
 ?>
+
+<form class="search-form" action="" method="get">
+	<p id="page-search" class="search-box">
+		<label class="hidden" for="page-search-input"><?php _e( 'Search Pages' ); ?></label>
+		<input type="text" id="page-search-input" name="s" value="<?php the_search_query(); ?>" />
+		<input type="submit" value="<?php _e( 'Search Pages' ); ?>" class="button" />
+	</p>
+</form>
+
 <div class="wrap">
-<form id="posts-filter" action="" method="get">
+<form id="adv-settings" action="" method="get">
+<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
+<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
+
+<div id="edit-settings" class="hide-if-js hide-if-no-js">
+<div id="edit-settings-wrap">
+<h5><?php _e('Show on screen') ?></h5>
+<div class="metabox-prefs">
+<?php manage_columns_prefs('page') ?>
+<br class="clear" />
+</div></div>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+</div></form>
+
 <h2><?php
 // Use $_GET instead of is_ since they can override each other
 $h2_search = isset($_GET['s']) && $_GET['s'] ? ' ' . sprintf(__('matching &#8220;%s&#8221;'), wp_specialchars( stripslashes( $_GET['s'] ) ) ) : '';
@@ -87,6 +111,7 @@ if ( isset($_GET['author']) && $_GET['author'] ) {
 printf( _c( '%1$s%2$s%3$s (<a href="%4$s">Add New</a>)|You can reorder these: 1: Pages, 2: by {s}, 3: matching {s}' ), $post_status_label, $h2_author, $h2_search, 'page-new.php' );
 ?></h2>
 
+<form id="posts-filter" action="" method="get">
 <ul class="subsubsub">
 <?php
 
@@ -115,19 +140,13 @@ unset($status_links);
 
 <?php if ( isset($_GET['post_status'] ) ) : ?>
 <input type="hidden" name="post_status" value="<?php echo attribute_escape($_GET['post_status']) ?>" />
-<?php
-endif;
+<?php endif;
+
 if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET['posted']; ?>
 <div id="message" class="updated fade"><p><strong><?php _e('Your page has been saved.'); ?></strong> <a href="<?php echo get_permalink( $_GET['posted'] ); ?>"><?php _e('View page'); ?></a> | <a href="<?php echo get_edit_post_link( $_GET['posted'] ); ?>"><?php _e('Edit page'); ?></a></p></div>
 <?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('posted'), $_SERVER['REQUEST_URI']);
 endif;
 ?>
-
-<p id="page-search" class="search-box">
-	<label class="hidden" for="page-search-input"><?php _e( 'Search Pages' ); ?></label>
-	<input type="text" id="page-search-input" name="s" value="<?php the_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Pages' ); ?>" class="button" />
-</p>
 
 <div class="tablenav">
 
@@ -152,7 +171,8 @@ if ( $page_links )
 
 <div class="alignleft">
 <select name="action">
-<option value="" selected><?php _e('Actions'); ?></option>
+<option value="-1" selected><?php _e('Actions'); ?></option>
+<option value="edit"><?php _e('Edit'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" class="button-secondary action" />
@@ -170,27 +190,17 @@ $all = !( $h2_search || $post_status_q );
 
 if ($posts) {
 ?>
-<table class="widefat">
+<table class="widefat page">
   <thead>
   <tr>
-<?php $posts_columns = wp_manage_pages_columns(); ?>
-<?php foreach($posts_columns as $post_column_key => $column_display_name) {
-	if ( 'cb' === $post_column_key )
-		$class = ' class="check-column"';
-	elseif ( 'comments' === $post_column_key )
-		$class = ' class="num"';
-	else
-		$class = '';
-?>
-	<th scope="col"<?php echo $class; ?>><?php echo $column_display_name; ?></th>
-<?php } ?>
+<?php print_column_headers('page'); ?>
   </tr>
   </thead>
   <tbody>
+  <?php inline_edit_row( 'page' ) ?>
   <?php page_rows($posts, $pagenum, $per_page); ?>
   </tbody>
 </table>
-
 </form>
 
 <div id="ajax-response"></div>
