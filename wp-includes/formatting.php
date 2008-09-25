@@ -1324,7 +1324,7 @@ function wp_trim_excerpt($text) {
 		$text = apply_filters('the_content', $text);
 		$text = str_replace(']]>', ']]&gt;', $text);
 		$text = strip_tags($text);
-		$excerpt_length = 55;
+		$excerpt_length = apply_filters('excerpt_length', 55);
 		$words = explode(' ', $text, $excerpt_length + 1);
 		if (count($words) > $excerpt_length) {
 			array_pop($words);
@@ -1820,6 +1820,9 @@ function sanitize_option($option, $value) {
 		case 'default_category':
 		case 'default_email_category':
 		case 'default_link_category':
+		case 'close_comments_days_old':
+		case 'comments_per_page':
+		case 'thread_comments_depth':
 			$value = abs((int) $value);
 			break;
 

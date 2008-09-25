@@ -844,6 +844,15 @@ class WP_Query {
 	var $max_num_pages = 0;
 
 	/**
+	 * The amount of comment pages.
+	 *
+	 * @since 2.7.0
+	 * @access public
+	 * @var int
+	 */
+	var $max_num_comment_pages = 0;
+
+	/**
 	 * Set if query is single post.
 	 *
 	 * @since 1.5.0
@@ -1612,6 +1621,9 @@ class WP_Query {
 		else if ( $q['posts_per_page'] == 0 )
 			$q['posts_per_page'] = 1;
 
+		if ( !isset($q['comments_per_page']) || $q['comments_per_page'] == 0 )
+			$q['comments_per_page'] = get_option('comments_per_page');
+
 		if ( $this->is_home && (empty($this->query) || $q['preview'] == 'true') && ( 'page' == get_option('show_on_front') ) && get_option('page_on_front') ) {
 			$this->is_page = true;
 			$this->is_home = false;
@@ -1777,7 +1789,7 @@ class WP_Query {
 			$q['cat'] = implode(',', $req_cats);
 		}
 
-		if ( !empty($q['category__in']) || !empty($q['category__not_in']) || !empty($q['category__and']) ) {
+		if ( !empty($q['category__in']) ) {
 			$groupby = "{$wpdb->posts}.ID";
 		}
 
@@ -1857,8 +1869,7 @@ class WP_Query {
 			}
 		}
 
-		if ( !empty($q['tag__in']) || !empty($q['tag__not_in']) || !empty($q['tag__and']) ||
-			!empty($q['tag_slug__in']) || !empty($q['tag_slug__and']) ) {
+		if ( !empty($q['tag__in']) || !empty($q['tag_slug__in']) ) {
 			$groupby = "{$wpdb->posts}.ID";
 		}
 
