@@ -12,39 +12,48 @@ require_once('admin.php');
 $title = __('Edit Comments');
 wp_enqueue_script( 'admin-comments' );
 wp_enqueue_script( 'admin-forms' );
-wp_enqueue_script( 'jquery-table-hotkeys' );
+enqueue_comment_hotkeys_js();
 
-if ( isset( $_POST['delete_all_spam'] ) ) {
-	check_admin_referer('bulk-spam-delete');
-	
-	$deleted_spam = $wpdb->query( "DELETE FROM $wpdb->comments WHERE comment_approved = 'spam'" );
-	wp_redirect('edit-comments.php?deleted=' . (int) $deleted_spam);
-}
+if ( ( isset( $_POST['delete_all_spam'] ) || isset( $_POST['delete_all_spam2'] ) ) && !empty( $_POST['pagegen_timestamp'] ) ) {
+	check_admin_referer('bulk-spam-delete', '_spam_nonce');
 
-if ( !empty( $_REQUEST['delete_comments'] ) && isset($_REQUEST['action']) ) {
+	$delete_time = $wpdb->escape( $_POST['pagegen_timestamp'] );
+	$deleted_spam = $wpdb->query( "DELETE FROM $wpdb->comments WHERE comment_approved = 'spam' AND '$delete_time' > comment_date_gmt" );
+
+	wp_redirect('edit-comments.php?comment_status=spam&deleted=' . (int) $deleted_spam);
+} elseif ( isset($_REQUEST['delete_comments']) && isset($_REQUEST['action']) && ( -1 != $_REQUEST['action'] || -1 != $_REQUEST['action2'] ) ) {
 	check_admin_referer('bulk-comments');
+	$doaction = ( -1 != $_REQUEST['action'] ) ? $_REQUEST['action'] : $_REQUEST['action2'];
 
-	$comments_deleted = $comments_approved = $comments_unapproved = $comments_spammed = 0;
-	foreach ($_REQUEST['delete_comments'] as $comment) : // Check the permissions on each
-		$comment = (int) $comment;
-		$post_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT comment_post_ID FROM $wpdb->comments WHERE comment_ID = %d", $comment) );
+	$deleted = $approved = $unapproved = $spammed = 0;
+	foreach ( (array) $_REQUEST['delete_comments'] as $comment_id) : // Check the permissions on each
+		$comment_id = (int) $comment_id;
+		$post_id = (int) $wpdb->get_var( $wpdb->prepare( "SELECT comment_post_ID FROM $wpdb->comments WHERE comment_ID = %d", $comment_id) );
+
 		if ( !current_user_can('edit_post', $post_id) )
 			continue;
-		if ( $_REQUEST['action'] == 'markspam' ) {
-			wp_set_comment_status($comment, 'spam');
-			$comments_spammed++;
-		} elseif ( $_REQUEST['action'] == 'delete' ) {
-			wp_set_comment_status($comment, 'delete');
-			$comments_deleted++;
-		} elseif ( $_REQUEST['action'] == 'approve' ) {
-			wp_set_comment_status($comment, 'approve');
-			$comments_approved++;
-		} elseif ( $_REQUEST['action'] == 'unapprove' ) {
-			wp_set_comment_status($comment, 'hold');
-			$comments_unapproved++;
+
+		switch( $doaction ) {
+			case 'markspam' :
+				wp_set_comment_status($comment_id, 'spam');
+				$spammed++;
+				break;
+			case 'delete' :
+				wp_set_comment_status($comment_id, 'delete');
+				$deleted++;
+				break;
+			case 'approve' :
+				wp_set_comment_status($comment_id, 'approve');
+				$approved++;
+				break;
+			case 'unapprove' :
+				wp_set_comment_status($comment_id, 'hold');
+				$unapproved++;
+				break;
 		}
 	endforeach;
-	$redirect_to = basename( __FILE__ ) . '?deleted=' . $comments_deleted . '&approved=' . $comments_approved . '&spam=' . $comments_spammed . '&unapproved=' . $comments_unapproved;
+
+	$redirect_to = 'edit-comments.php?deleted=' . $deleted . '&approved=' . $approved . '&spam=' . $spammed . '&unapproved=' . $unapproved;
 	if ( isset($_REQUEST['apage']) )
 		$redirect_to = add_query_arg( 'apage', absint($_REQUEST['apage']), $redirect_to );
 	if ( !empty($_REQUEST['mode']) )
@@ -54,8 +63,8 @@ if ( !empty( $_REQUEST['delete_comments'] ) && isset($_REQUEST['action']) ) {
 	if ( !empty($_REQUEST['s']) )
 		$redirect_to = add_query_arg('s', $_REQUEST['s'], $redirect_to);
 	wp_redirect( $redirect_to );
-} elseif ( !empty($_GET['_wp_http_referer']) ) {
-	 wp_redirect(remove_query_arg(array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI'])));
+} elseif ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
+	 wp_redirect( remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']) ) );
 	 exit;
 }
 
@@ -63,19 +72,24 @@ require_once('admin-header.php');
 
 $mode = ( ! isset($_GET['mode']) || empty($_GET['mode']) ) ? 'detail' : attribute_escape($_GET['mode']);
 
-$comment_status = isset($_GET['comment_status']) ? attribute_escape($_GET['comment_status']) : '';
+$comment_status = !empty($_GET['comment_status']) ? attribute_escape($_GET['comment_status']) : '';
+
+$comment_type = !empty($_GET['comment_type']) ? attribute_escape($_GET['comment_type']) : '';
+
+$post_id = isset($_GET['p']) ? (int) $_GET['p'] : 0;
 
 $search_dirty = ( isset($_GET['s']) ) ? $_GET['s'] : '';
-$search = attribute_escape( $search_dirty );
-?>
+$search = attribute_escape( $search_dirty ); ?>
 
-<form class="search-form" action="" method="get">
-	<p id="comment-search" class="search-box">
-		<label class="hidden" for="comment-search-input"><?php _e( 'Search Comments' ); ?></label>
-		<input type="text" id="comment-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
-		<input type="submit" value="<?php _e( 'Search Comments' ); ?>" class="button" />
-	</p>
-</form>
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php manage_columns_prefs('comment') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+<br class="clear" />
+</div></form>
+</div>
 
 <?php
 if ( isset( $_GET['approved'] ) || isset( $_GET['deleted'] ) || isset( $_GET['spam'] ) ) {
@@ -105,9 +119,9 @@ if ( isset( $_GET['approved'] ) || isset( $_GET['deleted'] ) || isset( $_GET['sp
 	}
 }
 ?>
+
 <div class="wrap">
-<form id="posts-filter" action="" method="get">
-<h2><?php _e('Manage Comments'); ?></h2>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <ul class="subsubsub">
 <?php
@@ -120,13 +134,14 @@ $stati = array(
 	);
 $class = ( '' === $comment_status ) ? ' class="current"' : '';
 $status_links[] = "<li><a href=\"edit-comments.php\"$class>".__('Show All Comments')."</a>";
+$type = ( !$comment_type && 'all' != $comment_type ) ? '' : "&amp;comment_type=$comment_type";
 foreach ( $stati as $status => $label ) {
 	$class = '';
 
 	if ( $status == $comment_status )
 		$class = ' class="current"';
 
-	$status_links[] = "<li class='$status'><a href=\"edit-comments.php?comment_status=$status\"$class>$label</a>";
+	$status_links[] = "<li class='$status'><a href=\"edit-comments.php?comment_status=$status$type\"$class>$label</a>";
 }
 
 $status_links = apply_filters( 'comment_status_links', $status_links );
@@ -136,19 +151,37 @@ unset($status_links);
 ?>
 </ul>
 
-<input type="hidden" name="mode" value="<?php echo $mode; ?>" />
-<input type="hidden" name="comment_status" value="<?php echo $comment_status; ?>" />
+<div class="filter">
+<form id="list-filter" action="" method="get">
+<?php if ( $comment_status ) echo "<input type='hidden' name='comment_status' value='$comment_status' />\n"; ?>
+<select name="comment_type">
+	<option value="all"><?php _e('Show all comment types'); ?></option>
+<?php
+	$comment_types = apply_filters( 'admin_comment_types_dropdown', array(
+		'comment' => __('Comments'),
+		'pings' => __('Pings'),
+	) );
+
+	foreach ( $comment_types as $type => $label ) {
+		echo "	<option value='$type'";
+		selected( $comment_type, $type );
+		echo ">$label</option>\n";
+	}
+?>
+</select>
+<input type="submit" id="post-query-submit" value="<?php _e('Filter'); ?>" class="button-secondary" />
+</form>
+</div>
+
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="post-search-input"><?php _e( 'Search Comments' ); ?>:</label>
+	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Comments' ); ?>" class="button" />
+</p>
 </form>
 
-<!-- crazyhorse
-<ul class="view-switch">
-	<li <?php if ( 'detail' == $mode ) echo "class='current'" ?>><a href="<?php echo clean_url(add_query_arg('mode', 'detail', $_SERVER['REQUEST_URI'])) ?>"><?php _e('Detail View') ?></a></li>
-	<li <?php if ( 'list' == $mode ) echo "class='current'" ?>><a href="<?php echo clean_url(add_query_arg('mode', 'list', $_SERVER['REQUEST_URI'])) ?>"><?php _e('List View') ?></a></li>
-</ul>
--->
-
 <?php
-
 $comments_per_page = apply_filters('comments_per_page', 20, $comment_status);
 
 if ( isset( $_GET['apage'] ) )
@@ -158,7 +191,7 @@ else
 
 $start = $offset = ( $page - 1 ) * $comments_per_page;
 
-list($_comments, $total) = _wp_get_comment_list( $comment_status, $search_dirty, $start, $comments_per_page + 5 ); // Grab a few extra
+list($_comments, $total) = _wp_get_comment_list( $comment_status, $search_dirty, $start, $comments_per_page + 5, $post_id, $comment_type ); // Grab a few extra
 
 $comments = array_slice($_comments, 0, $comments_per_page);
 $extra_comments = array_slice($_comments, $comments_per_page);
@@ -173,6 +206,9 @@ $page_links = paginate_links( array(
 ?>
 
 <form id="comments-form" action="" method="post">
+<input type="hidden" name="mode" value="<?php echo $mode; ?>" />
+<input type="hidden" name="comment_status" value="<?php echo $comment_status; ?>" />
+<input type="hidden" name="pagegen_timestamp" value="<?php echo current_time('mysql', 1); ?>" />
 
 <div class="tablenav">
 
@@ -183,7 +219,7 @@ if ( $page_links )
 
 <div class="alignleft">
 <select name="action">
-<option value="" selected="selected"><?php _e('Actions') ?></option>
+<option value="-1" selected="selected"><?php _e('Actions') ?></option>
 <?php if ( empty($comment_status) || 'approved' == $comment_status ): ?>
 <option value="unapprove"><?php _e('Unapprove'); ?></option>
 <?php endif; ?>
@@ -201,8 +237,8 @@ if ( $page_links )
 	<input type="hidden" name="apage" value="<?php echo absint( $_GET['apage'] ); ?>" />
 <?php }
 
-if ( 'spam' == $comment_status ) { 
-	wp_nonce_field('bulk-spam-delete'); ?>
+if ( 'spam' == $comment_status ) {
+	wp_nonce_field('bulk-spam-delete', '_spam_nonce'); ?>
 <input type="submit" name="delete_all_spam" value="<?php _e('Delete All Spam'); ?>" class="button-secondary apply" />
 <?php } ?>
 <?php do_action('manage_comments_nav', $comment_status); ?>
@@ -212,20 +248,22 @@ if ( 'spam' == $comment_status ) {
 
 </div>
 
-<br class="clear" />
-<?php
-if ($comments) {
-?>
+<div class="clear"></div>
+
+<?php if ( $comments ) { ?>
 <table class="widefat">
 <thead>
-  <tr>
-    <th scope="col" class="check-column"><input type="checkbox" /></th>
-    <th scope="col" class="comment-column"><?php _e('Comment') ?></th>
-	<th scope="col" class="author-column"><?php _e('Author') ?></th>
-    <th scope="col" class="date-column"><?php _e('Submitted') ?></th>
-    <th scope="col" class="response-column"><?php _e('In Response To This Post') ?></th>
-  </tr>
+	<tr>
+<?php print_column_headers('comment'); ?>
+	</tr>
 </thead>
+
+<tfoot>
+	<tr>
+<?php print_column_headers('comment', false); ?>
+	</tr>
+</tfoot>
+
 <tbody id="the-comment-list" class="list:comment">
 <?php
 	foreach ($comments as $comment)
@@ -239,6 +277,37 @@ if ($comments) {
 ?>
 </tbody>
 </table>
+
+<div class="tablenav">
+<?php
+if ( $page_links )
+	echo "<div class='tablenav-pages'>$page_links</div>";
+?>
+
+<div class="alignleft">
+<select name="action2">
+<option value="-1" selected="selected"><?php _e('Actions') ?></option>
+<?php if ( empty($comment_status) || 'approved' == $comment_status ): ?>
+<option value="unapprove"><?php _e('Unapprove'); ?></option>
+<?php endif; ?>
+<?php if ( empty($comment_status) || 'moderated' == $comment_status ): ?>
+<option value="approve"><?php _e('Approve'); ?></option>
+<?php endif; ?>
+<?php if ( 'spam' != $comment_status ): ?>
+<option value="markspam"><?php _e('Mark as Spam'); ?></option>
+<?php endif; ?>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" name="doaction2" id="doaction2" value="<?php _e('Apply'); ?>" class="button-secondary apply" />
+
+<?php if ( 'spam' == $comment_status ) { ?>
+<input type="submit" name="delete_all_spam2" value="<?php _e('Delete All Spam'); ?>" class="button-secondary apply" />
+<?php } ?>
+<?php do_action('manage_comments_nav', $comment_status); ?>
+</div>
+
+<br class="clear" />
+</div>
 
 </form>
 
@@ -258,7 +327,7 @@ if ($comments) {
 <?php _e('No comments awaiting moderation&hellip; yet.') ?>
 </p>
 <?php
-} else  {
+} else {
 ?>
 <p>
 <?php _e('No results found.') ?>
@@ -266,13 +335,6 @@ if ($comments) {
 <?php
 }
 ?>
-<div class="tablenav">
-<?php
-if ( $page_links )
-	echo "<div class='tablenav-pages'>$page_links</div>";
-?>
-<br class="clear" />
-</div>
 
 </div>
 

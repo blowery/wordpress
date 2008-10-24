@@ -20,6 +20,8 @@
  *
  * The second filter, 'plugins_api', is the result that would be returned.
  *
+ * @since 2.7.0
+ *
  * @param string $action
  * @param array|object $args Optional. Arguments to serialize for the Plugin Info API.
  * @return mixed
@@ -35,19 +37,25 @@ function plugins_api($action, $args = null) {
 
 	if ( ! $res ) {
 		$request = wp_remote_post('http://api.wordpress.org/plugins/info/1.0/', array( 'body' => array('action' => $action, 'request' => serialize($args))) );
-		$res = unserialize($request['body']);
-		if ( ! $res )
-			wp_die($request['body']);
+		if ( is_wp_error($request) ) {
+			$res = new WP_Error('plugins_api_failed', __('An Unexpected HTTP Error occured during the API request.</p> <p><a href="?" onclick="document.location.reload(); return false;">Try again</a>'), $request->get_error_message() );
+		} else {
+			$res = unserialize($request['body']);
+			if ( ! $res )
+				$res = new WP_Error('plugins_api_failed', __('An unknown error occured'), $request['body']);
+		}
 	}
 
 	return apply_filters('plugins_api_result', $res, $action, $args);
 }
 
 /**
- * 
+ * Retrieve popular WordPress plugin tags.
  *
- * @param unknown_type $args
- * @return unknown
+ * @since 2.7.0
+ *
+ * @param array $args
+ * @return array
  */
 function install_popular_tags( $args = array() ) {
 	if ( ! ($cache = wp_cache_get('popular_tags', 'api')) && ! ($cache = get_option('wporg_popular_tags')) )
@@ -58,6 +66,9 @@ function install_popular_tags( $args = array() ) {
 
 	$tags = plugins_api('hot_tags', $args);
 
+	if ( is_wp_error($tags) )
+		return $tags;
+
 	$cache = (object) array('timeout' => time(), 'cached' => $tags);
 
 	update_option('wporg_popular_tags', $cache);
@@ -65,64 +76,91 @@ function install_popular_tags( $args = array() ) {
 
 	return $tags;
 }
-
 add_action('install_plugins_search', 'install_search', 10, 1);
+
+/**
+ * Display search results and display as tag cloud.
+ *
+ * @since 2.7.0
+ *
+ * @param string $page
+ */
 function install_search($page) {
 	$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
 	$term = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
 
-	if( ! empty($term) ){
-		$args = array();
+	$args = array();
 
-		switch( $type ){
-			case 'tag':
-				$args['tag'] = sanitize_title_with_dashes($term);
-				break;
-			case 'term':
-				$args['search'] = $term;
-				break;
-			case 'author':
-				$args['author'] = $term;
-				break;
-		}
-
-		$args['page'] = $page;
-
-		$api = plugins_api('query_plugins', $args);
-
-		add_action('install_plugins_table_header', 'install_search_form');
-
-		display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
-
-		return;
+	switch( $type ){
+		case 'tag':
+			$args['tag'] = sanitize_title_with_dashes($term);
+			break;
+		case 'term':
+			$args['search'] = $term;
+			break;
+		case 'author':
+			$args['author'] = $term;
+			break;
 	}
-	?>
 
-	<p><?php _e('Plugins extend and expand the functionality of WordPress. You may automatically install plugins from the <a href="http://wordpress.org/extend/plugins/">WordPress Plugin Directory</a> via this page.') ?></p>
+	$args['page'] = $page;
+
+	$api = plugins_api('query_plugins', $args);
+
+	if ( is_wp_error($api) )
+		wp_die($api);
+
+	add_action('install_plugins_table_header', 'install_search_form');
+
+	display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
+
+	return;
+}
+
+add_action('install_plugins_dashboard', 'install_dashboard');
+function install_dashboard() {
+	?>
+	<p><?php _e('Plugins extend and expand the functionality of WordPress. You may automatically install plugins from the <a href="http://wordpress.org/extend/plugins/">WordPress Plugin Directory</a> or upload a plugin in .zip format via this page.') ?></p>
 
 	<h4><?php _e('Search') ?></h4>
-	<?php install_search_form() ?>
+	<?php install_search_form('<a href="' . add_query_arg('show-help', !isset($_REQUEST['show-help'])) .'" onclick="jQuery(\'#search-help\').toggle(); return false;">' . __('[need help?]') . '</a>') ?>
+	<div id="search-help" style="display: <?php echo isset($_REQUEST['show-help']) ? 'block' : 'none'; ?>;">
 	<p>	<?php _e('You may search based on 3 criteria:') ?><br />
 		<?php _e('<strong>Term:</strong> Searches plugins names and descriptions for the specified term') ?><br />
 		<?php _e('<strong>Tag:</strong> Searches for plugins tagged as such') ?><br />
 		<?php _e('<strong>Author:</strong> Searches for plugins created by the Author, or which the Author contributed to.') ?></p>
-
+	</div>
+	
+	<h4><?php _e('Install a plugin in .zip format') ?></h4>
+	<p><?php _e('If you have a plugin in a .zip format, You may install it by uploading it here.') ?></p>
+	<form method="post" enctype="multipart/form-data" action="<?php echo admin_url('plugin-install.php?tab=upload') ?>">
+		<?php wp_nonce_field( 'plugin-upload') ?>
+		<input type="file" name="pluginzip" />
+		<input type="submit" value="<?php _e('Install Now') ?>" />
+	</form>
+	
 	<h4><?php _e('Popular tags') ?></h4>
-	<p><?php _e('You may also search based on these popular tags, These are tags which are most popular on WordPress.org') ?></p>
+	<p><?php _e('You may also browse based on the most popular tags on wordpress.org') ?></p>
 	<?php
 
-		$api_tags = install_popular_tags();
+	$api_tags = install_popular_tags();
 
-		//Set up the tags in a way which can be interprated by wp_generate_tag_cloud()
-		$tags = array();
-		foreach ( (array)$api_tags as $tag )
-			$tags[ $tag['name'] ] = (object) array(
-									'link' => clean_url( admin_url('plugin-install.php?tab=search&type=tag&s=' . urlencode($tag['name'])) ),
-									'name' => $tag['name'],
-									'count' => $tag['count'] );
-		echo wp_generate_tag_cloud($tags, array( 'single_text' => __('%d plugin'), 'multiple_text' => __('%d plugins') ) );
+	//Set up the tags in a way which can be interprated by wp_generate_tag_cloud()
+	$tags = array();
+	foreach ( (array)$api_tags as $tag )
+		$tags[ $tag['name'] ] = (object) array(
+								'link' => clean_url( admin_url('plugin-install.php?tab=search&type=tag&s=' . urlencode($tag['name'])) ),
+								'name' => $tag['name'],
+								'id' => sanitize_title_with_dashes($tag['name']),
+								'count' => $tag['count'] );
+	echo wp_generate_tag_cloud($tags, array( 'single_text' => __('%d plugin'), 'multiple_text' => __('%d plugins') ) );
 }
 
+/**
+ * Display search form for searching plugins.
+ *
+ * @since 2.7.0
+ */
 function install_search_form(){
 	$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
 	$term = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
@@ -130,53 +168,94 @@ function install_search_form(){
 	?><form id="search-plugins" method="post" action="<?php echo admin_url('plugin-install.php?tab=search') ?>">
 		<select name="type" id="typeselector">
 			<option value="term"<?php selected('term', $type) ?>><?php _e('Term') ?></option>
-			<option value="tag"<?php selected('tag', $type) ?>><?php _e('Tag') ?></option>
 			<option value="author"<?php selected('author', $type) ?>><?php _e('Author') ?></option>
+			<option value="tag"<?php selected('tag', $type) ?>><?php _e('Tag') ?></option>
 		</select>
 		<input type="text" name="s" id="search-field" value="<?php echo attribute_escape($term) ?>" />
 		<input type="submit" name="search" value="<?php echo attribute_escape(__('Search')) ?>" class="button" />
+		<?php echo $after_submit ?>
 	</form><?php
 }
 
 add_action('install_plugins_featured', 'install_featured', 10, 1);
-function install_featured($page){
+/**
+ * Display featured plugins.
+ *
+ * @since 2.7.0
+ *
+ * @param string $page
+ */
+function install_featured($page = 1) {
 	$args = array('browse' => 'featured', 'page' => $page);
 	$api = plugins_api('query_plugins', $args);
+	if ( is_wp_error($api) )
+		wp_die($api);
 	display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
 }
+
 add_action('install_plugins_popular', 'install_popular', 10, 1);
-function install_popular($page){
+/**
+ * Display popular plugins.
+ *
+ * @since 2.7.0
+ *
+ * @param string $page
+ */
+function install_popular($page = 1) {
 	$args = array('browse' => 'popular', 'page' => $page);
 	$api = plugins_api('query_plugins', $args);
 	display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
 }
+
 add_action('install_plugins_new', 'install_new', 10, 1);
-function install_new($page){
+/**
+ * Display new plugins.
+ *
+ * @since 2.7.0
+ *
+ * @param string $page
+ */
+function install_new($page = 1) {
 	$args = array('browse' => 'new', 'page' => $page);
 	$api = plugins_api('query_plugins', $args);
+	if ( is_wp_error($api) )
+		wp_die($api);
 	display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
 }
 add_action('install_plugins_updated', 'install_updated', 10, 1);
-function install_updated($page){
+
+
+/**
+ * Display recently updated plugins.
+ *
+ * @since 2.7.0
+ *
+ * @param string $page
+ */
+function install_updated($page = 1) {
 	$args = array('browse' => 'updated', 'page' => $page);
 	$api = plugins_api('query_plugins', $args);
 	display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
 }
-add_action('install_plugins_upload', 'install_upload_custom', 10, 1);
-function install_upload_custom($page){
-	//$args = array('browse' => 'updated', 'page' => $page);
-	//$api = plugins_api('query_plugins', $args);
-	//display_plugins_table($api->plugins, $api->info['page'], $api->info['pages']);
-	echo '<h1>Not Implemented</h1> <p>Will utilise SwfUpload(if available) & unzip .zip plugin packages</p>';
-}
 
+/**
+ * Display plugin content based on plugin list.
+ *
+ * @since 2.7.0
+ *
+ * @param array $plugins List of plugins.
+ * @param string $page
+ * @param int $totalpages Number of pages.
+ */
 function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 	global $tab;
 
 	$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
 	$term = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
 
-	$plugins_allowedtags = array('a' => array('href' => array(),'title' => array(), 'target' => array()),'abbr' => array('title' => array()),'acronym' => array('title' => array()),'code' => array(),'em' => array(),'strong' => array());
+	$plugins_allowedtags = array('a' => array('href' => array(),'title' => array(), 'target' => array()),
+								'abbr' => array('title' => array()),'acronym' => array('title' => array()),
+								'code' => array(), 'pre' => array(), 'em' => array(),'strong' => array());
 
 ?>
 	<div class="tablenav">
@@ -184,7 +263,7 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 		<?php do_action('install_plugins_table_header'); ?>
 		</div>
 		<?php
-			$url = $_SERVER['REQUEST_URI'];
+			$url = clean_url($_SERVER['REQUEST_URI']);
 			if ( ! empty($term) )
 				$url = add_query_arg('s', $term, $url);
 			if ( ! empty($type) )
@@ -200,8 +279,8 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 			if ( $page_links )
 				echo "\t\t<div class='tablenav-pages'>$page_links</div>";
 ?>
+		<br class="clear" />
 	</div>
-	<br class="clear" />
 	<table class="widefat" id="install-plugins">
 		<thead>
 			<tr>
@@ -212,6 +291,17 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 				<th scope="col" class="action-links"><?php _e('Actions'); ?></th>
 			</tr>
 		</thead>
+
+		<tfoot>
+			<tr>
+				<th scope="col" class="name"><?php _e('Name'); ?></th>
+				<th scope="col" class="num"><?php _e('Version'); ?></th>
+				<th scope="col" class="num"><?php _e('Rating'); ?></th>
+				<th scope="col" class="desc"><?php _e('Description'); ?></th>
+				<th scope="col" class="action-links"><?php _e('Actions'); ?></th>
+			</tr>
+		</tfoot>
+
 		<tbody class="plugins">
 		<?php
 			if( empty($plugins) )
@@ -234,7 +324,7 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 				$author = wp_kses($author, $plugins_allowedtags);
 
 				if( isset($plugin['homepage']) )
-					$title = '<a target="_blank" href="' . $plugin['homepage'] . '">' . $title . '</a>';
+					$title = '<a target="_blank" href="' . attribute_escape($plugin['homepage']) . '">' . $title . '</a>';
 
 				$action_links = array();
 				$action_links[] = '<a href="' . admin_url('plugin-install.php?tab=plugin-information&amp;plugin=' . $plugin['slug'] .
@@ -247,7 +337,7 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 				<td class="name"><?php echo $title; ?></td>
 				<td class="vers"><?php echo $version; ?></td>
 				<td class="vers">
-					<div class="star-holder" title="<?php printf( __('based on %d ratings'), $plugin['num_ratings'] ); ?>">
+					<div class="star-holder" title="<?php printf(__ngettext('(based on %d rating)', '(based on %d ratings)', $plugin['num_ratings']), number_format_i18n($plugin['num_ratings'])) ?>">
 						<div class="star star-rating" style="width: <?php echo attribute_escape($plugin['rating']) ?>px"></div>
 						<div class="star star5"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('5 stars') ?>" /></div>
 						<div class="star star4"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('4 stars') ?>" /></div>
@@ -264,65 +354,52 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 			?>
 		</tbody>
 	</table>
-<?php
-}
 
-function install_iframe_header($title = '') {
-if( empty($title) )
-	$title = __('Plugin Install &#8212; WordPress');
+	<div class="tablenav">
+		<?php if ( $page_links )
+				echo "\t\t<div class='tablenav-pages'>$page_links</div>"; ?>
+		<br class="clear" />
+	</div>
 
-register_shutdown_function('install_iframe_footer'); //Do footer after content, Allows us to simply die or return at any point as may happen with error handlers
-
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" <?php do_action('admin_xml_ns'); ?> <?php language_attributes(); ?>>
-<head>
-<meta http-equiv="Content-Type" content="<?php bloginfo('html_type'); ?>; charset=<?php echo get_option('blog_charset'); ?>" />
-<title><?php bloginfo('name') ?> &rsaquo; <?php echo $title ?></title>
 <?php
-wp_enqueue_style( 'global' );
-wp_enqueue_style( 'wp-admin' );
-wp_enqueue_style( 'colors' );
-?>
-<script type="text/javascript">
-//<![CDATA[
-function addLoadEvent(func) {if ( typeof wpOnload!='function'){wpOnload=func;}else{ var oldonload=wpOnload;wpOnload=function(){oldonload();func();}}}
-//]]>
-</script>
-<?php
-do_action('admin_print_styles');
-do_action('admin_print_scripts');
-do_action('admin_head');
-?>
-</head>
-<body<?php if ( isset($GLOBALS['body_id']) ) echo ' id="' . $GLOBALS['body_id'] . '"'; ?>>
-<?php
-}
-
-function install_iframe_footer() {
-echo '
-</body>
-</html>';
 }
 
 add_action('install_plugins_pre_plugin-information', 'install_plugin_information');
+
+/**
+ * Display plugin information in dialog box form.
+ *
+ * @since 2.7.0
+ */
 function install_plugin_information() {
 	global $tab;
 
 	$api = plugins_api('plugin_information', array('slug' => $_REQUEST['plugin']));
 
+	if ( is_wp_error($api) )
+		wp_die($api);
+
+	$plugins_allowedtags = array('a' => array('href' => array(), 'title' => array(), 'target' => array()),
+								'abbr' => array('title' => array()), 'acronym' => array('title' => array()),
+								'code' => array(), 'pre' => array(), 'em' => array(), 'strong' => array(),
+								'div' => array(), 'p' => array(), 'ul' => array(), 'ol' => array(), 'li' => array());
+	//Sanitize HTML
+	foreach ( (array)$api->sections as $section_name => $content )
+		$api->sections[$section_name] = wp_kses($content, $plugins_allowedtags);
+	foreach ( array('version', 'author', 'requires', 'tested', 'homepage', 'downloaded', 'slug') as $key )
+		$api->$key = wp_kses($api->$key, $plugins_allowedtags);
+
 	$section = isset($_REQUEST['section']) ? $_REQUEST['section'] : 'description'; //Default to the Description tab, Do not translate, API returns English.
 	if( empty($section) || ! isset($api->sections[ $section ]) )
 		$section = array_shift( $section_titles = array_keys((array)$api->sections) );
 
-	install_iframe_header();
+	iframe_header( __('Plugin Install') );	
 	echo "<div id='$tab-header'>\n";
 	echo "<ul id='sidemenu'>\n";
 	foreach ( (array)$api->sections as $section_name => $content ) {
 
 		$title = $section_name;
-		$title[0] = strtoupper($title[0]); //Capitalize first character.
-		$title = str_replace('_', ' ', $title);
+		$title = ucwords(str_replace('_', ' ', $title));
 
 		$class = ( $section_name == $section ) ? ' class="current"' : '';
 		$href = add_query_arg( array('tab' => $tab, 'section' => $section_name) );
@@ -332,7 +409,6 @@ function install_plugin_information() {
 	}
 	echo "</ul>\n";
 	echo "</div>\n";
-
 	?>
 	<div class="alignright fyi">
 		<?php if ( ! empty($api->download_link) ) : ?>
@@ -356,12 +432,12 @@ function install_plugin_information() {
 				default:
 				case 'install':
 					if ( current_user_can('install_plugins') ) :
-				?><a href="<?php echo wp_nonce_url(admin_url('plugin-install.php?tab=install&plugin=' . $api->slug), 'install-plugin_' . $api->slug) ?>"><?php _e('Install Now') ?></a><?php
+				?><a href="<?php echo wp_nonce_url(admin_url('plugin-install.php?tab=install&plugin=' . $api->slug), 'install-plugin_' . $api->slug) ?>" target="_parent"><?php _e('Install Now') ?></a><?php
 					endif;
 				break;
 				case 'update_available':
 					if ( current_user_can('update_plugins') ) :
-						?><a href="<?php echo wp_nonce_url(admin_url('update.php?action=upgrade-plugin&plugin=' . $update_file), 'upgrade-plugin_' . $update_file) ?>"><?php _e('Install Update Now') ?></a><?php
+						?><a href="<?php echo wp_nonce_url(admin_url('update.php?action=upgrade-plugin&plugin=' . $update_file), 'upgrade-plugin_' . $update_file) ?>" target="_parent"><?php _e('Install Update Now') ?></a><?php
 					endif;
 				break;
 				case 'latest_installed':
@@ -394,7 +470,7 @@ function install_plugin_information() {
 <?php endif; ?>
 		</ul>
 		<h2><?php _e('Average Rating') ?></h2>
-		<div class="star-holder" title="<?php printf(__('(based on %d ratings)'), $api->num_ratings) ?>">
+		<div class="star-holder" title="<?php printf(__ngettext('(based on %s rating)', '(based on %s ratings)', $api->num_ratings), number_format_i18n($api->num_ratings)); ?>">
 			<div class="star star-rating" style="width: <?php echo attribute_escape($api->rating) ?>px"></div>
 			<div class="star star5"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('5 stars') ?>" /></div>
 			<div class="star star4"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('4 stars') ?>" /></div>
@@ -402,10 +478,14 @@ function install_plugin_information() {
 			<div class="star star2"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('2 stars') ?>" /></div>
 			<div class="star star1"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('1 star') ?>" /></div>
 		</div>
-		<small><?php printf(__('(based on %d ratings)'), $api->num_ratings) ?></small>
+		<small><?php printf(__ngettext('(based on %s rating)', '(based on %s ratings)', $api->num_ratings), number_format_i18n($api->num_ratings)); ?></small>
 	</div>
 	<div id="section-holder" class="wrap">
-		<?php
+	<?php
+		if ( version_compare($GLOBALS['wp_version'], $api->tested, '>') ) 
+			echo '<div class="updated"><p>' . __('<strong>Warning:</strong> This plugin has <strong>not been tested</strong> with your current version of WordPress.') . '</p></div>';
+		else if ( version_compare($GLOBALS['wp_version'], $api->requires, '<') ) 
+			echo '<div class="updated"><p>' . __('<strong>Warning:</strong> This plugin has not been marked as being <strong>not compatible</strong> with your version of WordPress.') . '</p></div>';
 		foreach ( (array)$api->sections as $section_name => $content ) {
 			$title = $section_name;
 			$title[0] = strtoupper($title[0]);
@@ -418,26 +498,66 @@ function install_plugin_information() {
 
 			$display = ( $section_name == $section ) ? 'block' : 'none';
 
-			echo "\t<div id='section-{$san_title}' style='display: {$display};'>\n";
+			echo "\t<div id='section-{$san_title}' class='section' style='display: {$display};'>\n";
 			echo "\t\t<h2 class='long-header'>$title</h2>";
 			echo $content;
 			echo "\t</div>\n";
 		}
 	echo "</div>\n";
 
+	iframe_footer();
 	exit;
 }
 
-add_action('install_plugins_pre_install', 'install_plugin');
+
+add_action('install_plugins_upload', 'upload_plugin');
+function upload_plugin() {
+
+	if ( ! ( ( $uploads = wp_upload_dir() ) && false === $uploads['error'] ) )
+		wp_die($uploads['error']);
+
+	if ( !empty($_FILES) )
+		$filename = $_FILES['pluginzip']['name'];
+	else if ( isset($_GET['package']) )
+		$filename = $_GET['package'];
+
+	check_admin_referer('plugin-upload');
+
+	echo '<div class="wrap">';
+	echo '<h2>', sprintf( __('Installing Plugin from file: %s'), basename($filename) ), '</h2>';
+
+	//Handle a newly uploaded file, Else assume it was 
+	if ( !empty($_FILES) ) {
+		$filename = wp_unique_filename( $uploads['basedir'], $filename );
+		$local_file = $uploads['basedir'] . '/' . $filename;
+	
+		// Move the file to the uploads dir
+		if ( false === @ move_uploaded_file( $_FILES['pluginzip']['tmp_name'], $local_file) )
+			wp_die( sprintf( __('The uploaded file could not be moved to %s.' ), $uploads['path']));
+	} else {
+		$local_file = $uploads['basedir'] . '/' . $filename;
+	}
+
+	do_plugin_install_local_package($local_file, $filename);
+	echo '</div>';
+}
+
+add_action('install_plugins_install', 'install_plugin');
+
+/**
+ * Display plugin link and execute install.
+ *
+ * @since 2.7.0
+ */
 function install_plugin() {
 
 	$plugin = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
 
 	check_admin_referer('install-plugin_' . $plugin);
-
-	install_iframe_header();
-
 	$api = plugins_api('plugin_information', array('slug' => $plugin, 'fields' => array('sections' => false) ) ); //Save on a bit of bandwidth.
+	
+	if ( is_wp_error($api) )
+		wp_die($api);
 
 	echo '<div class="wrap">';
 	echo '<h2>', sprintf( __('Installing Plugin: %s'), $api->name . ' ' . $api->version ), '</h2>';
@@ -445,9 +565,17 @@ function install_plugin() {
 	do_plugin_install($api->download_link, $api);
 	echo '</div>';
 
-	exit;
 }
-function do_plugin_install($download_url = '', $plugin_information = NULL) {
+
+/**
+ * Retrieve plugin and install.
+ *
+ * @since 2.7.0
+ *
+ * @param string $download_url Download URL.
+ * @param object $plugin_information Optional. Plugin information
+ */
+function do_plugin_install($download_url, $plugin_information = null) {
 	global $wp_filesystem;
 
 	if ( empty($download_url) ) {
@@ -485,15 +613,79 @@ function do_plugin_install($download_url = '', $plugin_information = NULL) {
 		$plugin_file = $result;
 
 		$install_actions = apply_filters('install_plugin_complete_actions', array(
-							'activate_plugin' => '<a href="' . wp_nonce_url('plugins.php?action=activate&amp;plugin=' . $plugin_file, 'activate-plugin_' . $plugin_file) . '" title="' . __('Activate this plugin') . '" target="_parent">' . __('Activate Plugin') . '</a>',
-							'plugins_page' => '<a href="' . admin_url('plugins.php') . '" title="' . __('Goto plugins page') . '" target="_parent">' . __('Return to Plugins page') . '</a>',
-							'dismiss_dialog' => '<a href="' . admin_url('plugin-installer.php') . '" onclick="window.parent.tb_remove(); return false;" title="' . __('Dismiss Dialog') . '" target="_parent">' . __('Dismiss Dialog') . '</a>'
+			'activate_plugin' => '<a href="' . wp_nonce_url('plugins.php?action=activate&amp;plugin=' . $plugin_file, 'activate-plugin_' . $plugin_file) . '" title="' . attribute_escape(__('Activate this plugin')) . '" target="_parent">' . __('Activate Plugin') . '</a>',
+			'plugins_page' => '<a href="' . admin_url('plugins.php') . '" title="' . attribute_escape(__('Goto plugins page')) . '" target="_parent">' . __('Return to Plugins page') . '</a>'
 							), $plugin_information, $plugin_file);
-
-		echo '<p><strong>' . __('Actions:') . '</strong>' . implode(' | ', (array)$install_actions) . '</p>';
+		if ( ! empty($install_actions) )
+			show_message('<strong>' . __('Actions:') . '</strong> ' . implode(' | ', (array)$install_actions));
 	}
 }
 
+/**
+ * Install a plugin from a local file.
+ *
+ * @since 2.7.0
+ *
+ * @param string $package Local Plugin zip
+ * @param string $filename Optional. Original filename
+ * @param object $plugin_information Optional. Plugin information
+ */
+function do_plugin_install_local_package($package, $filename = '') {
+	global $wp_filesystem;
+
+	if ( empty($package) ) {
+		show_message( __('No plugin Specified') );
+		return;
+	}
+	
+	if ( empty($filename) )
+		$filename = basename($package);
+
+	$url = 'plugin-install.php?tab=upload';
+	$url = add_query_arg(array('package' => $filename), $url);
+
+	$url = wp_nonce_url($url, 'plugin-upload');
+	if ( false === ($credentials = request_filesystem_credentials($url)) )
+		return;
+
+	if ( ! WP_Filesystem($credentials) ) {
+		request_filesystem_credentials($url, '', true); //Failed to connect, Error and request again
+		return;
+	}
+
+	if ( $wp_filesystem->errors->get_error_code() ) {
+		foreach ( $wp_filesystem->errors->get_error_messages() as $message )
+			show_message($message);
+		return;
+	}
+
+	$result = wp_install_plugin_local_package( $package, 'show_message' );
+
+	if ( is_wp_error($result) ) {
+		show_message($result);
+		show_message( __('Installation Failed') );
+	} else {
+		show_message( __('Successfully installed the plugin.') );
+		$plugin_file = $result;
+
+		$install_actions = apply_filters('install_plugin_complete_actions', array(
+							'activate_plugin' => '<a href="' . wp_nonce_url('plugins.php?action=activate&amp;plugin=' . $plugin_file, 'activate-plugin_' . $plugin_file) . '" title="' . __('Activate this plugin') . '" target="_parent">' . __('Activate Plugin') . '</a>',
+							'plugins_page' => '<a href="' . admin_url('plugins.php') . '" title="' . __('Goto plugins page') . '" target="_parent">' . __('Return to Plugins page') . '</a>'
+							), $plugin_information, $plugin_file);
+		if ( ! empty($install_actions) )
+			show_message('<strong>' . __('Actions:') . '</strong> ' . implode(' | ', (array)$install_actions));
+	}
+}
+
+/**
+ * Install plugin.
+ *
+ * @since 2.7.0
+ *
+ * @param string $package
+ * @param string $feedback Optional.
+ * @return mixed.
+ */
 function wp_install_plugin($package, $feedback = '') {
 	global $wp_filesystem;
 
@@ -544,7 +736,7 @@ function wp_install_plugin($package, $feedback = '') {
 	$result = unzip_file($download_file, $working_dir);
 
 	// Once extracted, delete the package
-	unlink($download_file);
+	@unlink($download_file);
 
 	if ( is_wp_error($result) ) {
 		$wp_filesystem->delete($working_dir, true);
@@ -584,5 +776,99 @@ function wp_install_plugin($package, $feedback = '') {
 	return  $folder . '/' . $pluginfiles[0];
 }
 
+/**
+ * Install plugin from local package
+ *
+ * @since 2.7.0
+ *
+ * @param string $package
+ * @param string $feedback Optional.
+ * @return mixed.
+ */
+function wp_install_plugin_local_package($package, $feedback = '') {
+	global $wp_filesystem;
+
+	if ( !empty($feedback) )
+		add_filter('install_feedback', $feedback);
+
+	// Is a filesystem accessor setup?
+	if ( ! $wp_filesystem || ! is_object($wp_filesystem) )
+		WP_Filesystem();
+
+	if ( ! is_object($wp_filesystem) )
+		return new WP_Error('fs_unavailable', __('Could not access filesystem.'));
+
+	if ( $wp_filesystem->errors->get_error_code() )
+		return new WP_Error('fs_error', __('Filesystem error'), $wp_filesystem->errors);
+
+	//Get the base plugin folder
+	$plugins_dir = $wp_filesystem->wp_plugins_dir();
+	if ( empty($plugins_dir) )
+		return new WP_Error('fs_no_plugins_dir', __('Unable to locate WordPress Plugin directory.'));
+
+	//And the same for the Content directory.
+	$content_dir = $wp_filesystem->wp_content_dir();
+	if( empty($content_dir) )
+		return new WP_Error('fs_no_content_dir', __('Unable to locate WordPress Content directory (wp-content).'));
+
+	$plugins_dir = trailingslashit( $plugins_dir );
+	$content_dir = trailingslashit( $content_dir );
+
+	if ( empty($package) )
+		return new WP_Error('no_package', __('Install package not available.'));
+
+	if ( is_wp_error($download_file) )
+		return new WP_Error('download_failed', __('Download failed.'), $download_file->get_error_message());
+
+	$working_dir = $content_dir . 'upgrade/' . basename($package, '.zip');
+
+	// Clean up working directory
+	if ( $wp_filesystem->is_dir($working_dir) )
+		$wp_filesystem->delete($working_dir, true);
+
+	apply_filters('install_feedback', __('Unpacking the plugin package'));
+	// Unzip package to working directory
+	$result = unzip_file($package, $working_dir);
+
+	// Once extracted, delete the package
+	unlink($package);
+
+	if ( is_wp_error($result) ) {
+		$wp_filesystem->delete($working_dir, true);
+		return $result;
+	}
+
+	//Get a list of the directories in the working directory before we delete it, We need to know the new folder for the plugin
+	$filelist = array_keys( $wp_filesystem->dirlist($working_dir) );
+
+	if( $wp_filesystem->exists( $plugins_dir . $filelist[0] ) ) {
+		$wp_filesystem->delete($working_dir, true);
+		return new WP_Error('install_folder_exists', __('Folder allready exists.'), $filelist[0] );
+	}
+
+	apply_filters('install_feedback', __('Installing the plugin'));
+	// Copy new version of plugin into place.
+	$result = copy_dir($working_dir, $plugins_dir);
+	if ( is_wp_error($result) ) {
+		$wp_filesystem->delete($working_dir, true);
+		return $result;
+	}
+
+	//Get a list of the directories in the working directory before we delete it, We need to know the new folder for the plugin
+	$filelist = array_keys( $wp_filesystem->dirlist($working_dir) );
+
+	// Remove working directory
+	$wp_filesystem->delete($working_dir, true);
+
+	if( empty($filelist) )
+		return false; //We couldnt find any files in the working dir, therefor no plugin installed? Failsafe backup.
+
+	$folder = $filelist[0];
+	$plugin = get_plugins('/' . $folder); //Ensure to pass with leading slash
+	$pluginfiles = array_keys($plugin); //Assume the requested plugin is the first in the list
+
+	//Return the plugin files name.
+	return  $folder . '/' . $pluginfiles[0];
+}
 
 ?>

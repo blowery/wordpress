@@ -18,26 +18,32 @@ $form_extra = "' />\n<input type='hidden' name='comment_ID' value='" . $comment-
 <form name="post" action="comment.php" method="post" id="post">
 <?php wp_nonce_field('update-comment_' . $comment->comment_ID) ?>
 <div class="wrap">
-<h2><?php echo $toprow_title; ?></h2>
 
-<div id="poststuff">
+<div id="poststuff" class="metabox-holder">
 <input type="hidden" name="user_ID" value="<?php echo (int) $user_ID ?>" />
 <input type="hidden" name="action" value='<?php echo $form_action . $form_extra ?>' />
 <?php
 // All meta boxes should be defined and added before the first do_meta_boxes() call (or potentially during the do_meta_boxes action).
 
-function comment_submit_meta_box($comment) { // not used, but keeping for a bit longer in case it's needed
+/**
+ * Display comment edit meta box.
+ *
+ * Not used, but keeping for a bit longer in case it's needed.
+ *
+ * @since 2.7.0
+ *
+ * @param object $comment Comment data.
+ */
+function comment_submit_meta_box($comment) {
 ?>
 <div class="submitbox" id="submitcomment">
 <div class="inside-submitbox">
 
-<p><strong><label for='comment_status'><?php _e('Approval Status') ?></label></strong></p>
-<p>
-<select name='comment_status' id='comment_status'>
-<option<?php selected( $comment->comment_approved, '1' ); ?> value='1'><?php _e('Approved') ?></option>
-<option<?php selected( $comment->comment_approved, '0' ); ?> value='0'><?php _e('Awaiting Moderation') ?></option>
-<option<?php selected( $comment->comment_approved, 'spam' ); ?> value='spam'><?php _e('Spam') ?></option>
-</select>
+<p><strong><?php _e('Approval Status') ?></strong></p>
+<p id='comment-status-radio'>
+<label><input type="radio"<?php checked( $comment->comment_approved, '1' ); ?> name="comment_status" value="1" /><?php _e('Approved') ?></label>
+<label><input type="radio"<?php checked( $comment->comment_approved, '0' ); ?> name="comment_status" value="0" /><?php _e('Awaiting Moderation') ?></label>
+<label><input type="radio"<?php checked( $comment->comment_approved, 'spam' ); ?> name="comment_status" value="spam" /><?php _e('Spam') ?></label>
 </p>
 
 <div class="insidebox" id="deletebutton">
@@ -63,6 +69,9 @@ $time = mysql2date(get_option('time_format'), $comment->comment_date);
 </div>
 <?php
 }
+
+$email = attribute_escape( $comment->comment_author_email );
+$url = attribute_escape( $comment->comment_author_url );
 // add_meta_box('submitdiv', __('Save'), 'comment_submit_meta_box', 'comment', 'side', 'core');
 ?>
 
@@ -73,12 +82,13 @@ $time = mysql2date(get_option('time_format'), $comment->comment_date);
 <div class="submitbox" id="submitcomment">
 <div class="inside-submitbox">
 
-<div class="insidebox"><strong><label for='comment_status'><?php _e('This comment is') ?></label></strong><br />
-<select name='comment_status' id='comment_status'>
-<option<?php selected( $comment->comment_approved, '1' ); ?> value='1'><?php _e('Approved') ?></option>
-<option<?php selected( $comment->comment_approved, '0' ); ?> value='0'><?php _e('Awaiting Moderation') ?></option>
-<option<?php selected( $comment->comment_approved, 'spam' ); ?> value='spam'><?php _e('Spam') ?></option>
-</select>
+<div class="insidebox">
+<div id='comment-status-radio'>
+<p><strong><?php _e('This comment is') ?></strong></p>
+<label><input type="radio"<?php checked( $comment->comment_approved, '1' ); ?> name="comment_status" value="1" /><?php _e('Approved') ?></label><br />
+<label><input type="radio"<?php checked( $comment->comment_approved, '0' ); ?> name="comment_status" value="0" /><?php _e('Awaiting Moderation') ?></label><br />
+<label><input type="radio"<?php checked( $comment->comment_approved, 'spam' ); ?> name="comment_status" value="spam" /><?php _e('Spam') ?></label>
+</div>
 </div>
 
 <div class="insidebox" id="deletebutton">
@@ -124,14 +134,22 @@ $time = mysql2date(get_option('time_format'), $comment->comment_date);
 <div id="emaildiv" class="stuffbox">
 <h3><label for="email"><?php _e('E-mail') ?></label></h3>
 <div class="inside">
-<input type="text" name="newcomment_author_email" size="30" value="<?php echo attribute_escape( $comment->comment_author_email ); ?>" tabindex="2" id="email" />
+<input type="text" name="newcomment_author_email" size="30" value="<?php echo $email; ?>" tabindex="2" id="email" />
+<?php if ( $email )
+	comment_author_email_link( __('Send Email'), '<p>', '</p>'); ?>
 </div>
 </div>
 
 <div id="uridiv" class="stuffbox">
 <h3><label for="newcomment_author_url"><?php _e('URL') ?></label></h3>
 <div class="inside">
-<input type="text" id="newcomment_author_url" name="newcomment_author_url" size="30" value="<?php echo attribute_escape( $comment->comment_author_url ); ?>" tabindex="3" />
+<input type="text" id="newcomment_author_url" name="newcomment_author_url" size="30" value="<?php echo $url; ?>" tabindex="3" />
+<?php if ( ! empty( $url ) && 'http://' != $url ) {
+	$url = get_comment_author_url();
+	$link = "<a href='$url' rel='external nofollow' target='_blank'>" . __('Visit site') . "</a>";
+	
+	echo '<p>' . apply_filters('get_comment_author_link', $link) . '</p>'; 
+} ?>
 </div>
 </div>
 

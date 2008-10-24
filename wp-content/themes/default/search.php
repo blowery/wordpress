@@ -1,4 +1,10 @@
-<?php get_header(); ?>
+<?php
+/**
+ * @package WordPress
+ * @subpackage Default_Theme
+ */
+
+get_header(); ?>
 
 	<div id="content" class="narrowcolumn">
 
@@ -31,7 +37,7 @@
 	<?php else : ?>
 
 		<h2 class="center">No posts found. Try a different search?</h2>
-		<?php include (TEMPLATEPATH . '/searchform.php'); ?>
+		<?php get_search_form(); ?>
 
 	<?php endif; ?>
 

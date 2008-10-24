@@ -1,4 +1,10 @@
-<?php get_header(); ?>
+<?php
+/**
+ * @package WordPress
+ * @subpackage Default_Theme
+ */
+
+get_header(); ?>
 
 	<div id="content" class="narrowcolumn">
 
@@ -28,7 +34,7 @@
 
 		<h2 class="center">Not Found</h2>
 		<p class="center">Sorry, but you are looking for something that isn't here.</p>
-		<?php include (TEMPLATEPATH . "/searchform.php"); ?>
+		<?php get_search_form(); ?>
 
 	<?php endif; ?>
 

@@ -253,11 +253,15 @@ if ( !function_exists( 'wp_mail' ) ) :
  * @param string $subject Email subject
  * @param string $message Message contents
  * @param string|array $headers Optional. Additional headers.
+ * @param string|array $attachments Optional. Files to attach.
  * @return bool Whether the email contents were sent successfully.
  */
-function wp_mail( $to, $subject, $message, $headers = '' ) {
+function wp_mail( $to, $subject, $message, $headers = '', $attachments = array() ) {
 	// Compact the input, apply the filters, and extract them back out
-	extract( apply_filters( 'wp_mail', compact( 'to', 'subject', 'message', 'headers' ) ) );
+	extract( apply_filters( 'wp_mail', compact( 'to', 'subject', 'message', 'headers', 'attachments' ) ) );
+
+	if ( !is_array($attachments) )
+		$attachments = explode( "\n", $attachments );
 
 	global $phpmailer;
 
@@ -406,6 +410,13 @@ function wp_mail( $to, $subject, $message, $headers = '' ) {
 		}
 	}
 
+	error_log($attachments);
+	if ( !empty( $attachments ) ) {
+		foreach ( $attachments as $attachment ) {
+			$phpmailer->AddAttachment($attachment);
+		}
+	}
+
 	do_action_ref_array( 'phpmailer_init', array( &$phpmailer ) );
 
 	// Send!
@@ -415,16 +426,16 @@ function wp_mail( $to, $subject, $message, $headers = '' ) {
 }
 endif;
 
+if ( !function_exists('wp_authenticate') ) :
 /**
  * Checks a user's login information and logs them in if it checks out.
  *
- * @since 2.5
+ * @since 2.5.0
  *
  * @param string $username User's username
  * @param string $password User's password
  * @return WP_Error|WP_User WP_User object if login successful, otherwise WP_Error object.
  */
-if ( !function_exists('wp_authenticate') ) :
 function wp_authenticate($username, $password) {
 	$username = sanitize_user($username);
 
@@ -456,12 +467,12 @@ function wp_authenticate($username, $password) {
 }
 endif;
 
+if ( !function_exists('wp_logout') ) :
 /**
  * Log the current user out.
  *
- * @since 2.5
+ * @since 2.5.0
  */
-if ( !function_exists('wp_logout') ) :
 function wp_logout() {
 	wp_clear_auth_cookie();
 	do_action('wp_logout');
@@ -772,7 +783,7 @@ if ( !function_exists('check_admin_referer') ) :
 function check_admin_referer($action = -1, $query_arg = '_wpnonce') {
 	$adminurl = strtolower(admin_url());
 	$referer = strtolower(wp_get_referer());
-	$result = wp_verify_nonce($_REQUEST[$query_arg], $action);
+	$result = isset($_REQUEST[$query_arg]) ? wp_verify_nonce($_REQUEST[$query_arg], $action) : false;
 	if ( !$result && !(-1 == $action && strpos($referer, $adminurl) !== false) ) {
 		wp_nonce_ays($action);
 		die();
@@ -1454,12 +1465,17 @@ if ( !function_exists( 'get_avatar' ) ) :
  * @param int|string|object $id_or_email A user ID,  email address, or comment object
  * @param int $size Size of the avatar image
  * @param string $default URL to a default image to use if no avatar is available
- * @param string $alt Alternate text to use in image tag
+ * @param string $alt Alternate text to use in image tag. Defaults to blank
  * @return string <img> tag for the user's avatar
 */
-function get_avatar( $id_or_email, $size = '96', $default = '', $alt = 'Avatar' ) {
+function get_avatar( $id_or_email, $size = '96', $default = '', $alt = false ) {
 	if ( ! get_option('show_avatars') )
 		return false;
+
+	if ( false === $alt)
+		$safe_alt = '';
+	else
+		$safe_alt = attribute_escape( $alt );
 
 	if ( !is_numeric($size) )
 		$size = '96';
@@ -1471,6 +1487,9 @@ function get_avatar( $id_or_email, $size = '96', $default = '', $alt = 'Avatar' 
 		if ( $user )
 			$email = $user->user_email;
 	} elseif ( is_object($id_or_email) ) {
+		if ( isset($id_or_email->comment_type) && '' != $id_or_email->comment_type && 'comment' != $id_or_email->comment_type )
+			return false; // No avatar for pingbacks or trackbacks
+
 		if ( !empty($id_or_email->user_id) ) {
 			$id = (int) $id_or_email->user_id;
 			$user = get_userdata($id);
@@ -1514,9 +1533,9 @@ function get_avatar( $id_or_email, $size = '96', $default = '', $alt = 'Avatar' 
 		if ( !empty( $rating ) )
 			$out .= "&amp;r={$rating}";
 
-		$avatar = "<img alt='{$alt}' src='{$out}' class='avatar avatar-{$size}' height='{$size}' width='{$size}' />";
+		$avatar = "<img alt='{$safe_alt}' src='{$out}' class='avatar avatar-{$size}' height='{$size}' width='{$size}' />";
 	} else {
-		$avatar = "<img alt='{$alt}' src='{$default}' class='avatar avatar-{$size} avatar-default' height='{$size}' width='{$size}' />";
+		$avatar = "<img alt='{$safe_alt}' src='{$default}' class='avatar avatar-{$size} avatar-default' height='{$size}' width='{$size}' />";
 	}
 
 	return apply_filters('get_avatar', $avatar, $id_or_email, $size, $default, $alt);
@@ -1644,13 +1663,8 @@ function wp_text_diff( $left_string, $right_string, $args = null ) {
 	if ( !class_exists( 'WP_Text_Diff_Renderer_Table' ) )
 		require( ABSPATH . WPINC . '/wp-diff.php' );
 
-	// Normalize whitespace
-	$left_string  = trim($left_string);
-	$right_string = trim($right_string);
-	$left_string  = str_replace("\r", "\n", $left_string);
-	$right_string = str_replace("\r", "\n", $right_string);
-	$left_string  = preg_replace( array( '/\n+/', '/[ \t]+/' ), array( "\n", ' ' ), $left_string );
-	$right_string = preg_replace( array( '/\n+/', '/[ \t]+/' ), array( "\n", ' ' ), $right_string );
+	$left_string  = normalize_whitespace($left_string);
+	$right_string = normalize_whitespace($right_string);
 
 	$left_lines  = split("\n", $left_string);
 	$right_lines = split("\n", $right_string);

@@ -10,17 +10,19 @@
 require_once('admin.php');
 
 // Handle bulk actions
-if ( isset($_GET['action']) && $_GET['action'] != -1 ) {
-	switch ( $_GET['action'] ) {
+if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2'] ) ) {
+	$doaction = ( -1 != $_GET['action'] ) ? $_GET['action'] : $_GET['action2'];
+
+	switch ( $doaction ) {
 		case 'delete':
 			if ( isset($_GET['post']) && isset($_GET['doaction']) ) {
 				check_admin_referer('bulk-pages');
 				foreach( (array) $_GET['post'] as $post_id_del ) {
 					$post_del = & get_post($post_id_del);
-		
+
 					if ( !current_user_can('delete_page', $post_id_del) )
 						wp_die( __('You are not allowed to delete this page.') );
-		
+
 					if ( $post_del->post_type == 'attachment' ) {
 						if ( ! wp_delete_attachment($post_id_del) )
 							wp_die( __('Error in deleting...') );
@@ -34,11 +36,14 @@ if ( isset($_GET['action']) && $_GET['action'] != -1 ) {
 		case 'edit':
 			if ( isset($_GET['post']) ) {
 				check_admin_referer('bulk-pages');
-				$_GET['post_status'] = $_GET['_status'];
-	
-				if ( -1 == $_GET['post_author'] )
-					unset($_GET['post_author']);
-	
+
+				if ( -1 == $_GET['_status'] ) {
+					$_GET['post_status'] = null;
+					unset($_GET['_status'], $_GET['post_status']);
+				} else {
+					$_GET['post_status'] = $_GET['_status'];
+				}
+
 				$done = bulk_edit_posts($_GET);
 			}
 			break;
@@ -48,22 +53,23 @@ if ( isset($_GET['action']) && $_GET['action'] != -1 ) {
 	elseif (strpos($sendback, 'attachments.php') !== false) $sendback = admin_url('attachments.php');
 	$sendback = preg_replace('|[^a-z0-9-~+_.?#=&;,/:]|i', '', $sendback);
 	if ( isset($done) ) {
-		$done['upd'] = count( $done['upd'] );
-		$done['skip'] = count( $done['skip'] );
+		$done['updated'] = count( $done['updated'] );
+		$done['skipped'] = count( $done['skipped'] );
+		$done['locked'] = count( $done['locked'] );
 		$sendback = add_query_arg( $done, $sendback );
-		unset($done);
 	}
 	wp_redirect($sendback);
 	exit();
-} elseif ( !empty($_GET['_wp_http_referer']) ) {
-	 wp_redirect(remove_query_arg(array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI'])));
+} elseif ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
+	 wp_redirect( remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']) ) );
 	 exit;
 }
 
-$title = __('Pages');
+if ( empty($title) )
+	$title = __('Edit Pages');
 $parent_file = 'edit.php';
 wp_enqueue_script('admin-forms');
-wp_enqueue_script('inline-edit');
+wp_enqueue_script('inline-edit-post');
 wp_enqueue_script('pages');
 
 $post_stati  = array(	//	array( adj, noun )
@@ -89,65 +95,53 @@ wp($query_str);
 
 if ( is_singular() ) {
 	wp_enqueue_script( 'admin-comments' );
-	wp_enqueue_script( 'jquery-table-hotkeys' );
+	enqueue_comment_hotkeys_js();
 }
 
-require_once('admin-header.php');
+require_once('admin-header.php'); ?>
 
-?>
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php manage_columns_prefs('page') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+<br class="clear" />
+</div></form>
+</div>
 
-<form class="search-form" action="" method="get">
-	<p id="page-search" class="search-box">
-		<label class="hidden" for="page-search-input"><?php _e( 'Search Pages' ); ?></label>
-		<input type="text" id="page-search-input" name="s" value="<?php the_search_query(); ?>" />
-		<input type="submit" value="<?php _e( 'Search Pages' ); ?>" class="button" />
-	</p>
-</form>
-
-<?php if ( isset($_GET['upd']) && (int) $_GET['upd'] ) { ?>
+<?php if ( isset($_GET['locked']) || isset($_GET['skipped']) || isset($_GET['updated']) ) { ?>
 <div id="message" class="updated fade"><p>
-<?php printf( __ngettext( '%d page updated.', '%d pages updated.', $_GET['upd'] ), number_format_i18n( $_GET['upd'] ) );
-unset($_GET['upd']);
-	
-	if ( isset($_GET['skip']) && (int) $_GET['skip'] ) {
-		printf( __ngettext( ' %d page not updated. Somebody is editing it.', ' %d pages not updated. Somebody is editing them.', $_GET['skip'] ), number_format_i18n( $_GET['skip'] ) );
-		unset($_GET['skip']);
-	} ?>
+<?php if ( (int) $_GET['updated'] ) {
+	printf( __ngettext( '%d page updated.', '%d pages updated.', $_GET['updated'] ), number_format_i18n( $_GET['updated'] ) );
+	unset($_GET['updated']);
+}
+
+if ( (int) $_GET['skipped'] ) {
+	printf( __ngettext( ' %d page not updated, invalid parent page specified.', ' %d pages not updated, invalid parent page specified.', $_GET['skipped'] ), number_format_i18n( $_GET['skipped'] ) );
+	unset($_GET['skipped']);
+}
+
+if ( (int) $_GET['locked'] ) {
+	printf( __ngettext( ' %d page not updated, somebody is editing it.', ' %d pages not updated, somebody is editing them.', $_GET['locked'] ), number_format_i18n( $_GET['skipped'] ) );
+	unset($_GET['locked']);
+} ?>
 </p></div>
 <?php } ?>
 
+<?php if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET['posted']; ?>
+<div id="message" class="updated fade"><p><strong><?php _e('Your page has been saved.'); ?></strong> <a href="<?php echo get_permalink( $_GET['posted'] ); ?>"><?php _e('View page'); ?></a> | <a href="<?php echo get_edit_post_link( $_GET['posted'] ); ?>"><?php _e('Edit page'); ?></a></p></div>
+<?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('posted'), $_SERVER['REQUEST_URI']);
+endif; ?>
+
 <div class="wrap">
-<form id="adv-settings" action="" method="get">
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php manage_columns_prefs('page') ?>
-<br class="clear" />
-</div></div>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-</div></form>
-
-<h2><?php
-// Use $_GET instead of is_ since they can override each other
-$h2_search = isset($_GET['s']) && $_GET['s'] ? ' ' . sprintf(__('matching &#8220;%s&#8221;'), wp_specialchars( stripslashes( $_GET['s'] ) ) ) : '';
-$h2_author = '';
-if ( isset($_GET['author']) && $_GET['author'] ) {
-	$author_user = get_userdata( (int) $_GET['author'] );
-	$h2_author = ' ' . sprintf(__('by %s'), wp_specialchars( $author_user->display_name ));
-}
-printf( _c( '%1$s%2$s%3$s (<a href="%4$s">Add New</a>)|You can reorder these: 1: Pages, 2: by {s}, 3: matching {s}' ), $post_status_label, $h2_author, $h2_search, 'page-new.php' );
-?></h2>
-
-<form id="posts-filter" action="" method="get">
 <ul class="subsubsub">
 <?php
 
 $avail_post_stati = get_available_post_statuses('page');
-
+if ( empty($locked_post_status) ) :
 $status_links = array();
 $num_posts = wp_count_posts('page', 'readable');
 $class = empty($_GET['post_status']) ? ' class="current"' : '';
@@ -166,18 +160,23 @@ foreach ( $post_stati as $status => $label ) {
 }
 echo implode(' |</li>', $status_links) . '</li>';
 unset($status_links);
+endif;
 ?>
 </ul>
 
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="post-search-input"><?php _e( 'Search Pages' ); ?>:</label>
+	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Pages' ); ?>" class="button" />
+</p>
+</form>
+
+<form id="posts-filter" action="" method="get">
+
 <?php if ( isset($_GET['post_status'] ) ) : ?>
 <input type="hidden" name="post_status" value="<?php echo attribute_escape($_GET['post_status']) ?>" />
-<?php endif;
-
-if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET['posted']; ?>
-<div id="message" class="updated fade"><p><strong><?php _e('Your page has been saved.'); ?></strong> <a href="<?php echo get_permalink( $_GET['posted'] ); ?>"><?php _e('View page'); ?></a> | <a href="<?php echo get_edit_post_link( $_GET['posted'] ); ?>"><?php _e('Edit page'); ?></a></p></div>
-<?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('posted'), $_SERVER['REQUEST_URI']);
-endif;
-?>
+<?php endif; ?>
 
 <div class="tablenav">
 
@@ -202,7 +201,7 @@ if ( $page_links )
 
 <div class="alignleft">
 <select name="action">
-<option value="-1" selected><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
@@ -213,7 +212,7 @@ if ( $page_links )
 <br class="clear" />
 </div>
 
-<br class="clear" />
+<div class="clear"></div>
 
 <?php
 
@@ -227,10 +226,36 @@ if ($posts) {
 <?php print_column_headers('page'); ?>
   </tr>
   </thead>
+
+  <tfoot>
+  <tr>
+<?php print_column_headers('page', false); ?>
+  </tr>
+  </tfoot>
+
   <tbody>
   <?php page_rows($posts, $pagenum, $per_page); ?>
   </tbody>
 </table>
+
+<div class="tablenav">
+<?php
+if ( $page_links )
+	echo "<div class='tablenav-pages'>$page_links</div>";
+?>
+
+<div class="alignleft">
+<select name="action2">
+<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="edit"><?php _e('Edit'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
+</div>
+
+<br class="clear" />
+</div>
+
 </form>
 
 <?php inline_edit_row( 'page' ) ?>
@@ -246,13 +271,6 @@ if ($posts) {
 } // end if ($posts)
 ?>
 
-<div class="tablenav">
-<?php
-if ( $page_links )
-	echo "<div class='tablenav-pages'>$page_links</div>";
-?>
-<br class="clear" />
-</div>
 
 <?php
 

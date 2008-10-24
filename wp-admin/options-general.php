@@ -12,14 +12,52 @@ require_once('./admin.php');
 $title = __('General Settings');
 $parent_file = 'options-general.php';
 
+/**
+ * Display JavaScript on the page.
+ *
+ * @package WordPress
+ * @subpackage General_Settings_Panel
+ */
+function add_js() {
+?>
+<script type="text/javascript">
+//<![CDATA[
+	jQuery(document).ready(function($){
+		$("input[name='date_format']").click(function(){
+			if ( "date_format_custom_radio" != $(this).attr("id") )
+				$("input[name='date_format_custom']").val( $(this).val() );
+		});
+		$("input[name='date_format_custom']").focus(function(){
+			$("#date_format_custom_radio").attr("checked", "checked");
+		});
+
+		$("input[name='time_format']").click(function(){
+			if ( "time_format_custom_radio" != $(this).attr("id") )
+				$("input[name='time_format_custom']").val( $(this).val() );
+		});
+		$("input[name='time_format_custom']").focus(function(){
+			$("#time_format_custom_radio").attr("checked", "checked");
+		});
+	});
+//]]>
+</script>
+<?php
+}
+add_filter('admin_head', 'add_js');
+
 include('./admin-header.php');
 ?>
 
 <div class="wrap">
-<h2><?php _e('General Settings') ?></h2>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
 <form method="post" action="options.php">
-<?php wp_nonce_field('general-options') ?>
-<input type='hidden' name='option_page' value='general' />
+<?php settings_fields('general'); ?>
+
+<p class="submit submit-top">
+<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
+</p>
+
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><label for="blogname"><?php _e('Blog Title') ?></label></th>
@@ -96,15 +134,67 @@ foreach ( $offset_range as $offset ) {
 </td>
 </tr>
 <tr>
-<th scope="row"><label for="date_format"><?php _e('Date Format') ?></label></th>
-<td><input name="date_format" type="text" id="date_format" size="30" value="<?php form_option('date_format'); ?>" /><br />
-<?php _e('Output:') ?> <strong><?php echo mysql2date(get_option('date_format'), current_time('mysql')); ?></strong></td>
+<th scope="row"><?php _e('Date Format') ?></th>
+<td>
+	<fieldset><legend class="hidden"><?php _e('Date Format') ?></legend>
+<?php
+
+	$date_formats = apply_filters( 'date_formats', array(
+		__('F j, Y'),
+		'Y/m/d',
+		'm/d/Y',
+		'd/m/Y',
+	) );
+
+	$custom = TRUE;
+
+	foreach ( $date_formats as $format ) {
+		echo "\t<label title='" . attribute_escape($format) . "'><input type='radio' name='date_format' value='" . attribute_escape($format) . "'";
+		if ( get_option('date_format') === $format ) { // checked() uses "==" rather than "==="
+			echo " checked='checked'";
+			$custom = FALSE;
+		}
+		echo ' /> ' . gmdate( $format, current_time('timestamp') ) . "</label><br />\n";
+	}
+
+	echo '	<label><input type="radio" name="date_format" id="date_format_custom_radio" value="\c\u\s\t\o\m"';
+	checked( $custom, TRUE );
+	echo '/> ' . __('Custom') . ': </label><input type="text" name="date_format_custom" value="' . attribute_escape( get_option('date_format') ) . '" size="30" /> ' . gmdate( get_option('date_format'), current_time('timestamp') ) . "\n";
+
+	echo "\t<p>" . __('<a href="http://codex.wordpress.org/Formatting_Date_and_Time">Documentation on date formatting</a>. Click "Save Changes" to update sample output.') . "</p>\n";
+?>
+	</fieldset>
+</td>
 </tr>
 <tr>
-<th scope="row"><label for="time_format"><?php _e('Time Format') ?></label></th>
-<td><input name="time_format" type="text" id="time_format" size="30" value="<?php form_option('time_format'); ?>" /><br />
-<?php _e('Output:') ?> <strong><?php echo gmdate(get_option('time_format'), current_time('timestamp')); ?></strong><br />
-<?php _e('<a href="http://codex.wordpress.org/Formatting_Date_and_Time">Documentation on date formatting</a>. Click "Save Changes" to update sample output.') ?></td>
+<th scope="row"><?php _e('Time Format') ?></th>
+<td>
+	<fieldset><legend class="hidden"><?php _e('Time Format') ?></legend>
+<?php
+
+	$time_formats = apply_filters( 'time_formats', array(
+		__('g:i a'),
+		'g:i A',
+		'H:i',
+	) );
+
+	$custom = TRUE;
+
+	foreach ( $time_formats as $format ) {
+		echo "\t<label title='" . attribute_escape($format) . "'><input type='radio' name='time_format' value='" . attribute_escape($format) . "'";
+		if ( get_option('time_format') === $format ) { // checked() uses "==" rather than "==="
+			echo " checked='checked'";
+			$custom = FALSE;
+		}
+		echo ' /> ' . gmdate( $format, current_time('timestamp') ) . "</label><br />\n";
+	}
+
+	echo '	<label><input type="radio" name="time_format" id="time_format_custom_radio" value="\c\u\s\t\o\m"';
+	checked( $custom, TRUE );
+	echo '/> ' . __('Custom') . ': </label><input type="text" name="time_format_custom" value="' . attribute_escape( get_option('time_format') ) . '" size="30" /> ' . gmdate( get_option('time_format'), current_time('timestamp') ) . "\n";
+?>
+	</fieldset>
+</td>
 </tr>
 <tr>
 <th scope="row"><label for="start_of_week"><?php _e('Week Starts On') ?></label></th>
@@ -122,8 +212,8 @@ endfor;
 
 <?php do_settings_sections('general'); ?>
 
-<p class="submit"><input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
-<input type="hidden" name="action" value="update" />
+<p class="submit">
+<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
 </p>
 </form>
 

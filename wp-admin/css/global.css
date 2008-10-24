@@ -1,33 +1,32 @@
 /* 2 column liquid layout */
-div#wpbody {
-	float: right;
-	clear: right;
+#wpwrap {
+	height: auto;
+	min-height: 100%;
+	overflow: hidden;
 	width: 100%;
-	margin-left: -185px;
 }
 
-div#wpbody-content {
-	margin-left: 177px;
-	border-top-width: 1px;
-	border-top-style: solid;
+#wpcontent {
+	height: 100%;
+	margin-bottom: 50px;
+}
+
+#wpbody-content {
+	overflow: hidden;
 	padding-top: 10px;
 }
 
-div#sidemenu-bg {
-	border-right-style: solid;
-	border-right-width: 1px;
-	height: 100%;
-	left: 0;
-	position: absolute;
-	top: 0;
-	width: 175px;
-}
-
-ul#adminmenu {
+#adminmenu {
 	float: left;
 	clear: left;
-	width: 165px; /* + 10 padding */
+	margin: 15px 5px 15px 18px;
 	position: relative;
+}
+
+#footer {
+	clear: both;
+	position: relative;
+	width: 100%;
 }
 
 /* inner 2 column liquid layout */
@@ -35,7 +34,7 @@ ul#adminmenu {
 .inner-sidebar {
 	float: right;
 	clear: right;
-	width: 220px;
+	width: 280px;
 	position: relative;
 }
 
@@ -43,11 +42,11 @@ ul#adminmenu {
 	float: left;
 	clear: left;
 	width: 100%;
-	margin-right: -240px;
+	margin-right: -340px;
 }
 
 .has-sidebar .has-sidebar-content {
-	margin-right: 245px;
+	margin-right: 305px;
 }
 
 
@@ -78,13 +77,23 @@ textarea, input, select {
 	padding: 3px;
 }
 
-.alignleft { float: left; }
-.alignright { float: right; }
+.alignleft {
+	float: left;
+}
 
-.textleft { text-align: left; }
-.textright { text-align: right; }
+.alignright {
+	float: right;
+}
 
-.clear { clear: both; height: 2px; }
+.textleft {
+	text-align: left;
+}
+
+.textright {
+	text-align: right;
+}
+
+.clear { clear: both; }
 
 .hidden { display: none; }
 
@@ -131,19 +140,33 @@ h6 {
 
 .subsubsub {
 	list-style: none;
-	margin: 14px 0 8px 0;
+	margin: 0;
 	padding: 0;
+	position: relative;
+	top: -5px;
 	white-space: nowrap;
 	font-size: 12px;
+	float: left;
 }
 
-.subsubsub a { line-height: 200%; padding: 3px; text-decoration: none; }
+.subsubsub a {
+	line-height: 200%;
+	padding: 3px;
+	text-decoration: none;
+}
 
-.subsubsub a.current { font-weight: bold; background: none; border: none;}
+.subsubsub a.current {
+	font-weight: bold;
+	background: none;
+	border: none;
+}
 
-.subsubsub li { display: inline; margin: 0; padding: 0; }
+.subsubsub li {
+	display: inline;
+	margin: 0;
+	padding: 0;
+}
 
-/* make it small? */
 .subsubsub li.spam {
 	font-size: .9em;
 }
@@ -209,10 +232,6 @@ th.check-column + th, th.check-column + td {
 	text-align: center;
 }
 
-#wpbody .wrap {
-	position: relative;
-}
-
 .wrap, .updated, .error {
 	margin: 0 15px;
 	padding: 0;
@@ -222,7 +241,7 @@ th.check-column + th, th.check-column + td {
 	border-width: 1px;
 	border-style: solid;
 	padding: 0 0.6em;
-	margin-bottom: 1em;
+	margin: 3px 15px 5px;
 }
 
 .updated p, .error p {

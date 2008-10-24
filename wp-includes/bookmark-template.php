@@ -26,10 +26,16 @@
  *		of the bookmark.
  * 'show_images' - Default is 1 (integer). Whether to show link image if
  *		available.
+ * 'show_name' - Default is 1 (integer). Whether to show link name if
+ *		available.
  * 'before' - Default is '<li>' (string). The html or text to prepend to each
  *		bookmarks.
  * 'after' - Default is '</li>' (string). The html or text to append to each
  *		bookmarks.
+ * 'link_before' - Default is '' (string). The html or text to prepend to each
+ *		bookmarks inside the <a> tag.
+ * 'link_after' - Default is '' (string). The html or text to append to each
+ *		bookmarks inside the <a> tag.
  * 'between' - Default is '\n' (string). The string for use in between the link,
  *		description, and image.
  * 'show_rating' - Default is 0 (integer). Whether to show the link rating.
@@ -45,9 +51,9 @@
 function _walk_bookmarks($bookmarks, $args = '' ) {
 	$defaults = array(
 		'show_updated' => 0, 'show_description' => 0,
-		'show_images' => 1, 'before' => '<li>',
-		'after' => '</li>', 'between' => "\n",
-		'show_rating' => 0
+		'show_images' => 1, 'show_name' => 1,
+		'before' => '<li>', 'after' => '</li>', 'between' => "\n",
+		'show_rating' => 0, 'link_before' => '', 'link_after' => ''
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -91,16 +97,20 @@ function _walk_bookmarks($bookmarks, $args = '' ) {
 			$target = ' target="' . $target . '"';
 
 		$output .= '<a href="' . $the_link . '"' . $rel . $title . $target. '>';
+		
+		$output .= $link_before;
 
 		if ( $bookmark->link_image != null && $show_images ) {
 			if ( strpos($bookmark->link_image, 'http') !== false )
 				$output .= "<img src=\"$bookmark->link_image\" $alt $title />";
 			else // If it's a relative path
 				$output .= "<img src=\"" . get_option('siteurl') . "$bookmark->link_image\" $alt $title />";
-		} else {
-			$output .= $name;
 		}
+		
+		if ($show_name) $output .= $name;
 
+		$output .= $link_after;
+		
 		$output .= '</a>';
 
 		if ( $show_updated && $bookmark->recently_updated )

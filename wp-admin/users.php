@@ -18,12 +18,13 @@ if ( !current_user_can('edit_users') )
 $title = __('Users');
 $parent_file = 'users.php';
 
-$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : '';
-$update = '';
+$update = $doaction = '';
+if ( isset($_REQUEST['action']) )
+	$doaction = $_REQUEST['action'] ? $_REQUEST['action'] : $_REQUEST['action2'];
 
-if ( empty($action) ) {
+if ( empty($doaction) ) {
 	if ( isset($_GET['changeit']) && !empty($_GET['new_role']) )
-		$action = 'promote';
+		$doaction = 'promote';
 }
 
 if ( empty($_REQUEST) ) {
@@ -36,7 +37,7 @@ if ( empty($_REQUEST) ) {
 	$referer = '';
 }
 
-switch ($action) {
+switch ($doaction) {
 
 case 'promote':
 	check_admin_referer('bulk-users');
@@ -207,10 +208,10 @@ default:
 	$usersearch = isset($_GET['usersearch']) ? $_GET['usersearch'] : null;
 	$userspage = isset($_GET['userspage']) ? $_GET['userspage'] : null;
 	$role = isset($_GET['role']) ? $_GET['role'] : null;
-	
+
 	// Query the users
 	$wp_user_search = new WP_User_Search($usersearch, $userspage, $role);
-	
+
 	$messages = array();
 	if ( isset($_GET['update']) ) :
 		switch($_GET['update']) {
@@ -236,13 +237,15 @@ default:
 		}
 	endif; ?>
 
-<form class="search-form" action="" method="get">
-	<p id="user-search" class="search-box">
-	<label class="hidden" for="user-search-input"><?php _e( 'Search Users' ); ?></label>
-	<input type="text" id="user-search-input" class="search-input" name="usersearch" value="<?php echo attribute_escape($wp_user_search->search_term); ?>" />
-	<input type="submit" value="<?php _e( 'Search Users' ); ?>" class="button" />
-	</p>
-</form>
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php manage_columns_prefs('user') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+<br class="clear" />
+</div></form>
+</div>
 
 <?php if ( isset($errors) && is_wp_error( $errors ) ) : ?>
 	<div class="error">
@@ -253,7 +256,7 @@ default:
 		?>
 		</ul>
 	</div>
-<?php endif; 
+<?php endif;
 
 if ( ! empty($messages) ) {
 	foreach ( $messages as $msg )
@@ -261,26 +264,11 @@ if ( ! empty($messages) ) {
 } ?>
 
 <div class="wrap">
-
-<form id="adv-settings" action="" method="get">
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php manage_columns_prefs('user') ?>
-<br class="clear" />
-</div></div>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-</div></form>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <form id="posts-filter" action="" method="get">
 	<?php if ( $wp_user_search->is_search() ) : ?>
 		<h2><?php printf( current_user_can('create_users') ? __('Users Matching "%2$s" (<a href="%1$s">Add New</a>)') : __('Add New'), '#add-new-user', wp_specialchars($wp_user_search->search_term) ); ?></h2>
-	<?php else : ?>
-		<h2><?php printf( current_user_can('create_users') ? __('Users (<a href="%s">Add New</a>)') : __('Add New'), '#add-new-user' ); ?></h2>
 	<?php endif; ?>
 
 <ul class="subsubsub">
@@ -329,7 +317,7 @@ unset($role_links);
 
 <div class="alignleft">
 <select name="action">
-<option value="" selected><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -367,6 +355,13 @@ unset($role_links);
 <?php print_column_headers('user') ?>
 </tr>
 </thead>
+
+<tfoot>
+<tr class="thead">
+<?php print_column_headers('user', false) ?>
+</tr>
+</tfoot>
+
 <tbody id="users" class="list:user user-list">
 <?php
 $style = '';
@@ -387,6 +382,14 @@ foreach ( $wp_user_search->get_results() as $userid ) {
 <?php if ( $wp_user_search->results_are_paged() ) : ?>
 	<div class="tablenav-pages"><?php $wp_user_search->page_links(); ?></div>
 <?php endif; ?>
+
+<div class="alignleft">
+<select name="action2">
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
+</div>
 
 <br class="clear" />
 </div>
@@ -483,7 +486,7 @@ foreach ( $wp_user_search->get_results() as $userid ) {
 }
 break;
 
-} // end of the $action switch
+} // end of the $doaction switch
 
 include('admin-footer.php');
 ?>

@@ -10,11 +10,6 @@ jQuery(document).ready( function() {
 	if ( ( 'undefined' != typeof wpAjax ) && jQuery.isFunction( wpAjax.validateForm ) ) {
 		jQuery('form.validate').submit( function() { return wpAjax.validateForm( jQuery(this) ); } );
 	}
-
-	jQuery('a.no-crazy').click( function() {
-		alert( "This feature isn't enabled in this prototype." );
-		return false;
-	} );
 });
 /*
 (function($) {
@@ -48,35 +43,5 @@ jQuery(document).ready( function() {
 	}
 }(jQuery));
 */
-jQuery( function($) {
-	var menuToggle = function(ul, effect) {
-		if ( !effect ) {
-			effect = 'slideToggle';
-		}
-		ul[effect]().parent().toggleClass( 'wp-menu-open' );
-
-		$('#adminmenu li.wp-has-submenu').each(function(i, e) {
-			var v = $(e).hasClass('wp-menu-open') ? 'o' : 'c';
-
-			setUserSetting( 'm'+i, v );
-		});
-
-		return false;
-	};
-
-	$('#adminmenu li.wp-has-submenu').each(function(i, e) {
-		var v = getUserSetting( 'm'+i );
-
-		if ( $(e).hasClass('wp-has-current-submenu') ) return true; // leave the current parent open
-
-		if ( 'o' == v ) $(e).addClass('wp-menu-open');
-		else if ( 'c' == v ) $(e).removeClass('wp-menu-open');	
-	});
-
-	$('#adminmenu li.wp-has-submenu > a').click( function() { return menuToggle( $(this).siblings('ul') ); } );
-
-	$('#dashmenu li.wp-has-submenu').bind( 'mouseenter mouseleave', function() { return menuToggle( $(this).children('ul'), 'toggle' ); } );
-
-} );
 
 //jQuery(function(){jQuery('#media-buttons a').tTips();});

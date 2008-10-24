@@ -9,10 +9,12 @@
 /**
  * Display list of widgets, either all or matching search.
  *
+ * The search parameter are search terms separated by spaces.
+ *
  * @since unknown
  *
- * @param unknown_type $show
- * @param unknown_type $_search Optional. Search for widgets. Should be unsanitized.
+ * @param string $show Optional, default is all. What to display, can be 'all', 'unused', or 'used'.
+ * @param string $_search Optional. Search for widgets. Should be unsanitized.
  */
 function wp_list_widgets( $show = 'all', $_search = false ) {
 	global $wp_registered_widgets, $sidebars_widgets, $wp_registered_widget_controls;
@@ -168,7 +170,7 @@ function wp_list_widgets( $show = 'all', $_search = false ) {
  *
  * @since unknown
  *
- * @param unknown_type $sidebar
+ * @param string $sidebar
  */
 function wp_list_widget_controls( $sidebar ) {
 	add_filter( 'dynamic_sidebar_params', 'wp_list_widget_controls_dynamic_sidebar' );
@@ -188,8 +190,8 @@ function wp_list_widget_controls( $sidebar ) {
  *
  * @since unknown
  *
- * @param unknown_type $params
- * @return unknown
+ * @param array $params
+ * @return array
  */
 function wp_list_widget_controls_dynamic_sidebar( $params ) {
 	global $wp_registered_widgets;
@@ -216,8 +218,8 @@ function wp_list_widget_controls_dynamic_sidebar( $params ) {
  *
  * @since unknown
  *
- * @param unknown_type $sidebar_args
- * @return unknown
+ * @param array $sidebar_args
+ * @return array
  */
 function wp_widget_control( $sidebar_args ) {
 	global $wp_registered_widgets, $wp_registered_widget_controls, $sidebars_widgets, $edit_widget;
@@ -303,7 +305,7 @@ function wp_widget_control( $sidebar_args ) {
 
 				<?php if ( $control ) : ?>
 
-				<a class="widget-action widget-control-save hide-if-no-js edit alignleft" href="#save:<?php echo $id_format; ?>"><?php _e('Change'); ?></a>
+				<a class="widget-action widget-control-save hide-if-no-js edit alignleft" href="#save:<?php echo $id_format; ?>"><?php _e('Done'); ?></a>
 
 				<?php endif; ?>
 
@@ -322,8 +324,8 @@ function wp_widget_control( $sidebar_args ) {
  *
  * @since unknown
  *
- * @param unknown_type $string
- * @return unknown
+ * @param string $string
+ * @return string
  */
 function wp_widget_control_ob_filter( $string ) {
 	if ( false === $beg = strpos( $string, '%BEG_OF_TITLE%' ) )

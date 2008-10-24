@@ -16,14 +16,14 @@ if ( ! empty($cat_ID) ) {
 	/**
 	 * @var string
 	 */
-	$heading = __('Edit Category');
+	$heading = '';
 	$submit_text = __('Edit Category');
 	$form = '<form name="editcat" id="editcat" method="post" action="categories.php" class="validate">';
 	$action = 'editedcat';
 	$nonce_action = 'update-category_' . $cat_ID;
 	do_action('edit_category_form_pre', $category);
 } else {
-	$heading = __('Add Category');
+	$heading = '<h2>' . __('Add Category') . '</h2>';
 	$submit_text = __('Add Category');
 	$form = '<form name="addcat" id="addcat" method="post" action="categories.php" class="add:the-list: validate">';
 	$action = 'addcat';
@@ -56,12 +56,12 @@ _fill_empty_category($category);
 ?>
 
 <div class="wrap">
-<h2><?php echo $heading ?></h2>
+<?php echo $heading ?>
 <div id="ajax-response"></div>
 <?php echo $form ?>
 <input type="hidden" name="action" value="<?php echo $action ?>" />
 <input type="hidden" name="cat_ID" value="<?php echo $category->term_id ?>" />
-<?php wp_nonce_field($nonce_action); ?>
+<?php wp_original_referer_field(true, 'previous'); wp_nonce_field($nonce_action); ?>
 	<table class="form-table">
 		<tr class="form-field form-required">
 			<th scope="row" valign="top"><label for="cat_name"><?php _e('Category Name') ?></label></th>

@@ -192,27 +192,6 @@ jQuery(document).ready( function($) {
 		return false;
 	});
 
-	// Edit Settings
-	$('#show-settings-link').click(function () {
-		$('#edit-settings').slideDown('normal', function(){
-			$('#show-settings-link').hide();
-			$('#hide-settings-link').show();
-			
-		});
-		$('#show-settings').addClass('show-settings-opened');
-		return false;
-	});
-	
-	$('#hide-settings-link').click(function () {
-		$('#edit-settings').slideUp('normal', function(){
-			$('#hide-settings-link').hide();
-			$('#show-settings-link').show();
-			$('#show-settings').removeClass('show-settings-opened');
-		});
-		
-		return false;
-	});
-
 	// Custom Fields
 	jQuery('#the-list').wpList( { addAfter: function( xml, s ) {
 		if ( jQuery.isFunction( autosave_update_post_ID ) ) {
@@ -223,7 +202,7 @@ jQuery(document).ready( function($) {
 		return s;
 	}
 	});
-	
+
 	$('.edit-post-status').click(function() {
 		if ($('#post-status-select').is(":hidden")) {
 			$('#post-status-select').slideDown("normal");
@@ -237,16 +216,73 @@ jQuery(document).ready( function($) {
 		$('#post-status-select').slideUp("normal");
 		$('#post-status-display').html($('#post_status :selected').text());
 		$('.edit-post-status').show();
-		
+
 		return false;
 	});
-	
+
 	$('.cancel-post-status').click(function() {
 		$('#post-status-select').slideUp("normal");
 		$('#post_status').val($('#hidden_post_status').val());
 		$('#post-status-display').html($('#post_status :selected').text());
 		$('.edit-post-status').show();
-		
+
 		return false;
 	});
 });
+
+(function($){
+	commentsBox = {
+		st : 0,
+
+		get : function(total, num) {
+			var st = this.st;
+			if ( ! num )
+				num = 20;
+
+			this.st += num;
+			this.total = total;
+			$('.waiting').show();
+
+			var data = {
+				'action' : 'get-comments',
+				'mode' : 'single',
+				'_ajax_nonce' : $('#add_comment_nonce').val(),
+				'post_ID' : $('#post_ID').val(),
+				'start' : st,
+				'num' : num
+			};
+
+			$.post('admin-ajax.php', data,
+				function(r) {
+					var r = wpAjax.parseAjaxResponse(r);
+					$('#commentstatusdiv .widefat').show();
+					$('.waiting').hide();
+
+					if ( 'object' == typeof r && r.responses[0] ) {
+						$('#the-comment-list').append( r.responses[0].data );
+						$('#the-comment-list .hide-if-no-js').removeClass('hide-if-no-js');
+
+						theList = theExtraList = null;
+						$("a[className*=':']").unbind();
+						setCommentsList();
+
+						if ( commentsBox.st > commentsBox.total )
+							$('#show-comments').hide();
+						else
+							$('#show-comments').html(postL10n.showcomm);
+						return;
+					} else if ( 1 == r ) {
+						$('#show-comments').parent().html(postL10n.endcomm);
+						return;
+					}
+
+					$('#the-comment-list').append('<tr><td colspan="5">'+wpAjax.broken+'</td></tr>');
+				}
+			);
+
+			return false;
+		}
+	}
+
+})(jQuery);
+

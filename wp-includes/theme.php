@@ -586,8 +586,8 @@ function get_category_template() {
 /**
  * Retrieve path of tag template in current or parent template.
  *
- * Works by retrieving the current tag ID, for example 'tag-1.php' and will
- * fallback to tag.php template, if the ID tag file doesn't exist.
+ * Works by retrieving the current tag name, for example 'tag-wordpress.php' and will
+ * fallback to tag.php template, if the name tag file doesn't exist.
  *
  * @since 2.3.0
  * @uses apply_filters() Calls 'tag_template' on file path of tag template.
@@ -595,7 +595,7 @@ function get_category_template() {
  * @return string
  */
 function get_tag_template() {
-	$template = locate_template(array("tag-" . absint( get_query_var('tag') ) . '.php', 'tag.php'));
+	$template = locate_template(array("tag-" . get_query_var('tag') . '.php', 'tag.php'));
 	return apply_filters('tag_template', $template);
 }
 
@@ -932,6 +932,8 @@ function switch_theme($template, $stylesheet) {
  * Does not check the 'default' theme. The 'default' theme should always exist
  * or should have another theme renamed to that template name and directory
  * path. Will switch theme to default if current theme does not validate.
+ * You can use the 'validate_current_theme' filter to return FALSE to
+ * disable this functionality.
  *
  * @since 1.5.0
  *
@@ -939,7 +941,7 @@ function switch_theme($template, $stylesheet) {
  */
 function validate_current_theme() {
 	// Don't validate during an install/upgrade.
-	if ( defined('WP_INSTALLING') )
+	if ( defined('WP_INSTALLING') || !apply_filters( 'validate_current_theme', true ) )
 		return true;
 
 	if ( get_template() != 'default' && !file_exists(get_template_directory() . '/index.php') ) {

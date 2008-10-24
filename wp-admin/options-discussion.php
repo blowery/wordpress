@@ -16,10 +16,17 @@ include('admin-header.php');
 ?>
 
 <div class="wrap">
-<h2><?php _e('Discussion Settings') ?></h2>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
 <form method="post" action="options.php">
 <input type='hidden' name='option_page' value='discussion' />
+<input type="hidden" name="action" value="update" />
 <?php wp_nonce_field('discussion-options') ?>
+
+<p class="submit submit-top">
+<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
+</p>
+
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><?php _e('Default article settings') ?></th>
@@ -36,19 +43,60 @@ include('admin-header.php');
 <input name="default_comment_status" type="checkbox" id="default_comment_status" value="open" <?php checked('open', get_option('default_comment_status')); ?> />
 <?php _e('Allow people to post comments on the article') ?></label>
 <br />
+<small><em><?php echo '(' . __('These settings may be overridden for individual articles.') . ')'; ?></em></small>
+</fieldset></td>
+</tr>
+<tr valign="top">
+<th scope="row"><?php _e('Other comment settings') ?></th>
+<td><fieldset><legend class="hidden"><?php _e('Other comment settings') ?></legend>
+<label for="require_name_email"><input type="checkbox" name="require_name_email" id="require_name_email" value="1" <?php checked('1', get_option('require_name_email')); ?> /> <?php _e('Comment author must fill out name and e-mail') ?></label>
+<br />
 <label for="close_comments_for_old_posts">
 <input name="close_comments_for_old_posts" type="checkbox" id="close_comments_for_old_posts" value="1" <?php checked('1', get_option('close_comments_for_old_posts')); ?> />
-<?php _e('Close comments on articles older than') ?></label> <?php printf(__('%s days'), '<input name="close_comments_days_old" type="text" id="close_comments_days_old" value="' . attribute_escape(get_option('close_comments_days_old')) . '" size="3" />') ?>
+<?php printf( __('Automatically close comments on articles older than %s days'), '</label><input name="close_comments_days_old" type="text" id="close_comments_days_old" value="' . attribute_escape(get_option('close_comments_days_old')) . '" size="3" />') ?>
 <br />
 <label for="thread_comments">
 <input name="thread_comments" type="checkbox" id="thread_comments" value="1" <?php checked('1', get_option('thread_comments')); ?> />
-<?php _e('Group replies into threads') ?></label> <?php printf(__('%s levels deep'), '<input name="thread_comments_depth" type="text" id="thread_comments_depth" value="' . attribute_escape(get_option('thread_comments_depth')) . '" size="3" />') ?>
-<br />
+<?php 
+
+$maxdeep = (int) apply_filters( 'thread_comments_depth_max', 10 );
+
+$thread_comments_depth = '</label><select name="thread_comments_depth" id="thread_comments_depth">';
+for ( $i = 1; $i <= $maxdeep; $i++ ) {
+	$thread_comments_depth .= "<option value='$i'";
+	if ( get_option('thread_comments_depth') == $i ) $thread_comments_depth .= " selected='selected'";
+	$thread_comments_depth .= ">$i</option>";
+}
+$thread_comments_depth .= '</select>';
+
+printf( __('Enable threaded (nested) comments %s levels deep'), $thread_comments_depth );
+
+?><br />
 <label for="page_comments">
 <input name="page_comments" type="checkbox" id="page_comments" value="1" <?php checked('1', get_option('page_comments')); ?> />
-<?php _e('Break comments into pages with') ?></label> <?php printf(__('%s comments per page'), '<input name="comments_per_page" type="text" id="comments_per_page" value="' . attribute_escape(get_option('comments_per_page')) . '" size="3" />') ?>
+<?php
+
+$default_comments_page = '</label><select name="default_comments_page" id="default_comments_page"><option value="newest"';
+if ( 'newest' == get_option('default_comments_page') ) $default_comments_page .= ' selected="selected"';
+$default_comments_page .= '>' . __('last') . '</option><option value="oldest"';
+if ( 'oldest' == get_option('default_comments_page') ) $default_comments_page .= ' selected="selected"';
+$default_comments_page .= '>' . __('first') . '</option></select>';
+
+printf( __('Break comments into pages with %1$s comments per page and the %2$s page displayed by default'), '</label><input name="comments_per_page" type="text" id="comments_per_page" value="' . attribute_escape(get_option('comments_per_page')) . '" size="3" />', $default_comments_page );
+
+?>
 <br />
-<small><em><?php echo '(' . __('These settings may be overridden for individual articles.') . ')'; ?></em></small>
+<label for="comment_order"><?php
+
+$comment_order = '<select name="comment_order" id="comment_order"><option value="asc"';
+if ( 'asc' == get_option('comment_order') ) $comment_order .= ' selected="selected"';
+$comment_order .= '>' . __('older') . '</option><option value="desc"';
+if ( 'desc' == get_option('comment_order') ) $comment_order .= ' selected="selected"';
+$comment_order .= '>' . __('newer') . '</option></select>';
+
+printf( __('Comments should be displayed with the %s comments at the top of each page'), $comment_order );
+
+?></label>
 </fieldset></td>
 </tr>
 <tr valign="top">
@@ -69,8 +117,6 @@ include('admin-header.php');
 <label for="comment_moderation">
 <input name="comment_moderation" type="checkbox" id="comment_moderation" value="1" <?php checked('1', get_option('comment_moderation')); ?> />
 <?php _e('An administrator must always approve the comment') ?> </label>
-<br />
-<label for="require_name_email"><input type="checkbox" name="require_name_email" id="require_name_email" value="1" <?php checked('1', get_option('require_name_email')); ?> /> <?php _e('Comment author must fill out name and e-mail') ?></label>
 <br />
 <label for="comment_whitelist"><input type="checkbox" name="comment_whitelist" id="comment_whitelist" value="1" <?php checked('1', get_option('comment_whitelist')); ?> /> <?php _e('Comment author must have a previously approved comment') ?></label>
 </fieldset></td>
@@ -173,7 +219,6 @@ echo apply_filters('default_avatar_select', $avatar_list);
 <?php do_settings_sections('discussion'); ?>
 
 <p class="submit">
-<input type="hidden" name="action" value="update" />
 <input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
 </p>
 </form>

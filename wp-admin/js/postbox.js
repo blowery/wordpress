@@ -1,32 +1,43 @@
-
 (function($) {
 	postboxes = {
-		add_postbox_toggles : function(page) {
-			$('.postbox h3').before('<a class="togbox">+</a> ');
-			$('.postbox h3, .postbox a.togbox').click( function() {
+		add_postbox_toggles : function(page,args) {
+			$('.postbox h3').click( function() {
 				$($(this).parent().get(0)).toggleClass('closed');
 				postboxes.save_state(page);
-			});
+			} );
+			$('.postbox h3 a').click( function(e) {
+				e.stopPropagation();
+			} );
 
-			$('.hide-postbox-tog').click( function() {
-				var box = jQuery(this).val();
-				var show = jQuery(this).attr('checked');
-				if ( show ) {
-					jQuery('#' + box).show();
-				} else {
-					jQuery('#' + box).hide();
-				}
+			$('.hide-postbox-tog').click( function() { 
+				var box = jQuery(this).val(); 
+				if ( jQuery(this).attr('checked') ) { 
+					jQuery('#' + box).show(); 
+					if ( $.isFunction( postboxes.onShow ) ) { 
+						postboxes.onShow( box ); 
+					}
+				} else { 
+					jQuery('#' + box).hide(); 
+				} 
 				postboxes.save_state(page);
 			} );
 
-			if ( $.browser.msie ) {
-				$('#side-sortables').append( '<div id="make-it-tall"></div>' );
-			} else {
-				$('#side-sortables').append( '<div id="make-it-tall" style="margin-bottom: -2000px; padding-bottom: 2001px"></div>' );
-			}
-			$('#wpbody-content').css( 'overflow', 'hidden' );
+			this.makeItTall();
+			this.init(page,args);
+		},
+		
+		makeItTall : function() {
+			var t = $('#make-it-tall').remove();
+
+			if ( t.length < 1 )
+				t = $.browser.mozilla ? '<div id="make-it-tall" style="margin-bottom: -2000px; padding-bottom: 2001px"></div>' : '<div id="make-it-tall"> <br /> <br /></div>';
 			
-			this.init(page);
+			$('#side-sortables').append(t);
+			
+			if ( $('#side-sortables').children().length > 1 )
+				$('#side-sortables').css({'minHeight':'300px'});
+
+			$('#wpbody-content').css( 'overflow', 'hidden' );
 		},
 
 		expandSidebar : function( doIt ) {
@@ -39,20 +50,22 @@
 			}
 		},
 
-		init : function(page) {
+		init : function(page,args) {
+			$.extend( this, args || {} );
 			jQuery('.meta-box-sortables').sortable( {
+				placeholder: 'sortable-placeholder',
 				connectWith: [ '.meta-box-sortables' ],
 				items: '> .postbox',
 				handle: '.hndle',
 				distance: 2,
+				tolerance: 'pointer',
+				receive: function() {
+					postboxes.makeItTall();
+				},
 				stop: function() {
-					if ( 'side-sortables' == this.id ) { // doing this with jQuery doesn't work for some reason: make-it-tall gets duplicated
-						var makeItTall = document.getElementById( 'make-it-tall' );
-						var sideSort = makeItTall.parentNode;
-						sideSort.removeChild( makeItTall );
-						sideSort.appendChild( makeItTall );
-						
-					}
+					if ( $('#side-sortables').children().length < 2 )
+						$('#side-sortables').css({'minHeight':''});
+
 					var postVars = {
 						action: 'meta-box-order',
 						_ajax_nonce: jQuery('#meta-box-order-nonce').val(),
@@ -83,7 +96,10 @@
 				closedpostboxesnonce: jQuery('#closedpostboxesnonce').val(),
 				page: page
 			});
-		}
+		},
+
+		/* Callbacks */
+		onShow : false
 	};
 
 	$(document).ready(function(){postboxes.expandSidebar();});

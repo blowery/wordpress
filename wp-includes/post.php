@@ -28,11 +28,8 @@
 function get_attached_file( $attachment_id, $unfiltered = false ) {
 	$file = get_post_meta( $attachment_id, '_wp_attached_file', true );
 	// If the file is relative, prepend upload dir
-	if ( 0 !== strpos($file, '/') ) {
-		$uploads = wp_upload_dir();
+	if ( 0 !== strpos($file, '/') && !preg_match('|^.:\\\|', $file) && ( ($uploads = wp_upload_dir()) && false === $uploads['error'] ) )
 		$file = $uploads['basedir'] . "/$file";
-	}
-	 	
 	if ( $unfiltered )
 		return $file;
 	return apply_filters( 'get_attached_file', $file, $attachment_id );
@@ -523,7 +520,7 @@ function add_post_meta($post_id, $meta_key, $meta_value, $unique = false) {
 	if ( $unique && $wpdb->get_var( $wpdb->prepare( "SELECT meta_key FROM $wpdb->postmeta WHERE meta_key = %s AND post_id = %d", $meta_key, $post_id ) ) )
 		return false;
 
-	$meta_value = maybe_serialize($meta_value);
+	$meta_value = maybe_serialize( stripslashes_deep($meta_value) );
 
 	$wpdb->insert( $wpdb->postmeta, compact( 'post_id', 'meta_key', 'meta_value' ) );
 
@@ -544,31 +541,33 @@ function add_post_meta($post_id, $meta_key, $meta_value, $unique = false) {
  * @link http://codex.wordpress.org/Function_Reference/delete_post_meta
  *
  * @param int $post_id post ID
- * @param string $key Metadata name.
- * @param mixed $value Optional. Metadata value.
+ * @param string $meta_key Metadata name.
+ * @param mixed $meta_value Optional. Metadata value.
  * @return bool False for failure. True for success.
  */
-function delete_post_meta($post_id, $key, $value = '') {
+function delete_post_meta($post_id, $meta_key, $meta_value = '') {
 	global $wpdb;
 
-	$post_id = absint( $post_id );
+	// make sure meta is added to the post, not a revision
+	if ( $the_post = wp_is_post_revision($post_id) )
+		$post_id = $the_post;
 
-	// expected_slashed ($key, $value)
-	$key = stripslashes( $key );
-	$value = stripslashes( $value );
+	// expected_slashed ($meta_key, $meta_value)
+	$meta_key = stripslashes( $meta_key );
+	$meta_value = maybe_serialize( stripslashes_deep($meta_value) );
 
-	if ( empty( $value ) )
-		$meta_id = $wpdb->get_var( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s", $post_id, $key ) );
+	if ( empty( $meta_value ) )
+		$meta_id = $wpdb->get_var( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s", $post_id, $meta_key ) );
 	else
-		$meta_id = $wpdb->get_var( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s AND meta_value = %s", $post_id, $key, $value ) );
+		$meta_id = $wpdb->get_var( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s AND meta_value = %s", $post_id, $meta_key, $meta_value ) );
 
 	if ( !$meta_id )
 		return false;
 
-	if ( empty( $value ) )
-		$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s", $post_id, $key ) );
+	if ( empty( $meta_value ) )
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s", $post_id, $meta_key ) );
 	else
-		$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s AND meta_value = %s", $post_id, $key, $value ) );
+		$wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s AND meta_value = %s", $post_id, $meta_key, $meta_value ) );
 
 	wp_cache_delete($post_id, 'post_meta');
 
@@ -629,6 +628,10 @@ function get_post_meta($post_id, $key, $single = false) {
 function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '') {
 	global $wpdb;
 
+	// make sure meta is added to the post, not a revision
+	if ( $the_post = wp_is_post_revision($post_id) )
+		$post_id = $the_post;
+
 	// expected_slashed ($meta_key)
 	$meta_key = stripslashes($meta_key);
 
@@ -636,7 +639,7 @@ function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '') {
 		return add_post_meta($post_id, $meta_key, $meta_value);
 	}
 
-	$meta_value = maybe_serialize($meta_value);
+	$meta_value = maybe_serialize( stripslashes_deep($meta_value) );
 
 	$data  = compact( 'meta_value' );
 	$where = compact( 'meta_key', 'post_id' );
@@ -1304,7 +1307,7 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 	$defaults = array('post_status' => 'draft', 'post_type' => 'post', 'post_author' => $user_ID,
 		'ping_status' => get_option('default_ping_status'), 'post_parent' => 0,
 		'menu_order' => 0, 'to_ping' =>  '', 'pinged' => '', 'post_password' => '',
-		'guid' => '', 'post_content_filtered' => '', 'post_excerpt' => '');
+		'guid' => '', 'post_content_filtered' => '', 'post_excerpt' => '', 'import_id' => 0);
 
 	$postarr = wp_parse_args($postarr, $defaults);
 	$postarr = sanitize_post($postarr, 'db');
@@ -1350,21 +1353,25 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 		$guid = get_post_field( 'guid', $post_ID );
 	}
 
-	// Create a valid post name.  Drafts are allowed to have an empty
+	// Don't allow contributors to set to set the post slug for pending review posts
+	if ( 'pending' == $post_status && !current_user_can( 'publish_posts' ) )
+		$post_name = '';
+
+	// Create a valid post name.  Drafts and pending posts are allowed to have an empty
 	// post name.
 	if ( empty($post_name) ) {
-		if ( 'draft' != $post_status )
+		if ( !in_array( $post_status, array( 'draft', 'pending' ) ) )
 			$post_name = sanitize_title($post_title);
 	} else {
 		$post_name = sanitize_title($post_name);
 	}
 
-	// If the post date is empty (due to having been new or a draft) and status is not 'draft', set date to now
+	// If the post date is empty (due to having been new or a draft) and status is not 'draft' or 'pending', set date to now
 	if ( empty($post_date) || '0000-00-00 00:00:00' == $post_date )
 		$post_date = current_time('mysql');
 
 	if ( empty($post_date_gmt) || '0000-00-00 00:00:00' == $post_date_gmt ) {
-		if ( !in_array($post_status, array('draft', 'pending')) )
+		if ( !in_array( $post_status, array( 'draft', 'pending' ) ) )
 			$post_date_gmt = get_gmt_from_date($post_date);
 		else
 			$post_date_gmt = '0000-00-00 00:00:00';
@@ -1414,7 +1421,7 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 	if ( !isset($post_password) )
 		$post_password = '';
 
-	if ( 'draft' != $post_status ) {
+	if ( !in_array( $post_status, array( 'draft', 'pending' ) ) ) {
 		$post_name_check = $wpdb->get_var($wpdb->prepare("SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_type = %s AND ID != %d AND post_parent = %d LIMIT 1", $post_name, $post_type, $post_ID, $post_parent));
 
 		if ($post_name_check || in_array($post_name, $wp_rewrite->feeds) ) {
@@ -1445,6 +1452,13 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 	} else {
 		if ( isset($post_mime_type) )
 			$data['post_mime_type'] = stripslashes( $post_mime_type ); // This isn't in the update
+		// If there is a suggested ID, use it if not already present
+		if ( !empty($import_id) ) {
+			$import_id = (int) $import_id;
+			if ( ! $wpdb->get_var( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE ID = %d", $import_id) ) ) {
+				$data['ID'] = $import_id;
+			}
+		}
 		if ( false === $wpdb->insert( $wpdb->posts, $data ) ) {
 			if ( $wp_error )
 				return new WP_Error('db_insert_error', __('Could not insert post into the database'), $wpdb->last_error);
@@ -1457,7 +1471,7 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 		$where = array( 'ID' => $post_ID );
 	}
 
-	if ( empty($post_name) && 'draft' != $post_status ) {
+	if ( empty($post_name) && !in_array( $post_status, array( 'draft', 'pending' ) ) ) {
 		$post_name = sanitize_title($post_title, $post_ID);
 		$wpdb->update( $wpdb->posts, compact( 'post_name' ), $where );
 	}
@@ -1540,7 +1554,7 @@ function wp_update_post($postarr = array()) {
 	$postarr = array_merge($post, $postarr);
 	$postarr['post_category'] = $post_cats;
 	if ( $clear_date ) {
-		$postarr['post_date'] = current_time('mysql');;
+		$postarr['post_date'] = current_time('mysql');
 		$postarr['post_date_gmt'] = '';
 	}
 
@@ -1608,6 +1622,14 @@ function check_and_publish_future_post($post_id) {
 
 	if ( 'future' != $post->post_status )
 		return;
+
+	$time = strtotime( $post->post_date_gmt . ' GMT' );
+
+	if ( $time > time() ) { // Uh oh, someone jumped the gun!
+		wp_clear_scheduled_hook( 'publish_future_post', $post_id ); // clear anything else in the system
+		wp_schedule_single_event( $time, 'publish_future_post', array( $post_id ) );
+		return;
+	}
 
 	return wp_publish_post($post_id);
 }
@@ -2032,20 +2054,24 @@ function &get_pages($args = '') {
 		'sort_column' => 'post_title', 'hierarchical' => 1,
 		'exclude' => '', 'include' => '',
 		'meta_key' => '', 'meta_value' => '',
-		'authors' => ''
+		'authors' => '', 'parent' => -1
 	);
 
 	$r = wp_parse_args( $args, $defaults );
 	extract( $r, EXTR_SKIP );
 
 	$key = md5( serialize( $r ) );
-	if ( $cache = wp_cache_get( 'get_pages', 'posts' ) )
-		if ( isset( $cache[ $key ] ) )
-			return apply_filters('get_pages', $cache[ $key ], $r );
+	if ( $cache = wp_cache_get( 'get_pages', 'posts' ) ) {
+		if ( isset( $cache[ $key ] ) ) {
+			$pages = apply_filters('get_pages', $cache[ $key ], $r );
+			return $pages;
+		}
+	}
 
 	$inclusions = '';
 	if ( !empty($include) ) {
-		$child_of = 0; //ignore child_of, exclude, meta_key, and meta_value params if using include
+		$child_of = 0; //ignore child_of, parent, exclude, meta_key, and meta_value params if using include
+		$parent = -1;
 		$exclude = '';
 		$meta_key = '';
 		$meta_value = '';
@@ -2118,6 +2144,10 @@ function &get_pages($args = '') {
 			$where .= $wpdb->prepare(" AND $wpdb->postmeta.meta_value = %s", $meta_value);
 
 	}
+	
+	if ( $parent >= 0 ) 
+		$where .= $wpdb->prepare(' AND post_parent = %d ', $parent); 
+	
 	$query = "SELECT * FROM $wpdb->posts $join WHERE (post_type = 'page' AND post_status = 'publish') $where ";
 	$query .= $author_query;
 	$query .= " ORDER BY " . $sort_column . " " . $sort_order ;
@@ -2251,14 +2281,14 @@ function wp_insert_attachment($object, $file = false, $parent = 0) {
 		$post_name = sanitize_title($post_name);
 
 	// expected_slashed ($post_name)
-	$post_name_check = $wpdb->get_var( $wpdb->prepare( "SELECT post_name FROM $wpdb->posts WHERE post_name = '$post_name' AND post_status = 'inherit' AND ID != %d LIMIT 1", $post_ID));
+	$post_name_check = $wpdb->get_var( $wpdb->prepare( "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_status = 'inherit' AND ID != %d LIMIT 1", $post_name, $post_ID));
 
 	if ($post_name_check) {
 		$suffix = 2;
 		while ($post_name_check) {
 			$alt_post_name = $post_name . "-$suffix";
 			// expected_slashed ($alt_post_name, $post_name)
-			$post_name_check = $wpdb->get_var( $wpdb->prepare( "SELECT post_name FROM $wpdb->posts WHERE post_name = '$alt_post_name' AND post_status = 'inherit' AND ID != %d AND post_parent = %d LIMIT 1", $post_ID, $post_parent));
+			$post_name_check = $wpdb->get_var( $wpdb->prepare( "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_status = 'inherit' AND ID != %d AND post_parent = %d LIMIT 1", $alt_post_name, $post_ID, $post_parent));
 			$suffix++;
 		}
 		$post_name = $alt_post_name;
@@ -2850,7 +2880,11 @@ function update_post_cache(&$posts) {
  * @param int $id The Post ID in the cache to clean
  */
 function clean_post_cache($id) {
-	global $wpdb;
+	global $_wp_suspend_cache_invalidation, $wpdb;
+
+	if ( !empty($_wp_suspend_cache_invalidation) )
+		return;
+
 	$id = (int) $id;
 
 	wp_cache_delete($id, 'posts');
@@ -3101,8 +3135,11 @@ function _publish_post_hook($post_id) {
 function _save_post_hook($post_id, $post) {
 	if ( $post->post_type == 'page' ) {
 		clean_page_cache($post_id);
-		global $wp_rewrite;
-		$wp_rewrite->flush_rules();
+		// Avoid flushing rules for every post during import.
+		if ( !defined('WP_IMPORTING') ) {
+			global $wp_rewrite;
+			$wp_rewrite->flush_rules();
+		}
 	} else {
 		clean_post_cache($post_id);
 	}

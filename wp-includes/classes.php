@@ -985,6 +985,13 @@ class Walker {
 
 		// flat display
 		if ( -1 == $max_depth ) {
+			if ( !empty($args[0]['reverse_top_level']) ) {
+				$elements = array_reverse( $elements );
+				$oldstart = $start;
+				$start = $total_top - $end;
+				$end = $total_top - $oldstart;
+			}
+
 			$empty_array = array();
 			foreach ( $elements as $e ) {
 				$count++;
@@ -1017,7 +1024,18 @@ class Walker {
 		else
 			$end = $total_top;
 
-		foreach( $top_level_elements as $e ){
+		if ( !empty($args[0]['reverse_top_level']) ) {
+			$top_level_elements = array_reverse( $top_level_elements );
+			$oldstart = $start;
+			$start = $total_top - $end;
+			$end = $total_top - $oldstart;
+		}
+		if ( !empty($args[0]['reverse_children']) ) {
+			foreach ( $children_elements as $parent => $children )
+				$children_elements[$parent] = array_reverse( $children );
+		}
+
+		foreach ( $top_level_elements as $e ) {
 			$count++;
 
 			//for the last page, need to unset earlier children in order to keep track of orphans
@@ -1146,6 +1164,8 @@ class Walker_Page extends Walker {
 				$css_class .= ' current_page_item';
 			elseif ( $_current_page && $page->ID == $_current_page->post_parent )
 				$css_class .= ' current_page_parent';
+		} elseif ( $page->ID == get_settings('page_for_posts') ) {
+			$css_class .= ' current_page_parent';
 		}
 
 		$output .= $indent . '<li class="' . $css_class . '"><a href="' . get_page_link($page->ID) . '" title="' . attribute_escape(apply_filters('the_title', $page->post_title)) . '">' . apply_filters('the_title', $page->post_title) . '</a>';
@@ -1402,7 +1422,7 @@ class Walker_CategoryDropdown extends Walker {
 		$pad = str_repeat('&nbsp;', $depth * 3);
 
 		$cat_name = apply_filters('list_cats', $category->name, $category);
-		$output .= "\t<option value=\"".$category->term_id."\"";
+		$output .= "\t<option class=\"level-$depth\" value=\"".$category->term_id."\"";
 		if ( $category->term_id == $args['selected'] )
 			$output .= ' selected="selected"';
 		$output .= '>';

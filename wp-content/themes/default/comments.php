@@ -1,4 +1,10 @@
-<?php // Do not delete these lines
+<?php
+/**
+ * @package WordPress
+ * @subpackage Default_Theme
+ */
+
+// Do not delete these lines
 	if (!empty($_SERVER['SCRIPT_FILENAME']) && 'comments.php' == basename($_SERVER['SCRIPT_FILENAME']))
 		die ('Please do not load this page directly. Thanks!');
 
@@ -38,10 +44,10 @@
 
 <div id="respond">
 
-<h3>Leave a Reply</h3>
+<h3><?php comment_form_title( 'Leave a Reply', 'Leave a Reply to %s' ); ?></h3>
 
-<div id="cancel-comment-reply" style="display: none;">
-	<small><?php echo cancel_comment_reply_link() ?></small>
+<div class="cancel-comment-reply">
+	<small><?php cancel_comment_reply_link(); ?></small>
 </div>
 
 <?php if ( get_option('comment_registration') && !$user_ID ) : ?>
@@ -52,7 +58,7 @@
 
 <?php if ( $user_ID ) : ?>
 
-<p>Logged in as <a href="<?php echo get_option('siteurl'); ?>/wp-admin/profile.php"><?php echo $user_identity; ?></a>. <a href="<?php echo get_option('siteurl'); ?>/wp-login.php?action=logout" title="Log out of this account">Log out &raquo;</a></p>
+<p>Logged in as <a href="<?php echo get_option('siteurl'); ?>/wp-admin/profile.php"><?php echo $user_identity; ?></a>. <a href="<?php echo wp_logout_url(get_permalink()); ?>" title="Log out of this account">Log out &raquo;</a></p>
 
 <?php else : ?>
 
@@ -72,8 +78,7 @@
 <p><textarea name="comment" id="comment" cols="100%" rows="10" tabindex="4"></textarea></p>
 
 <p><input name="submit" type="submit" id="submit" tabindex="5" value="Submit Comment" />
-<input type="hidden" name="comment_post_ID" value="<?php echo $id; ?>" />
-<input type="hidden" name="comment_parent" id="comment-parent" value="0" />
+<?php comment_id_fields(); ?>
 </p>
 <?php do_action('comment_form', $post->ID); ?>
 

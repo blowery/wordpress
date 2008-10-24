@@ -1,4 +1,4 @@
-#poststuff .postbox h3 {
+.metabox-holder .postbox h3, #poststuff .postbox h3 {
 	padding-left:0;
 	padding-right: 23px;
 }
@@ -20,17 +20,10 @@ div#dashboard-widgets {
 #tagchecklist span a {
 	margin: 4px -9px 0 0;
 }
-#poststuff .togbox {
-	margin-left:0;
-	margin-right: -19px;
-}
 .widefat th input {
 	margin: 0 5px 0 0;
 }
 /* ---------- add by navid */
-#dashmenu { /* fix top right bottom in admin */
-	direction:ltr;
-}
 #sidemenu a { /* fix left admin buttom ex. plugins, options */
 	float:left;
 }
@@ -51,7 +44,7 @@ form#widgets-filter {
 	display:none;
 }
 /* fix manage comment page */
-ul.view-switch li {
+.view-switch {
 	float:left;
 }
 form#posts-filter {

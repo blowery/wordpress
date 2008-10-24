@@ -219,13 +219,13 @@ function get_the_category_list( $separator = '', $parents='', $post_id = false )
 			switch ( strtolower( $parents ) ) {
 				case 'multiple':
 					if ( $category->parent )
-						$thelist .= get_category_parents( $category->parent, true );
+						$thelist .= get_category_parents( $category->parent, true, $separator );
 					$thelist .= '<a href="' . get_category_link( $category->term_id ) . '" title="' . sprintf( __( "View all posts in %s" ), $category->name ) . '" ' . $rel . '>' . $category->name.'</a></li>';
 					break;
 				case 'single':
 					$thelist .= '<a href="' . get_category_link( $category->term_id ) . '" title="' . sprintf( __( "View all posts in %s" ), $category->name ) . '" ' . $rel . '>';
 					if ( $category->parent )
-						$thelist .= get_category_parents( $category->parent, false );
+						$thelist .= get_category_parents( $category->parent, false, $separator );
 					$thelist .= $category->name.'</a></li>';
 					break;
 				case '':
@@ -242,13 +242,13 @@ function get_the_category_list( $separator = '', $parents='', $post_id = false )
 			switch ( strtolower( $parents ) ) {
 				case 'multiple':
 					if ( $category->parent )
-						$thelist .= get_category_parents( $category->parent, true );
+						$thelist .= get_category_parents( $category->parent, true, $separator );
 					$thelist .= '<a href="' . get_category_link( $category->term_id ) . '" title="' . sprintf( __( "View all posts in %s" ), $category->name ) . '" ' . $rel . '>' . $category->cat_name.'</a>';
 					break;
 				case 'single':
 					$thelist .= '<a href="' . get_category_link( $category->term_id ) . '" title="' . sprintf( __( "View all posts in %s" ), $category->name ) . '" ' . $rel . '>';
 					if ( $category->parent )
-						$thelist .= get_category_parents( $category->parent, false );
+						$thelist .= get_category_parents( $category->parent, false, $separator );
 					$thelist .= "$category->cat_name</a>";
 					break;
 				case '':
@@ -288,12 +288,19 @@ function in_category( $category ) {
 	}
 
 	$categories = get_object_term_cache( $post->ID, 'category' );
-	if ( false === $categories )
-		$categories = wp_get_object_terms( $post->ID, 'category' );
-	if ( array_key_exists( $category, $categories ) )
+	if ( false !== $categories ) {
+		if ( array_key_exists( $category, $categories ) )
+			return true;
+		else
+			return false;
+	}
+
+	$categories = wp_get_object_terms( $post->ID, 'category', 'fields=ids' );
+	if ( is_array($categories) && in_array($category, $categories) )
 		return true;
 	else
 		return false;
+	
 }
 
 /**

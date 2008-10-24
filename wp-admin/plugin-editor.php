@@ -96,9 +96,8 @@ default:
 </div>
 <?php endif; ?>
 <div class="wrap">
-<div class="bordertitle">
-	<h2><?php _e('Plugin Editor'); ?></h2>
-</div>
+	<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
 <div class="tablenav">
 <div class="alignleft">
 <big><?php

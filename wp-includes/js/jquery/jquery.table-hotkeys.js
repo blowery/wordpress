@@ -65,7 +65,7 @@
 			}
 		};
 		var first_row = get_first_row();
-		if (!first_row.length) return;		
+		if (!first_row.length) return;
 		if (opts.highlight_first)
 			set_current_row(first_row);
 		else if (opts.highlight_last)
@@ -83,11 +83,11 @@
 				jQuery.hotkeys.add(key, opts.hotkeys_opts, make_key_callback('.'+opts.class_prefix+key));
 			}
 		});
-		
+
 	};
 	$.table_hotkeys.current_row = null;
 	$.table_hotkeys.defaults = {cycle_expr: 'tr', class_prefix: 'vim-', selected_suffix: 'current',
 		destructive_suffix: 'destructive', hotkeys_opts: {disableInInput: true, type: 'keypress'},
 		checkbox_expr: ':checkbox', next_key: 'j', prev_key: 'k', mark_key: 'x',
-		start_row_index: 1, highlight_first: false, highlight_last: false, next_page_link_cb: false, prev_page_link_cb: false};
+		start_row_index: 2, highlight_first: false, highlight_last: false, next_page_link_cb: false, prev_page_link_cb: false};
 })(jQuery);

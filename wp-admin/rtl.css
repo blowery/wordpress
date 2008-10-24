@@ -102,16 +102,6 @@ td.available-theme {
 	padding: 11px 12px 16px 170px;
 }
 
-#dashmenu {
-	right:0;
-	left:auto;
-	padding-left:0;
-	padding-right: 9px;
-}
-#dashmenu a {
-	margin-right:0;
-	margin-left:8px;
-}
 #adminmenu {
 	padding-left:0;
 	padding-right:11px;
@@ -219,26 +209,6 @@ td.available-theme {
 #poststuff #media-buttons a {
 	padding: 0 2px 2px 5px;
 }
-#poststuff .togbox {
-	margin-left:0;
-	margin-right: -21px;
-	-moz-border-radius-topleft:0;
-	-khtml-border-top-left-radius:0;
-	-webkit-border-top-left-radius:0;
-	border-top-left-radius:0;
-	-moz-border-radius-topright: 3px;
-	-khtml-border-top-right-radius: 3px;
-	-webkit-border-top-right-radius: 3px;
-	border-top-right-radius: 3px;
-	-moz-border-radius-bottomleft: 0;
-	-khtml-border-bottom-left-radius:0;
-	-webkit-border-bottom-left-radius:0;
-	border-bottom-left-radius:0;
-	-moz-border-radius-bottomright: 3px;
-	-khtml-border-bottom-right-radius: 3px;
-	-webkit-border-bottom-right-radius: 3px;
-	border-bottom-right-radius: 3px;
-}
 .submitbox .submitdelete {
 	margin-left:0;
 	margin-right:8px;
@@ -310,13 +280,10 @@ p#tag-search, p.search-box {
 #posts-filter fieldset legend {
 	padding: 0 1px .2em 0;
 }
-ul.view-switch {
+.view-switch {
 	float: left;
-	margin: -23px 0 -2px 5px;
 }
-ul.view-switch li {
-	float: right;
-}
+
 #the-comment-list td.comment p.comment-author {
 	margin-right: 0 ;
 }

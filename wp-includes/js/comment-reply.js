@@ -1,35 +1,45 @@
-function moveAddCommentForm(theId, threadId, respondId) {
-	var addComment = document.getElementById(respondId);
-	var comment = document.getElementById(theId);
-	addComment.parentNode.removeChild(addComment);
 
-	comment.appendChild(addComment);
-//	if(comment.className.indexOf("alt")>-1) {
-//		addComment.className = addComment.className.replace(" alt", "");					
-//	} else {
-//		addComment.className += " alt";
-//	}
-	var replyId = document.getElementById("comment-parent");
-	replyId.value = threadId;
-	var reRootElement = document.getElementById("cancel-comment-reply");
-	reRootElement.style.display = "block";
-	var aTags = comment.getElementsByTagName("A");
-	var anc = aTags.item(0).id;
-	//document.location.href = "#"+anc;
-	document.getElementById("comment").focus();
-}
+addComment = {
+	moveForm : function(commId, parentId, respondId) {
+		var t = this, div, comm = t.I(commId), respond = t.I(respondId), cancel = t.I('cancel-comment-reply-link'), parent = t.I('comment_parent');
 
-function cancelCommentReply(respondId, respondRoot) {
-	var addComment = document.getElementById(respondId);			
-	var reRootElement = document.getElementById("cancel-comment-reply");
-	reRootElement.style.display = "none";
-	var content = document.getElementById(respondRoot);
-	if( content ) {
-		addComment.parentNode.removeChild(addComment);
-		content.appendChild(addComment);
+		if ( ! comm || ! respond || ! cancel || ! parent )
+			return;
+
+		t.respondId = respondId;
+
+		if ( ! t.I('wp-temp-form-div') ) {
+			div = document.createElement('div');
+			div.id = 'wp-temp-form-div';
+			div.style.display = 'none';
+			respond.parentNode.insertBefore(div, respond);
+		}
+
+		comm.parentNode.insertBefore(respond, comm.nextSibling);
+		parent.value = parentId;
+		cancel.style.display = '';
+
+		cancel.onclick = function() {
+			var t = addComment, temp = t.I('wp-temp-form-div'), respond = t.I(t.respondId);
+
+			if ( ! temp || ! respond )
+				return;
+
+			t.I('comment_parent').value = '0';
+			temp.parentNode.insertBefore(respond, temp);
+			temp.parentNode.removeChild(temp);
+			this.style.display = 'none';
+			this.onclick = null;
+			return false;
+		}
+
+		try { t.I('comment').focus(); }
+		catch(e) {}
+
+		return false;
+	},
+
+	I : function(e) {
+		return document.getElementById(e);
 	}
-//	addComment.className = addComment.className.replace(" alt", "");
-	document.location.href = "#respond";
-	document.getElementById("comment").focus();				
-	document.getElementById("comment-parent").value = "0";
 }

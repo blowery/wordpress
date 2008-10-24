@@ -620,6 +620,7 @@ function wp_get_sidebars_widgets($update = true) {
 
 	unset($sidebars_widgets['array_version']);
 
+	$sidebars_widgets = apply_filters('sidebars_widgets', $sidebars_widgets);
 	return $sidebars_widgets;
 }
 
@@ -762,21 +763,11 @@ function wp_widget_links($args) {
  */
 function wp_widget_search($args) {
 	extract($args);
-	$searchform_template = get_template_directory() . '/searchform.php';
-
 	echo $before_widget;
 
 	// Use current theme search form if it exists
-	if ( file_exists($searchform_template) ) {
-		include_once($searchform_template);
-	} else { ?>
-		<form id="searchform" method="get" action="<?php bloginfo('url'); ?>/"><div>
-			<label class="hidden" for="s"><?php _e('Search for:'); ?></label>
-			<input type="text" name="s" id="s" size="15" value="<?php the_search_query(); ?>" />
-			<input type="submit" value="<?php echo attribute_escape(__('Search')); ?>" />
-		</div></form>
-	<?php }
-
+	get_search_form();
+	
 	echo $after_widget;
 }
 
@@ -1580,11 +1571,13 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 			if ( empty($title) )
 				$title = __('Untitled');
 			$desc = '';
-			$summary = '';
 			if ( isset( $item['description'] ) && is_string( $item['description'] ) )
-				$desc = $summary = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item['description'], ENT_QUOTES))));
+				$desc = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item['description'], ENT_QUOTES))));
 			elseif ( isset( $item['summary'] ) && is_string( $item['summary'] ) )
-				$desc = $summary = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item['summary'], ENT_QUOTES))));
+				$desc = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item['summary'], ENT_QUOTES))));
+			if ( 360 < strlen( $desc ) )
+				$desc = substr( $desc, 0, 360 ) . ' [&hellip;]';
+			$summary = $desc;
 
 			if ( $show_summary ) {
 				$desc = '';

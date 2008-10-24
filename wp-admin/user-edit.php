@@ -17,8 +17,7 @@ else
 /**
  * Display JavaScript for profile page.
  *
- * @package WordPress
- * @subpackage Administration
+ * @since 2.5.0
  */
 function profile_js ( ) {
 ?>
@@ -99,9 +98,17 @@ if ( !$user_id ) {
 	} else {
 		wp_die(__('Invalid user ID.'));
 	}
+} elseif ( !get_userdata($user_id) ) {
+	wp_die( __('Invalid user ID.') );
 }
 
-// Optional SSL preference that can be turned on by hooking to the 'personal_options' action 
+/**
+ * Optional SSL preference that can be turned on by hooking to the 'personal_options' action.
+ *
+ * @since 2.7.0
+ *
+ * @param object $user User data object
+ */
 function use_ssl_preference($user) {
 ?>
 	<tr>
@@ -127,9 +134,10 @@ check_admin_referer('update-user_' . $user_id);
 if ( !current_user_can('edit_user', $user_id) )
 	wp_die(__('You do not have permission to edit this user.'));
 
-if ( $is_profile_page ) {
+if ($is_profile_page)
 	do_action('personal_options_update');
-}
+else
+	do_action('edit_user_profile_update');
 
 $errors = edit_user($user_id);
 
@@ -169,7 +177,7 @@ include ('admin-header.php');
 <?php endif; ?>
 
 <div class="wrap" id="profile-page">
-<h2><?php $is_profile_page? _e('Your Profile and Personal Options') : _e('Edit User'); ?></h2>
+	<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <form id="your-profile" action="" method="post">
 <?php wp_nonce_field('update-user_' . $user_id) ?>
@@ -187,7 +195,7 @@ include ('admin-header.php');
 <?php if ( rich_edit_exists() ) : // don't bother showing the option if the editor has been removed ?>
 	<tr>
 		<th scope="row"><?php _e('Visual Editor')?></th>
-		<td><label for="rich_editing"><input name="rich_editing" type="checkbox" id="rich_editing" value="true" <?php checked('true', $profileuser->rich_editing); ?> /> <?php _e('Use the visual editor when writing'); ?></label></td>
+		<td><label for="rich_editing"><input name="rich_editing" type="checkbox" id="rich_editing" value="false" <?php checked('false', $profileuser->rich_editing); ?> /> <?php _e('Disable the visual editor when writing'); ?></label></td>
 	</tr>
 <?php endif; ?>
 <?php if (count($_wp_admin_css_colors) > 1 ) : ?>
@@ -212,6 +220,10 @@ foreach ( $_wp_admin_css_colors as $color => $color_info ): ?>
 </div>
 	<?php endforeach; ?>
 </fieldset></td>
+</tr>
+<tr>
+<th scope="row"><?php _e( 'Keyboard Shortcuts' ); ?></th>
+<td><label for="comment_shortcuts"><input type="checkbox" name="comment_shortcuts" id="comment_shortcuts" value="true" <?php checked('true', $profileuser->comment_shortcuts); ?> /> <?php _e( 'Enable keyboard shortcuts for comment moderation. <a href="http://codex.wordpress.org/Keyboard_Shortcuts">More information</a>' ); ?></label></td>
 </tr>
 <?php
 endif;

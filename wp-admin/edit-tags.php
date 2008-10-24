@@ -11,9 +11,9 @@ require_once('admin.php');
 
 $title = __('Tags');
 
-wp_reset_vars(array('action', 'tag'));
+wp_reset_vars( array('action', 'tag') );
 
-if ( isset( $_GET['action'] ) && $_GET['action'] == 'delete' && isset($_GET['delete_tags']) )
+if ( isset( $_GET['action'] ) && isset($_GET['delete_tags']) && ( 'delete' == $_GET['action'] || 'delete' == $_GET['action2'] ) )
 	$action = 'bulk-delete';
 
 switch($action) {
@@ -72,6 +72,7 @@ case 'bulk-delete':
 break;
 
 case 'edit':
+	$title = __('Edit Tag');
 
 	require_once ('admin-header.php');
 	$tag_ID = (int) $_GET['tag_ID'];
@@ -107,13 +108,15 @@ break;
 
 default:
 
-if ( !empty($_GET['_wp_http_referer']) ) {
-	 wp_redirect(remove_query_arg(array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI'])));
+if ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
+	 wp_redirect( remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']) ) );
 	 exit;
 }
 
 wp_enqueue_script( 'admin-tags' );
 wp_enqueue_script('admin-forms');
+if ( current_user_can('manage_categories') )
+	wp_enqueue_script('inline-edit-tax');
 
 require_once ('admin-header.php');
 
@@ -122,16 +125,17 @@ $messages[2] = __('Tag deleted.');
 $messages[3] = __('Tag updated.');
 $messages[4] = __('Tag not added.');
 $messages[5] = __('Tag not updated.');
-$messages[6] = __('Tags deleted.');
-?>
+$messages[6] = __('Tags deleted.'); ?>
 
-<form class="search-form" action="" method="get">
-	<p id="tag-search" class="search-box">
-		<label class="hidden" for="tag-search-input"><?php _e( 'Search Tags' ); ?></label>
-		<input type="text" id="tag-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
-		<input type="submit" value="<?php _e( 'Search Tags' ); ?>" class="button" />
-	</p>
-</form>
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php manage_columns_prefs('tag') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+<br class="clear" />
+</div></form>
+</div>
 
 <?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
 <div id="message" class="updated fade"><p><?php echo $messages[$msg]; ?></p></div>
@@ -139,23 +143,16 @@ $messages[6] = __('Tags deleted.');
 endif; ?>
 
 <div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
-<form id="adv-settings" action="" method="get">
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php manage_columns_prefs('tag') ?>
-<br class="clear" />
-</div></div>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-</div></form>
-
-	<h2><?php printf( current_user_can('manage_categories') ? __('Tags (<a href="%s">Add New</a>)') : __('Manage Tags'), '#addtag' ); ?></h2>
-
+<ul class="subsubsub"><li class="current"><a class="current"><br /></a></li></ul>
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="post-search-input"><?php _e( 'Search Tags' ); ?>:</label>
+	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Tags' ); ?>" class="button" />
+</p>
+</form>
 <br class="clear" />
 
 <form id="posts-filter" action="" method="get">
@@ -181,7 +178,7 @@ if ( $page_links )
 
 <div class="alignleft">
 <select name="action">
-<option value="" selected><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -191,14 +188,21 @@ if ( $page_links )
 <br class="clear" />
 </div>
 
-<br class="clear" />
+<div class="clear"></div>
 
-<table class="widefat">
+<table class="widefat tag">
 	<thead>
 	<tr>
 <?php print_column_headers('tag'); ?>
 	</tr>
 	</thead>
+
+	<tfoot>
+	<tr>
+<?php print_column_headers('tag', false); ?>
+	</tr>
+	</tfoot>
+
 	<tbody id="the-list" class="list:tag">
 <?php
 
@@ -209,17 +213,25 @@ $count = tag_rows( $pagenum, $tagsperpage, $searchterms );
 	</tbody>
 </table>
 
-</form>
-
 <div class="tablenav">
-
 <?php
 if ( $page_links )
 	echo "<div class='tablenav-pages'>$page_links</div>";
 ?>
+
+<div class="alignleft">
+<select name="action2">
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
+</div>
+
 <br class="clear" />
 </div>
+
 <br class="clear" />
+</form>
 
 </div>
 
@@ -227,6 +239,7 @@ if ( $page_links )
 
 <br />
 <?php include('edit-tag-form.php'); ?>
+<?php inline_edit_term_row('tag'); ?>
 
 <?php endif; ?>
 

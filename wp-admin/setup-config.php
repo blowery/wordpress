@@ -12,14 +12,19 @@
 /**
  * We are installing.
  *
- * @since unknown
  * @package WordPress
  */
 define('WP_INSTALLING', true);
-//These three defines are required to allow us to use require_wp_db() to load the database class while being wp-content/wp-db.php aware
+
+/**#@+
+ * These three defines are required to allow us to use require_wp_db() to load
+ * the database class while being wp-content/db.php aware.
+ * @ignore
+ */
 define('ABSPATH', dirname(dirname(__FILE__)).'/');
 define('WPINC', 'wp-includes');
 define('WP_CONTENT_DIR', ABSPATH . 'wp-content');
+/**#@-*/
 
 require_once('../wp-includes/compat.php');
 require_once('../wp-includes/functions.php');
@@ -49,7 +54,8 @@ else
 /**
  * Display setup wp-config.php file header.
  *
- * @since unknown
+ * @ignore
+ * @since 2.3.0
  * @package WordPress
  * @subpackage Installer_WP_Config
  */
@@ -61,7 +67,7 @@ function display_header() {
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>WordPress &rsaquo; Setup Configuration File</title>
-<link rel="stylesheet" href="<?php echo $admin_dir; ?>css/install.css" type="text/css" />
+<link rel="stylesheet" href="css/install.css" type="text/css" />
 
 </head>
 <body>
@@ -135,10 +141,14 @@ switch($step) {
 	if (empty($prefix)) $prefix = 'wp_';
 
 	// Test the db connection.
+	/**#@+
+	 * @ignore
+	 */
 	define('DB_NAME', $dbname);
 	define('DB_USER', $uname);
 	define('DB_PASSWORD', $passwrd);
 	define('DB_HOST', $dbhost);
+	/**#@-*/
 
 	// We'll fail here if the values are no good.
 	require_wp_db();

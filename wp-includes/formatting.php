@@ -126,7 +126,11 @@ function wpautop($pee, $br = 1) {
 		$pee = preg_replace('|\s*</embed>\s*|', '</embed>', $pee);
 	}
 	$pee = preg_replace("/\n\n+/", "\n\n", $pee); // take care of duplicates
-	$pee = preg_replace('/\n?(.+?)(?:\n\s*\n|\z)/s', "<p>$1</p>\n", $pee); // make paragraphs, including one at the end
+	// make paragraphs, including one at the end
+	$pees = preg_split('/\n\s*\n/', $pee, -1, PREG_SPLIT_NO_EMPTY);
+	$pee = '';
+	foreach ( $pees as $tinkle )
+		$pee .= '<p>' . trim($tinkle, "\n") . "</p>\n";
 	$pee = preg_replace('|<p>\s*?</p>|', '', $pee); // under certain strange conditions it could create a P of entirely whitespace
 	$pee = preg_replace('!<p>([^<]+)\s*?(</(?:div|address|form)[^>]*>)!', "<p>$1</p>$2", $pee);
 	$pee = preg_replace( '|<p>|', "$1<p>", $pee );
@@ -1215,8 +1219,10 @@ function iso8601_timezone_to_offset($timezone) {
  * @param string $timezone Optional. If set to GMT returns the time minus gmt_offset. Default is 'user'.
  * @return string The date and time in MySQL DateTime format - Y-m-d H:i:s.
  */
-function iso8601_to_datetime($date_string, $timezone = USER) {
-	if ($timezone == GMT) {
+function iso8601_to_datetime($date_string, $timezone = 'user') {
+	$timezone = strtolower($timezone);
+
+	if ($timezone == 'gmt') {
 
 		preg_match('#([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(Z|[\+|\-][0-9]{2,4}){0,1}#', $date_string, $date_bits);
 
@@ -1231,7 +1237,7 @@ function iso8601_to_datetime($date_string, $timezone = USER) {
 
 		return gmdate('Y-m-d H:i:s', $timestamp);
 
-	} else if ($timezone == USER) {
+	} else if ($timezone == 'user') {
 		return preg_replace('#([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(Z|[\+|\-][0-9]{2,4}){0,1}#', '$1-$2-$3 $4:$5:$6', $date_string);
 	}
 }
@@ -1668,7 +1674,7 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 	$original_url = $url;
 
 	if ('' == $url) return $url;
-	$url = preg_replace('|[^a-z0-9-~+_.?#=!&;,/:%@()\\x80-\\xff]|i', '', $url);
+	$url = preg_replace('|[^a-z0-9-~+_.?#=!&;,/:%@$*\'()\\x80-\\xff]|i', '', $url);
 	$strip = array('%0d', '%0a');
 	$url = str_replace($strip, '', $url);
 	$url = str_replace(';//', '://', $url);
@@ -1680,9 +1686,11 @@ function clean_url( $url, $protocols = null, $context = 'display' ) {
 		substr( $url, 0, 1 ) != '/' && !preg_match('/^[a-z0-9-]+?\.php/i', $url) )
 		$url = 'http://' . $url;
 
-	// Replace ampersands only when displaying.
-	if ( 'display' == $context )
+	// Replace ampersands and single quotes only when displaying.
+	if ( 'display' == $context ) {
 		$url = preg_replace('/&([^#])(?![a-z]{2,8};)/', '&#038;$1', $url);
+		$url = str_replace( "'", '&#039;', $url ); 
+	}
 
 	if ( !is_array($protocols) )
 		$protocols = array('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet');
@@ -2027,8 +2035,10 @@ function wp_sprintf_l($pattern, $args) {
 	if ( count($args) == 1 )
 		$result .= $l['between_only_two'] . array_shift($args);
 	// Loop when more than two args
-	while ( count($args) ) {
+	$i = count($args);
+	while ( $i ) {
 		$arg = array_shift($args);
+		$i--;
 		if ( $i == 1 )
 			$result .= $l['between_last_two'] . $arg;
 		else
@@ -2132,6 +2142,14 @@ function _links_add_target( $m, $target ) {
 	$tag = $m[1];
 	$link = preg_replace('|(target=[\'"](.*?)[\'"])|i', '', $m[2]);
 	return '<' . $tag . $link . ' target="' . $target . '">';
+}
+
+// normalize EOL characters and strip duplicate whitespace
+function normalize_whitespace( $str ) {
+	$str  = trim($str);
+	$str  = str_replace("\r", "\n", $str);
+	$str  = preg_replace( array( '/\n+/', '/[ \t]+/' ), array( "\n", ' ' ), $str );
+	return $str;
 }
 
 ?>

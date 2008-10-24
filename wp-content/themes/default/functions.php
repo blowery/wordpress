@@ -1,4 +1,9 @@
 <?php
+/**
+ * @package WordPress
+ * @subpackage Default_Theme
+ */
+
 if ( function_exists('register_sidebar') )
     register_sidebar(array(
         'before_widget' => '<li id="%1$s" class="widget %2$s">',
@@ -7,6 +12,7 @@ if ( function_exists('register_sidebar') )
         'after_title' => '</h2>',
     ));
 
+/** @ignore */
 function kubrick_head() {
 	$head = "<style type='text/css'>\n<!--";
 	$output = '';
@@ -357,8 +363,8 @@ function kubrick_theme_page() {
 	if ( isset( $_REQUEST['saved'] ) ) echo '<div id="message" class="updated fade"><p><strong>'.__('Options saved.').'</strong></p></div>';
 ?>
 <div class='wrap'>
+	<h2><?php _e('Customize Header'); ?></h2>
 	<div id="kubrick-header">
-	<h2><?php _e('Header Image and Color'); ?></h2>
 		<div id="headwrap">
 			<div id="header">
 				<div id="headerimg">

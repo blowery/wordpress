@@ -18,6 +18,15 @@ if ( ! empty($link_id) ) {
 	$nonce_action = 'add-bookmark';
 }
 
+/**
+ * Display checked checkboxes attribute for xfn microformat options.
+ *
+ * @since 1.0.1
+ *
+ * @param string $class
+ * @param string $value
+ * @param mixed $deprecated Not used.
+ */
 function xfn_check($class, $value = '', $deprecated = '') {
 	global $link;
 
@@ -37,7 +46,16 @@ function xfn_check($class, $value = '', $deprecated = '') {
 }
 ?>
 
-<?php function link_submit_meta_box($link) { ?>
+<?php
+/**
+ * Display link create form fields.
+ *
+ * @since 2.7.0
+ *
+ * @param object $link
+ */
+function link_submit_meta_box($link) {
+?>
 <div class="submitbox" id="submitlink">
 
 <div class="inside-submitbox">
@@ -63,6 +81,13 @@ if ( 'edit' == $_GET['action'] && current_user_can('manage_links') )
 }
 add_meta_box('linksubmitdiv', __('Save'), 'link_submit_meta_box', 'link', 'side', 'core');
 
+/**
+ * Display link categories form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $link
+ */
 function link_categories_meta_box($link) { ?>
 <div id="category-adder" class="wp-hidden-children">
 	<h4><a id="category-add-toggle" href="#category-add"><?php _e( '+ Add New Category' ); ?></a></h4>
@@ -100,6 +125,13 @@ function link_categories_meta_box($link) { ?>
 }
 add_meta_box('linkcategorydiv', __('Categories'), 'link_categories_meta_box', 'link', 'normal', 'core');
 
+/**
+ * Display form fields for changing link target.
+ *
+ * @since 2.6.0
+ *
+ * @param object $link
+ */
 function link_target_meta_box($link) { ?>
 <fieldset><legend class="hidden"><?php _e('Target') ?></legend>
 <label for="link_target_blank" class="selectit">
@@ -117,6 +149,13 @@ function link_target_meta_box($link) { ?>
 }
 add_meta_box('linktargetdiv', __('Target'), 'link_target_meta_box', 'link', 'normal', 'core');
 
+/**
+ * Display xfn form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $link
+ */
 function link_xfn_meta_box($link) {
 ?>
 <table class="editform" style="width: 100%;" cellspacing="2" cellpadding="5">
@@ -230,6 +269,13 @@ function link_xfn_meta_box($link) {
 }
 add_meta_box('linkxfndiv', __('Link Relationship (XFN)'), 'link_xfn_meta_box', 'link', 'normal', 'core');
 
+/**
+ * Display advanced link options form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $link
+ */
 function link_advanced_meta_box($link) {
 ?>
 <table class="form-table" style="width: 100%;" cellspacing="2" cellpadding="5">
@@ -261,30 +307,20 @@ function link_advanced_meta_box($link) {
 </table>
 <?php
 }
-add_meta_box('linkadvanceddiv', __('Advanced'), 'link_advanced_meta_box', 'link', 'normal', 'core');
+add_meta_box('linkadvanceddiv', __('Advanced'), 'link_advanced_meta_box', 'link', 'normal', 'core'); ?>
 
-echo $form;
-echo $link_added;
-
-wp_nonce_field($nonce_action);
-wp_nonce_field( 'closedpostboxes', 'closedpostboxesnonce', false );
-wp_nonce_field( 'meta-box-order', 'meta-box-order-nonce', false ); ?>
-
-<div class="wrap">
-
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
+<div id="screen-options-wrap" class="hidden">
 <h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
 <div class="metabox-prefs">
 <?php meta_box_prefs('link') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
 <br class="clear" />
-</div></div>
+</div></form>
 </div>
 
-<h2><?php echo $heading; ?></h2>
+<div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <!--
 <p id="big-add-button">
@@ -312,8 +348,15 @@ wp_nonce_field( 'meta-box-order', 'meta-box-order-nonce', false ); ?>
 </ul>
 </div>
 -->
+<?php
+echo $form;
+echo $link_added;
 
-<div id="poststuff">
+wp_nonce_field( $nonce_action );
+wp_nonce_field( 'closedpostboxes', 'closedpostboxesnonce', false );
+wp_nonce_field( 'meta-box-order', 'meta-box-order-nonce', false ); ?>
+
+<div id="poststuff" class="metabox-holder">
 
 <div id="side-info-column" class="inner-sidebar">
 <?php 
@@ -345,7 +388,7 @@ $side_meta_boxes = do_meta_boxes( 'link', 'side', $link );
 <div id="descriptiondiv" class="stuffbox">
 <h3><label for="link_description"><?php _e('Description') ?></label></h3>
 <div class="inside">
-	<input type="text" name="link_description" size="30" tabindex="1" value="<?php echo $link->link_description; ?>" id="link_description" /><br />
+	<input type="text" name="link_description" size="30" tabindex="1" value="<?php echo isset($link->link_description) ? $link->link_description : ''; ?>" id="link_description" /><br />
     <?php _e('This will be shown when someone hovers over the link in the blogroll, or optionally below the link.'); ?>
 </div>
 </div>
@@ -369,5 +412,5 @@ if ( $link_id ) : ?>
 </div>
 </div>
 
-</div>
 </form>
+</div>

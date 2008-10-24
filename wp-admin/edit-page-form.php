@@ -7,7 +7,7 @@
  */
 
 /**
- * Post ID global
+ * Post ID global.
  * @name $post_ID
  * @var int
  */
@@ -46,15 +46,14 @@ $temp_ID = (int) $temp_ID;
 $user_ID = (int) $user_ID;
 ?>
 
-<form name="post" action="page.php" method="post" id="post">
-<?php if ( $notice ) : ?>
-<div id="notice" class="error"><p><?php echo $notice ?></p></div>
-<?php endif; ?>
-<?php if (isset($_GET['message'])) : ?>
-<div id="message" class="updated fade"><p><?php echo $messages[$_GET['message']]; ?></p></div>
-<?php endif; ?>
-
 <?php
+/**
+ * Display submit form fields.
+ *
+ * @since 2.7.0
+ *
+ * @param object $post
+ */
 function page_submit_meta_box($post) {
 	global $action;
 
@@ -117,7 +116,7 @@ if ( $can_publish OR ( $post->post_status == 'publish' AND current_user_can('edi
 <?php } ?>
 
 <?php if ( ('edit' == $action) && current_user_can('delete_page', $post->ID) ) { ?>
-	<div class="insidebox" id="deletebutton"><a class="submitdelete" href="<?php echo wp_nonce_url("page.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this page '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )); ?>') ) {return true;}return false;"><?php _e('Delete&nbsp;page'); ?></a></div>
+	<div class="insidebox" id="deletebutton"><a class="submitdelete" href="<?php echo wp_nonce_url("page.php?action=delete&amp;post=$post->ID", 'delete-page_' . $post->ID); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this page '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )); ?>') ) {return true;}return false;"><?php _e('Delete&nbsp;page'); ?></a></div>
 <?php } ?>
 
 <?php
@@ -126,7 +125,7 @@ if ( 0 != $post->ID ) {
 		$stamp = __('Scheduled for: %1$s at %2$s');
 	} else if ( 'publish' == $post->post_status ) { // already published
 		$stamp = __('Published on: %1$s at %2$s');
-	} else if ( '0000-00-00 00:00:00' == $post->post_date ) { // draft, 1 or more saves, no date specified
+	} else if ( '0000-00-00 00:00:00' == $post->post_date_gmt ) { // draft, 1 or more saves, no date specified
 		$stamp = __('Publish immediately');
 	} else { // draft, 1 or more saves, date specified
 		$stamp = __('Publish on: %1$s at %2$s');
@@ -180,6 +179,13 @@ if ( !in_array( $post->post_status, array('publish', 'future') ) || 0 == $post->
 }
 add_meta_box('pagesubmitdiv', __('Publish'), 'page_submit_meta_box', 'page', 'side', 'core');
 
+/**
+ * Display custom field for page form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_custom_meta_box($post){
 ?>
 <div id="postcustomstuff">
@@ -200,6 +206,13 @@ list_meta($metadata);
 }
 add_meta_box('pagecustomdiv', __('Custom Fields'), 'page_custom_meta_box', 'page', 'normal', 'core');
 
+/**
+ * Display comments status form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_comments_status_meta_box($post){
 ?>
 <input name="advanced_view" type="hidden" value="1" />
@@ -212,6 +225,13 @@ function page_comments_status_meta_box($post){
 }
 add_meta_box('pagecommentstatusdiv', __('Comments &amp; Pings'), 'page_comments_status_meta_box', 'page', 'normal', 'core');
 
+/**
+ * Display page password form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_password_meta_box($post){
 ?>
 <p><label for="post_status_private" class="selectit"><input id="post_status_private" name="post_status" type="checkbox" value="private" <?php checked($post->post_status, 'private'); ?> tabindex='4' /> <?php _e('Keep this page private') ?></label></p>
@@ -222,6 +242,13 @@ function page_password_meta_box($post){
 }
 add_meta_box('pagepassworddiv', __('Privacy Options'), 'page_password_meta_box', 'page', 'normal', 'core');
 
+/**
+ * Display page slug form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_slug_meta_box($post){
 ?>
 <label class="hidden" for="post_name"><?php _e('Page Slug') ?></label><input name="post_name" type="text" size="13" id="post_name" value="<?php echo attribute_escape( $post->post_name ); ?>" />
@@ -229,6 +256,13 @@ function page_slug_meta_box($post){
 }
 add_meta_box('pageslugdiv', __('Page Slug'), 'page_slug_meta_box', 'page', 'normal', 'core');
 
+/**
+ * Display page parent form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_parent_meta_box($post){
 ?>
 <label class="hidden" for="parent_id"><?php _e('Page Parent') ?></label>
@@ -239,6 +273,13 @@ function page_parent_meta_box($post){
 add_meta_box('pageparentdiv', __('Page Parent'), 'page_parent_meta_box', 'page', 'normal', 'core');
 
 if ( 0 != count( get_page_templates() ) ) {
+	/**
+	 * Display page template form fields.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param object $post
+	 */
 	function page_template_meta_box($post){
 ?>
 <label class="hidden" for="page_template"><?php _e('Page Template') ?></label><select name="page_template" id="page_template">
@@ -251,6 +292,13 @@ if ( 0 != count( get_page_templates() ) ) {
 	add_meta_box('pagetemplatediv', __('Page Template'), 'page_template_meta_box', 'page', 'normal', 'core');
 }
 
+/**
+ * Display page order form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_order_meta_box($post){
 ?>
 <p><label class="hidden" for="menu_order"><?php _e('Page Order') ?></label><input name="menu_order" type="text" size="4" id="menu_order" value="<?php echo $post->menu_order ?>" /></p>
@@ -264,6 +312,13 @@ $authors = get_editable_user_ids( $current_user->id ); // TODO: ROLE SYSTEM
 if ( $post->post_author && !in_array($post->post_author, $authors) )
 	$authors[] = $post->post_author;
 if ( $authors && count( $authors ) > 1 ) {
+	/**
+	 * Display page author form fields, when more than one author exists.
+	 *
+	 * @since 2.6.0
+	 *
+	 * @param object $post
+	 */
 	function page_author_meta_box($post){
 		global $current_user, $user_ID;
 		$authors = get_editable_user_ids( $current_user->id ); // TODO: ROLE SYSTEM
@@ -278,6 +333,13 @@ if ( $authors && count( $authors ) > 1 ) {
 
 
 if ( 0 < $post_ID && wp_get_post_revisions( $post_ID ) ) :
+/**
+ * Display list of page revisions.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function page_revisions_meta_box($post) {
 	wp_list_post_revisions();
 }
@@ -285,26 +347,26 @@ add_meta_box('revisionsdiv', __('Page Revisions'), 'page_revisions_meta_box', 'p
 endif;
 ?>
 
-<div class="wrap">
-
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
+<div id="screen-options-wrap" class="hidden">
 <h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
 <div class="metabox-prefs">
 <?php meta_box_prefs('page') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
 <br class="clear" />
-</div></div>
+</div></form>
 </div>
 
-<h2><?php
-	if ( !isset($post_ID) || 0 == $post_ID )
-		printf( __( '<a href="%s">Pages</a> / Write New Page' ), 'edit-pages.php' );
-	else
-		printf( __( '<a href="%s">Pages</a> / Edit Page' ), 'edit-pages.php' );
-?></h2>
+<div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
+<form name="post" action="page.php" method="post" id="post">
+<?php if ( $notice ) : ?>
+<div id="notice" class="error"><p><?php echo $notice ?></p></div>
+<?php endif; ?>
+<?php if (isset($_GET['message'])) : ?>
+<div id="message" class="updated fade"><p><?php echo $messages[$_GET['message']]; ?></p></div>
+<?php endif; ?>
 
 <?php
 wp_nonce_field($nonce_action);
@@ -322,41 +384,7 @@ if (isset($mode) && 'bookmarklet' == $mode)
 <input name="referredby" type="hidden" id="referredby" value="<?php echo clean_url(stripslashes(wp_get_referer())); ?>" />
 <?php if ( 'draft' != $post->post_status ) wp_original_referer_field(true, 'previous'); ?>
 
-<!-- TODO
-<div class="inside">
-<p><strong><label for='post_status'><?php _e('Publish Status') ?></label></strong></p>
-<p>
-<select name='post_status' tabindex='4' id='post_status'>
-<?php // Show publish in dropdown if user can publish or if they can re-publish this page ('edit_published_pages')
-// 'publish' option will be selected for published AND private posts (checkbox overrides dropdown)
-if ( current_user_can('publish_pages') OR ( $post->post_status == 'publish' AND current_user_can('edit_page', $post->ID) ) ) : 
-?>
-<option<?php selected( $post->post_status, 'publish' ); selected( $post->post_status, 'private' );?> value='publish'><?php _e('Published') ?></option>
-<?php endif; ?>
-<?php if ( 'future' == $post->post_status ) : ?>
-<option<?php selected( $post->post_status, 'future' ); ?> value='future'><?php _e('Pending') ?></option>
-<?php endif; ?>
-<option<?php selected( $post->post_status, 'pending' ); ?> value='pending'><?php _e('Pending Review') ?></option>
-<option<?php selected( $post->post_status, 'draft' ); ?> value='draft'><?php _e('Unpublished') ?></option>
-</select>
-</p>
-<?php if ( current_user_can( 'publish_posts' ) ) : ?> 
-<p><label for="post_status_private2" class="selectit"><input id="post_status_private2" name="post_status" type="checkbox" value="private" <?php checked($post->post_status, 'private'); ?> tabindex='4' /> <?php _e('Keep this page private') ?></label></p>
-<?php endif; ?>
-
-<h5><?php _e('Related') ?></h5>
-<ul>
-<?php if ($post_ID): ?>
-<li><a href="edit-pages.php?page_id=<?php echo $post_ID ?>"><?php _e('See Comments on this Page') ?></a></li>
-<?php endif; ?>
-<li><a href="edit-comments.php"><?php _e('Manage All Comments') ?></a></li>
-<li><a href="edit-pages.php"><?php _e('Manage All Pages') ?></a></li>
-<?php do_action('page_relatedlinks_list'); ?>
-</ul>
-
--->
-
-<div id="poststuff">
+<div id="poststuff" class="metabox-holder">
 
 <div id="side-info-column" class="inner-sidebar">
 
@@ -431,8 +459,8 @@ do_meta_boxes('page', 'advanced', $post);
 </div>
 </div>
 
-</div>
 </form>
+</div>
 
 <script type="text/javascript">
 try{document.post.title.focus();}catch(e){}

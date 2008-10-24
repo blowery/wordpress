@@ -5,10 +5,6 @@
 	border-color: #c6d9e9;
 }
 
-#wpbody-content {
-	border-color: #c6d9e9;
-}
-
 a.page-numbers:hover {
 	border-color: #999;
 }
@@ -26,7 +22,8 @@ body > #upload-menu {
 
 div#current-widgets, #postcustomstuff table, #your-profile fieldset,
 a.page-numbers, #rightnow, div.dashboard-widget,
-#dashboard-widgets p.dashboard-widget-links, .widefat {
+#dashboard-widgets p.dashboard-widget-links, .widefat,
+#replyrow #ed_reply_toolbar input {
 	border-color: #ccc;
 }
 
@@ -50,8 +47,8 @@ input.disabled, textarea.disabled {
 	background-color: #ccc;
 }
 
-#user_info a:hover, li.widget-list-control-item h4.widget-title a:hover,
-#dashmenu a:hover, #footer a, #upload-menu li a.upload-tab-link, 
+li.widget-list-control-item h4.widget-title a:hover,
+#footer a, #upload-menu li a.upload-tab-link, 
 li.widget-list-control-item h4.widget-title a,
 #dragHelper li.widget-list-control-item h4.widget-title a,
 #draghelper li.widget-list-control-item h4.widget-title a:visited,
@@ -61,8 +58,9 @@ li.widget-list-control-item h4.widget-title a,
 }
 
 li.widget-list-control-item, div.nav, .tablenav, #dashboard-widgets p.dashboard-widget-links,
-ul.view-switch li.current, .form-table tr, #poststuff h3, #replyhandle,
-.login form, h3.info-box-title, #post-status-info, #edit-settings-wrap {
+.form-table tr, #poststuff h3, .metabox-holder h3, #replyhandle,
+.login form, h3.info-box-title, #post-status-info, #screen-options-wrap,
+#wpbody-content .describe tr, #edithead, #replyhead  {
 	background-color: #eaf3fa;
 }
 
@@ -79,6 +77,10 @@ strong .post-com-count span {
 #quicktags, #login form .submit input, .search-box .button,
 #ed_reply_toolbar {
 	background-color: #cee1ef !important;
+}
+
+#favorite-actions .favorite-action {
+	border-top-color: #cee1ef;
 }
 
 ul#widget-list li.widget-list-item h4.widget-title {
@@ -146,7 +148,10 @@ ul#widget-list li.widget-list-item h4.widget-title {
 	border-color: #c6d9e9;
 }
 
-.form-table td, .form-table th {
+.form-table td,
+.form-table th,
+#wpbody-content .describe td,
+#wpbody-content .describe th {
 	border-bottom-color: #fff;
 }
 
@@ -155,7 +160,7 @@ ul#widget-list li.widget-list-item h4.widget-title {
 	color: #d54e21;
 }
 
-#user_info, .howto, .nonessential, #dashmenu a, #edit-slug-box, .form-input-tip, #dashboard_primary span.rss-date, .subsubsub, #dashboard_secondary div.dashboard-widget-content ul li a cite {
+.howto, .nonessential, #edit-slug-box, .form-input-tip, #dashboard_primary span.rss-date, .subsubsub, #dashboard_secondary div.dashboard-widget-content ul li a cite {
 	color: #999;
 }
 
@@ -205,7 +210,12 @@ ul#widget-list li.widget-list-item h4.widget-title {
 	color: #666;
 }
 
-.submit input, .button, .button-secondary, #login form .submit input, div.dashboard-widget-submit input, #edit-slug-buttons a.save {
+.submit input,
+.button,
+.button-secondary,
+#login form .submit input,
+div.dashboard-widget-submit input,
+#edit-slug-buttons a.save {
 	background-color: #e5e5e5;
 	color: #246;
 	border-color: #80b5d0;
@@ -224,7 +234,7 @@ ul#widget-list li.widget-list-item h4.widget-title {
 #rightnow a:hover, a:hover, .subsubsub a:hover, .subsubsub a.current:hover,
 #login form .submit input:hover, div.dashboard-widget-submit input:hover,
 #edit-slug-buttons a.save:hover, #media-upload a.delete:hover,
-#media-upload a.del-link:hover, .ui-tabs-nav a:hover {
+#media-upload a.del-link:hover, .ui-tabs-nav a:hover, #user_info a:hover {
 	color: #d54e21;
 }
 
@@ -232,7 +242,6 @@ ul#widget-list li.widget-list-item h4.widget-title {
 	border-color: #328ab2;
 }
 
-ul.view-switch li.current a,
 #side-info-column #category-tabs .ui-tabs-selected a {
 	color: #333;
 }
@@ -301,7 +310,9 @@ ul.view-switch li.current a,
 }
 
 .widefat thead,
+.widefat tfoot,
 .thead,
+.tfoot,
 h3.dashboard-widget-title,
 h3.dashboard-widget-title span,
 h3.dashboard-widget-title small,
@@ -328,26 +339,17 @@ h3.dashboard-widget-title small a:hover {
 	color: #666;
 }
 
-#adminmenu li.wp-has-submenu a {
-	color: #333;
-}
 
-#adminmenu a, #adminmenu ul.wp-submenu a, #poststuff #edButtonPreview, #poststuff #edButtonHTML, #the-comment-list p.comment-author strong a, #media-upload a.del-link, #media-upload a.delete, .ui-tabs-nav a, .ui-sortable .postbox h3:hover span, a {
+#adminmenu a, #poststuff #edButtonPreview, #poststuff #edButtonHTML, #the-comment-list p.comment-author strong a, #media-upload a.del-link, #media-upload a.delete, .ui-tabs-nav a, .ui-sortable .postbox h3:hover span, a {
 	color: #2583ad;
 }
 
 /* Because we don't want visited on these links */
-#adminmenu li.current a, #sidemenu a.current, body.press-this .ui-tabs-selected a, body.press-this .ui-tabs-selected a:hover {
+body.press-this .ui-tabs-selected a, body.press-this .ui-tabs-selected a:hover {
 	background-color: #fff;
 	border-color: #c6d9e9;
 	border-bottom-color: #fff;
 	color: #d54e21;
-}
-
-#adminmenu li.current {
-	background-color: #fff;
-	border-color: #c6d9e9;
-	border-right-color: #fff;
 }
 
 #adminmenu li a #awaiting-mod {
@@ -402,7 +404,7 @@ input.readonly {
 }
 
 #footer {
-	background: url(../images/logo-ghost.png) #464646 no-repeat 20px 10px;
+	background: #464646;
 	color: #999;
 }
 
@@ -464,23 +466,13 @@ input.readonly {
 	color: #333;
 }
 
-#poststuff .closed .togbox {
-	background-color: #2583ad;
-	background-image: url(../images/toggle-arrow.gif);
-}
-
-#poststuff .postbox, #titlediv, #poststuff .postarea, #poststuff .stuffbox {
+.metabox-holder .postbox, #poststuff .postbox, #titlediv, #poststuff .postarea, #poststuff .stuffbox {
 	border-color: #ebebeb;
 	border-right-color: #ccc;
 	border-bottom-color: #ccc;
 }
 
-#poststuff .togbox {
-	background-color: #b2b2b2;
-	background-image: url(../images/toggle-arrow.gif);
-}
-
-#poststuff .postbox {
+.metabox-holder .postbox, #poststuff .postbox {
 	background-color: #FFF;
 }
 
@@ -500,17 +492,14 @@ input.readonly {
 	color: #448abd;
 }
 
-#tagchecklist span a {
+#tagchecklist span a,
+#bulk-titles div a {
 	background: url(../images/xit.gif) no-repeat;
 }
 
-#tagchecklist span a:hover {
+#tagchecklist span a:hover,
+#bulk-titles div a:hover {
 	background: url(../images/xit.gif) no-repeat -10px 0;
-}
-
-#the-comment-list .comment a {
-	border-bottom-color: #ababab;
-	color: #666;
 }
 
 #update-nag, .plugin-update {
@@ -550,35 +539,39 @@ input.readonly {
 	border-top-color: #247fab;
 }
 
-.login #backtoblog a, #user_info a, #dashmenu a {
+.login #backtoblog a {
 	color: #ccc;
 }
 
 #wphead {
-	background-color: #e4f2fd;
+	background-color: #464646;
 }
 
-#wphead, body.login {
+body.login {
 	border-top-color: #464646;
 }
 
-#wphead #viewsite a {
-	background-color: #c6d9e9;
-	color: #246;
-	border-color: #80b5d0;
+#wphead h1 a {
+	color: #fff;
 }
 
-#wphead #viewsite a:hover {
-	border-color: #328ab2;
-}
-
-#wphead h1, #wphead h1 a, #login form input {
+#login form input {
 	color: #555;
 }
 
 #wphead h1 a:hover {
 	text-decoration: underline;
 }
+
+#user_info {
+	color: #999;
+}
+
+#user_info a, #user_info a:visited {
+	color: #ccc;
+	text-decoration: none;
+}
+
 
 div#media-upload-error, .file-error, abbr.required, .widget-control-remove:hover, .delete:hover {
 	color: #f00;
@@ -767,7 +760,6 @@ table.diff .diff-addedline ins {
 	background-color: #99ff99;
 }
 
-#adminmenu,
 #att-info {
 	background-color: #E4F2FD;
 }
@@ -779,14 +771,9 @@ table.diff .diff-addedline ins {
 	border-top-color: #e4f2fd;
 }
 
-#edit-settings-wrap,
-#show-settings {
+#screen-options-wrap {
 	background-color: #E4F2FD;
 	border-color: #c6d9e9;
-}
-
-#show-settings.show-settings-opened {
-	border-bottom-color: #E4F2FD;
 }
 
 #replydiv,
@@ -828,9 +815,18 @@ div.star.select:hover {
 	background-color: #cee1ef;
 }
 
+#plugin-information pre, #plugin-information code {
+	background-color: #ededff;
+}
+
+#plugin-information pre {
+	border: 1px solid #ccc;
+}
+
 /* inline editor */
 .inline-editor input,
-.inline-editor textarea {
+.inline-editor textarea,
+#replyrow input {
 	border-color: #ddd;
 }
 
@@ -849,4 +845,9 @@ div.star.select:hover {
 
 .inline-editor .quick-edit-save {
 	background-color: #EAF3FA;
+}
+
+#replyrow #ed_reply_toolbar input:hover {
+	border-color: #aaa;
+	background: #ddd;
 }

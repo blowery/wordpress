@@ -16,10 +16,17 @@ include('./admin-header.php');
 ?>
 
 <div class="wrap">
-<h2><?php _e('Privacy Settings') ?></h2>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
 <form method="post" action="options.php">
 <?php wp_nonce_field('privacy-options') ?>
 <input type='hidden' name='option_page' value='privacy' />
+<input type="hidden" name="action" value="update" />
+
+<p class="submit submit-top">
+	<input type="submit" name="submit" class="button" value="<?php _e('Save Changes') ?>" />
+</p>
+
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><?php _e('Blog Visibility') ?> </th>
@@ -36,8 +43,8 @@ include('./admin-header.php');
 
 <?php do_settings_sections('privacy'); ?>
 
-<p class="submit"><input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
-<input type="hidden" name="action" value="update" />
+<p class="submit">
+	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
 </p>
 </form>
 

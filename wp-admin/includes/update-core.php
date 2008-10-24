@@ -4,13 +4,13 @@
  *
  * @package WordPress
  * @subpackage Administration
- * @since 2.7
+ * @since 2.7.0
  */
 
 /**
  * Stores files to be deleted.
  *
- * @since 2.7
+ * @since 2.7.0
  * @global array $_old_files
  * @var array
  * @name $_old_files
@@ -166,6 +166,8 @@ $_old_files = array(
  * themes, then if you edit the default theme, you should rename it, so that
  * your changes remain.
  *
+ * @since 2.7.0
+ *
  * @param string $from New release unzipped path.
  * @param string $to Path to old WordPress installation.
  * @return WP_Error|null WP_Error on failure, null on success.
@@ -173,10 +175,12 @@ $_old_files = array(
 function update_core($from, $to) {
 	global $wp_filesystem, $_old_files;
 
+	@set_time_limit( 300 );
+
 	// Sanity check the unzipped distribution
 	apply_filters('update_feedback', __('Verifying the unpacked files'));
-	if ( !file_exists($from . '/wordpress/wp-settings.php') || !file_exists($from . '/wordpress/wp-admin/admin.php') ||
-		!file_exists($from . '/wordpress/wp-includes/functions.php') ) {
+	if ( !$wp_filesystem->exists($from . '/wordpress/wp-settings.php') || !$wp_filesystem->exists($from . '/wordpress/wp-admin/admin.php') ||
+		!$wp_filesystem->exists($from . '/wordpress/wp-includes/functions.php') ) {
 		$wp_filesystem->delete($from, true);
 		return new WP_Error('insane_distro', __('The update could not be unpacked') );
 	}
@@ -197,7 +201,15 @@ function update_core($from, $to) {
 		return $result;
 	}
 
-	// Might have to do upgrade in a separate step.
+	// Remove old files
+	foreach ( $_old_files as $old_file ) {
+		$old_file = $to . $old_file;
+		if ( !$wp_filesystem->exists($old_file) )
+			continue;
+		$wp_filesystem->delete($old_file, true);
+	}
+
+	// Upgrade DB with separate request
 	apply_filters('update_feedback', __('Upgrading database'));
 	$db_upgrade_url = admin_url('upgrade.php?step=upgrade_db');
 	wp_remote_post($db_upgrade_url, array('timeout' => 60));
@@ -205,19 +217,11 @@ function update_core($from, $to) {
 	// Remove working directory
 	$wp_filesystem->delete($from, true);
 
-	// Remove maintenance file, we're done.
-	$wp_filesystem->delete($maintenance_file);
-
-	// Remove old files
-	foreach ( $_old_files as $old_file ) {
-		$old_file = $to . $old_file;
-		if ( !file_exists($old_file) )
-			continue;
-		$wp_filesystem->delete($old_file, true);
-	}
-
 	// Force refresh of update information
 	delete_option('update_core');
+
+	// Remove maintenance file, we're done.
+	$wp_filesystem->delete($maintenance_file);
 }
 
 ?>

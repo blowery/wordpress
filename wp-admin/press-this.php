@@ -16,7 +16,7 @@ if ( ! current_user_can('publish_posts') ) wp_die( __( 'Cheatin&#8217; uh?' ) );
  *
  * @package WordPress
  * @subpackage Press_This
- * @since unknown
+ * @since 2.6.0
  *
  * @param string $string
  * @return string
@@ -30,7 +30,7 @@ function preg_quote2($string) {
  *
  * @package WordPress
  * @subpackage Press_This
- * @since unknown
+ * @since 2.6.0
  *
  * @param string $text
  * @return string
@@ -47,7 +47,7 @@ function aposfix($text) {
  *
  * @package WordPress
  * @subpackage Press_This
- * @since unknown
+ * @since 2.6.0
  *
  * @return int Post ID
  */
@@ -61,7 +61,7 @@ function press_it() {
 
 	// insert the post with nothing in it, to get an ID
 	$post_ID = wp_insert_post($quick, true);
-
+	
 	$content = $_REQUEST['content'];
 
 	if($_REQUEST['photo_src'])
@@ -81,7 +81,7 @@ function press_it() {
 	// error handling for $post
 	if ( is_wp_error($post_ID)) {
 		wp_die($id);
-		wp_delete_post($post_ID);error_log('2');
+		wp_delete_post($post_ID);
 	// error handling for media_sideload
 	} elseif ( is_wp_error($upload)) {
 		wp_die($upload);
@@ -97,9 +97,7 @@ function press_it() {
 if ( 'post' == $_REQUEST['action'] ) {
 	check_admin_referer('press-this');
 	$post_ID = press_it();
-	error_log($post_ID);
 	$posted =  $post_ID;
-	//wp_redirect('press-this.php?posted=' . press_it());
 }
 
 // Set Variables
@@ -117,16 +115,18 @@ switch ($_REQUEST['ajax']) {
 	case 'video': ?>
 		<script type="text/javascript" charset="utf-8">	
 			jQuery('.select').click(function() {
-				append_editor(jQuery('#embed-code').html());
+				append_editor(jQuery('#embed-code').val());
+				jQuery('#extra_fields').hide();
+				jQuery('#extra_fields').html('');
 			});
 			jQuery('.close').click(function() {
 				jQuery('#extra_fields').hide();
+				jQuery('#extra_fields').html('');
 			});
 		</script>
 		<h2><label for="embed-code"><?php _e('Embed Code') ?></label></h2>
 		<div class="titlewrap" >
-			<textarea name="embed-code" id="embed-code" rows="8" cols="40"><?php echo format_to_edit($selection); ?></textarea>
-
+			<textarea name="embed-code" id="embed-code" rows="8" cols="40"><?php echo format_to_edit($selection, true); ?></textarea>
 		</div>
 		<p id="options"><a href="#" class="select button"><?php _e('Insert Video'); ?></a> <a href="#" class="close button"><?php _e('Cancel'); ?></a></p>
 		<?php break;
@@ -176,13 +176,23 @@ switch ($_REQUEST['ajax']) {
 		<p id="options"><a href="#" class="select"><?php _e('Insert Image'); ?></a> | <a href="#" class="cancel"><?php _e('Cancel'); ?></a></p>
 		<?php break;
 	case 'photo_images':
+		/**
+		 * Retrieve all image URLs from given URI.
+		 *
+		 * @package WordPress
+		 * @subpackage Press_This
+		 * @since 2.6.0
+		 *
+		 * @param string $uri
+		 * @return string
+		 */
 		function get_images_from_uri($uri) {
-			if( preg_match('/\.(jpg|jpe|jpeg|png|gif)/', $uri) && !strpos($uri,'blogger.com') )
+			if( preg_match('/\.(jpg|jpe|jpeg|png|gif)$/', $uri) && !strpos($uri,'blogger.com') )
 				return "'".$uri."'";
 
 			$content = wp_remote_fopen($uri);
 			if ( false === $content ) return '';
-
+		
 			$host = parse_url($uri);
 
 			$pattern = '/<img ([^>]*)src=(\"|\')([^<>]+?\.(png|jpeg|jpg|jpe|gif))[^<>\'\"]*(\2)([^>\/]*)\/*>/is';
@@ -195,13 +205,11 @@ switch ($_REQUEST['ajax']) {
 				// if no http in url
 				if(strpos($src, 'http') === false)
 					// if it doesn't have a relative uri
-					if( strpos($src, '../') === false && strpos($src, './') === false && strpos($src, '/') === true)
+					if( strpos($src, '../') === false && strpos($src, './') === false && strpos($src, '/') === 0)
 						$src = 'http://'.str_replace('//','/', $host['host'].'/'.$src);
 					else
 						$src = 'http://'.str_replace('//','/', $host['host'].'/'.dirname($host['path']).'/'.$src);
-
 				$sources[] = clean_url($src);
-				error_log($src);
 			}
 			return "'" . implode("','", $sources) . "'";
 		}
@@ -257,9 +265,8 @@ switch ($_REQUEST['ajax']) {
 				if(length == 0) length = 1;
 				jQuery('.photolist').append('<input name="photo_src[' + length + ']" value="' + img +'" type="hidden"/>');
 				jQuery('.photolist').append('<input name="photo_description[' + length + ']" value="' + desc +'" type="hidden"/>');
-				append_editor("\n\n" + '<p style="text-align: center;"><a href="<?php echo urlencode($url); ?>"><img src="' + img +'" alt="' + desc + '" /></a></p>');
+				insert_editor("\n\n" + '<p style="text-align: center;"><a href="<?php echo $url; ?>"><img src="' + img +'" alt="' + desc + '" /></a></p>');
 			}
-			tinyMCE.activeEditor.resizeToContent();
 			return false;
 		}
 
@@ -269,13 +276,15 @@ switch ($_REQUEST['ajax']) {
 			src = jQuery('#this_photo').val();
 			pick(src, desc);
 			jQuery('#extra_fields').hide();
+			jQuery('#extra_fields').html('');
 			return false;
 		}
 
 		jQuery(document).ready(function() {
-			jQuery('#extra_fields').html('<h2>Photo <small id="photo_directions">(<?php _e("click images to select") ?>)</small></h2><div class="photolist"></div><ul id="actions"><li><a href="#" id="photo_add_url" class="thickbox button"><?php _e("Add from URL") ?> +</a></li></ul><div class="titlewrap"><div id="img_container"></div></div><p id="options"><a href="#" class="close button"><?php _e('Cancel'); ?></a></p>');
+			jQuery('#extra_fields').html('<h2>Photo <small id="photo_directions">(<?php _e("click images to select") ?>)</small></h2><ul id="actions"><li><a href="#" id="photo_add_url" class="thickbox button"><?php _e("Add from URL") ?> +</a></li></ul><div class="titlewrap"><div id="img_container"></div></div><p id="options"><a href="#" class="close button"><?php _e('Cancel'); ?></a></p>');
 			jQuery('.close').click(function() {
 				jQuery('#extra_fields').hide();
+				jQuery('#extra_fields').html('');
 			});
 			jQuery('#img_container').html(strtoappend);
 			jQuery('#photo_add_url').attr('href', '?ajax=photo_thickbox_url&height=200&width=500');
@@ -292,63 +301,26 @@ die;
 <head>
 	<meta http-equiv="Content-Type" content="<?php bloginfo('html_type'); ?>; charset=<?php echo get_option('blog_charset'); ?>" />
 	<title><?php _e('Press This') ?></title>
-	<script type="text/javascript" src="../wp-includes/js/tinymce/tiny_mce.js?ver=311"></script>
+
 <?php
 	add_thickbox();
 	wp_enqueue_style('press-this');
 	wp_enqueue_style('press-this-ie');
 	wp_enqueue_style( 'colors' );
 	wp_enqueue_script( 'post' );
-	wp_enqueue_script('editor_functions');
+	wp_enqueue_script('editor');
 
 	do_action('admin_print_styles');
 	do_action('admin_print_scripts');
 	do_action('admin_head');
+	
+	if ( user_can_richedit() ) {
+		add_filter( 'teeny_mce_before_init', create_function( '$a', '$a["onpageload"] = ""; $a["mode"] = "textareas"; $a["editor_selector"] = "mceEditor"; return $a;' ) );
+		
+		wp_tiny_mce( true );
+	}
 ?>
 	<script type="text/javascript">
-	<?php if ( user_can_richedit() ) {
-		$language = ( '' == get_locale() ) ? 'en' : strtolower( substr(get_locale(), 0, 2) );
-		// Add TinyMCE languages
-		@include_once( dirname(__FILE__).'/../wp-includes/js/tinymce/langs/wp-langs.php' );
-		if ( isset($strings) ) echo $strings; ?>
-			(function() {
-				var base = tinymce.baseURL, sl = tinymce.ScriptLoader, ln = "<?php echo $language; ?>";
-				sl.markDone(base + '/langs/' + ln + '.js');
-				sl.markDone(base + '/themes/advanced/langs/' + ln + '.js');
-				sl.markDone(base + '/themes/advanced/langs/' + ln + '_dlg.js');
-			})();
-
-			tinyMCE.init({
-				mode: "textareas",
-				editor_selector: "mceEditor",
-				language : "<?php echo $language; ?>",
-				width: "100%",
-				height: "300",
-				theme : "advanced",
-				theme_advanced_buttons1 : "bold,italic,underline,blockquote,separator,strikethrough,bullist,numlist,justifyleft, justifycenter, justifyright, undo,redo,link,unlink",
-				theme_advanced_buttons2 : "",
-				theme_advanced_buttons3 : "",
-				theme_advanced_toolbar_location : "top",
-				theme_advanced_toolbar_align : "left",
-				theme_advanced_statusbar_location : "bottom",
-				theme_advanced_resizing : true,
-				theme_advanced_resize_horizontal : false,
-				skin : "wp_theme",
-				dialog_type : "modal",
-				relative_urls : false,
-				remove_script_host : false,
-				convert_urls : false,
-				apply_source_formatting : false,
-				remove_linebreaks : true,
-				accessibility_focus : false,
-				tab_focus : ":next",
-				plugins : "safari,inlinepopups, media",
-				entities : "38,amp,60,lt,62,gt",
-				force_p_newlines : true,
-				save_callback : 'switchEditors.saveCallback'
-			});
-    <?php } ?>
-
     jQuery('#tags-input').hide();
 	tag_update_quickclicks();
 	// add the quickadd form
@@ -372,10 +344,11 @@ die;
 		if ( '' == text || '<p></p>' == text ) text = '<p><br /></p>';
 		if ( tinyMCE.activeEditor ) tinyMCE.execCommand('mceSetContent', false, text);
 	}
-
+	function insert_editor(text) {
+		if ( '' != text && tinyMCE.activeEditor ) tinyMCE.execCommand('mceInsertContent', false, '<p>' + tinymce.DOM.decode(text) + '</p>');
+	}
 	function append_editor(text) {
-		if ( '' != text && tinyMCE.activeEditor ) tinyMCE.execCommand('mceSetContent', false, tinyMCE.activeEditor.getContent({format : 'raw'})
-		 + '<p>' + tinymce.DOM.decode(text) + '</p>');
+		if ( '' != text && tinyMCE.activeEditor ) tinyMCE.execCommand('mceSetContent', false, tinyMCE.activeEditor.getContent({format : 'raw'}) + '<p>' + text + '</p>');
 		tinyMCE.execCommand('mceCleanup');
 	}
 
@@ -383,6 +356,7 @@ die;
 		
 		switch(tab_name) {
 			case 'video' :
+				jQuery('#extra_fields').html('');
 				jQuery('#extra_fields').show();
 				jQuery('#extra_fields').load('<?php echo clean_url($_SERVER['PHP_SELF']); ?>', { ajax: 'video', s: '<?php echo attribute_escape($selection); ?>'}, function() {
 					<?php
@@ -408,7 +382,7 @@ die;
 				return false;
 				break;
 			case 'photo' :
-				if(jQuery('#extra_fields').css('display') == 'none') {
+					jQuery('#extra_fields').html('');
 					jQuery('#extra_fields').show();
 					jQuery('#extra_fields').before('<p id="waiting"><img src="images/loading.gif" alt="" /><?php echo js_escape( __( 'Loading...' ) ); ?></p>');
 					jQuery.ajax({
@@ -421,9 +395,7 @@ die;
 							jQuery('#waiting').remove();
 						}
 					});
-				} else {
-					jQuery('#extra_fields').hide();
-				}
+
 				return false;
 				break;
 		}
@@ -433,7 +405,9 @@ die;
 		top.resizeTo(700-screen.width+screen.availWidth,680-screen.height+screen.availHeight);
     	jQuery('#photo_button').click(function() { show('photo'); return false; });
 		jQuery('#video_button').click(function() { show('video'); return false; });
-		
+		jQuery('#visual_mode_button').click(function() {
+			
+		});
 		// Set default tabs
 		<?php if ( preg_match("/youtube\.com\/watch/i", $url) ) { ?>
 			show('video');
@@ -452,14 +426,16 @@ die;
 </div>
 
 <form action="press-this.php?action=post" method="post">
-	<?php wp_nonce_field('press-this') ?>
-	<input type="hidden" name="post_type" id="post_type" value="text"/>
 	
-	<div id="poststuff">	
+	
+	<div id="poststuff" class="metabox-holder">
 	<div id="side-info-column">
 		<div class="sleeve">
-			<h1 id="viewsite"><a class="button" href="<?php echo get_option('home'); ?>/"><?php bloginfo('name'); ?> &rsaquo; <?php _e('Press This') ?></a></span></h1>
-			
+			<h1 id="viewsite"><a class="button" href="<?php echo get_option('home'); ?>/" target="_blank"><?php bloginfo('name'); ?> &rsaquo; <?php _e('Press This') ?></a></span></h1>
+			<?php wp_nonce_field('press-this') ?>
+		<input type="hidden" name="post_type" id="post_type" value="text"/>
+	
+		<div class="photolist"></div>
 			<div id="categorydiv" class="stuffbox">
 			<h2><?php _e('Categories') ?></h2>
 				<div class="inside">
@@ -527,17 +503,30 @@ die;
 				<ul id="actions">
 					<li id="photo_button"><a href="#" class="button"><?php _e( 'Add Photo' ); ?></a></li>
 					<li id="video_button"><a href="#" class="button"><?php _e( 'Add Video' ); ?></a></li>
+					<li id="switcher">
+						<?php wp_print_scripts( 'quicktags' ); ?>
+		
+			<?php add_filter('the_editor_content', 'wp_richedit_pre'); ?>
+			<a id="edButtonHTML" onclick="switchEditors.go('<?php echo $id; ?>', 'html');"><?php _e('HTML'); ?></a>
+			<a id="edButtonPreview" class="active" onclick="switchEditors.go('<?php echo $id; ?>', 'tinymce');"><?php _e('Visual'); ?></a>
+			<div class="zerosize"><input accesskey="e" type="button" onclick="switchEditors.go('<?php echo $id; ?>')" /></div>
+		</li>
 				</ul>
-			
+			<div id="quicktags">
+	
+	
+	</div>
+	
 				<h2 id="content_type"><label for="content"><?php _e('Post') ?></label></h2>
 			
 				<div class="editor-container">
-					<textarea name="content" id="content" style="width:100%;" class="mceEditor" rows="15"><?php if ($selection) { echo wp_richedit_pre($selection); } ?><a href="<?php echo $url ?>"><?php echo $title; ?></a><?php if($selection) echo '.'; ?></textarea>
+					<textarea name="content" id="content" style="width:100%;" class="mceEditor" rows="15">
+					<?php if ($selection) echo wp_richedit_pre($selection); ?>
+					<?php if ($url) { ?><p><?php if($selection) _e('via'); ?> <a href="<?php echo $url ?>"><?php echo $title; ?></a>.</p><?php } ?>
+					</textarea>
 				</div>
 			</div>
 		</div>
-
-		
 	</div>
 </form>
 </body>

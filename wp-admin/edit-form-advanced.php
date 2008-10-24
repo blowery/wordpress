@@ -45,7 +45,7 @@ if ( 0 == $post_ID ) {
 	// Detect if there exists an autosave newer than the post and if that autosave is different than the post
 	if ( $autosave && mysql2date( 'U', $autosave->post_modified_gmt ) > mysql2date( 'U', $post->post_modified_gmt ) ) {
 		foreach ( _wp_post_revision_fields() as $autosave_field => $_autosave_field ) {
-			if ( wp_text_diff( $autosave->$autosave_field, $post->$autosave_field ) ) {
+			if ( normalize_whitespace( $autosave->$autosave_field ) != normalize_whitespace( $post->$autosave_field ) ) {
 				$notice = sprintf( $notices[1], get_edit_post_link( $autosave->ID ) );
 				break;
 			}
@@ -54,13 +54,15 @@ if ( 0 == $post_ID ) {
 	}
 }
 
-?>
-
-<form name="post" action="post.php" method="post" id="post">
-<?php
-
 // All meta boxes should be defined and added before the first do_meta_boxes() call (or potentially during the do_meta_boxes action).
 
+/**
+ * Display post submit form fields.
+ *
+ * @since 2.7.0
+ *
+ * @param object $post
+ */
 function post_submit_meta_box($post) {
 	global $action;
 
@@ -70,7 +72,44 @@ function post_submit_meta_box($post) {
 
 <div class="inside-submitbox">
 
-<div class="insidebox"><label for="post_status"><?php _e('This post is') ?></label>
+<div id="minor-publishing">
+<div id="misc-publishing-actions">
+<?php if ( $can_publish && current_user_can( 'edit_others_posts' ) ) { ?>
+	<div class="insidebox" id="sticky-checkbox"><input id="sticky" name="sticky" type="checkbox" value="sticky" <?php checked(is_sticky($post->ID), true); ?> tabindex="4" /> <label for="sticky" class="selectit"><?php _e('Stick to front page') ?></label></div>
+<?php } ?>
+
+<div class="insidebox" id="visibility">
+<?php _e('Visibility:'); ?> <?php _e('Public'); // TODO: dropdown ?>
+</div>
+
+<?php
+if ( 0 != $post->ID ) {
+	if ( 'future' == $post->post_status ) { // scheduled for publishing at a future date
+		$stamp = __('Scheduled for: %1$s at %2$s');
+	} else if ( 'publish' == $post->post_status ) { // already published
+		$stamp = __('Published on: %1$s at %2$s');
+	} else if ( '0000-00-00 00:00:00' == $post->post_date_gmt ) { // draft, 1 or more saves, no date specified
+		$stamp = __('Publish immediately');
+	} else { // draft, 1 or more saves, date specified
+		$stamp = __('Publish on: %1$s at %2$s');
+	}
+	$date = mysql2date(get_option('date_format'), $post->post_date);
+	$time = mysql2date(get_option('time_format'), $post->post_date);
+} else { // draft (no saves, and thus no date specified)
+	$stamp = __('Publish immediately');
+	$date = mysql2date(get_option('date_format'), current_time('mysql'));
+	$time = mysql2date(get_option('time_format'), current_time('mysql'));
+}
+?>
+<?php if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
+<div class="insidebox curtime">
+	<span id="timestamp"><?php printf($stamp, $date, $time); ?></span>
+	&nbsp;<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
+	<div id="timestampdiv" class="hide-if-js"><?php touch_time(($action == 'edit'),1,4); ?></div>
+</div>
+<?php endif; ?>
+
+<div class="insidebox"><label for="post_status"><?php _e('Status:') ?></label>
 <strong><span id="post-status-display">
 <?php
 switch ( $post->post_status ) {
@@ -85,7 +124,7 @@ switch ( $post->post_status ) {
 		_e('Pending Review');
 		break;
 	case 'draft':
-		_e('Unpublished');
+		_e('Draft');
 		break;
 }
 ?>
@@ -106,7 +145,7 @@ if ( $can_publish OR ( $post->post_status == 'publish' AND current_user_can('edi
 <?php endif; ?>
 <?php endif; ?>
 <option<?php selected( $post->post_status, 'pending' ); ?> value='pending'><?php _e('Pending Review') ?></option>
-<option<?php selected( $post->post_status, 'draft' ); ?> value='draft'><?php _e('Unpublished') ?></option>
+<option<?php selected( $post->post_status, 'draft' ); ?> value='draft'><?php _e('Draft') ?></option>
 </select>
 
 <a href="#post_status" class="save-post-status hide-if-no-js button"><?php _e('OK'); ?></a>
@@ -118,50 +157,16 @@ if ( $can_publish OR ( $post->post_status == 'publish' AND current_user_can('edi
 </div>
 
 <?php if ( $can_publish && 'pending' != $post->post_status ) { ?>
+<!--
 <div  class="insidebox"><input name="pending" type="submit" class="button" id="pending" tabindex="6" accesskey="r" value="<?php _e('Submit for Review') ?>" /></div>
+-->
 <?php } ?>
 
 <?php } ?>
-
-<?php if ( $can_publish && current_user_can( 'edit_others_posts' ) ) { ?>
-	<div class="insidebox" id="sticky-checkbox"><input id="sticky" name="sticky" type="checkbox" value="sticky" <?php checked(is_sticky($post->ID), true); ?> tabindex="4" /> <label for="sticky" class="selectit"><?php _e('Stick this post to the front page') ?></label></div>
-<?php } ?>
-
-<?php
-if ( ( 'edit' == $action ) && current_user_can('delete_post', $post->ID) ) { ?>
-	<div class="insidebox" id="deletebutton"><a class="submitdelete" href="<?php echo wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this post '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )); ?>') ) {return true;}return false;"><?php _e('Delete&nbsp;post'); ?></a></div>
-<?php } ?>
-
-<?php
-if ( 0 != $post->ID ) {
-	if ( 'future' == $post->post_status ) { // scheduled for publishing at a future date
-		$stamp = __('Scheduled for: %1$s at %2$s');
-	} else if ( 'publish' == $post->post_status ) { // already published
-		$stamp = __('Published on: %1$s at %2$s');
-	} else if ( '0000-00-00 00:00:00' == $post->post_date ) { // draft, 1 or more saves, no date specified
-		$stamp = __('Publish immediately');
-	} else { // draft, 1 or more saves, date specified
-		$stamp = __('Publish on: %1$s at %2$s');
-	}
-	$date = mysql2date(get_option('date_format'), $post->post_date);
-	$time = mysql2date(get_option('time_format'), $post->post_date);
-} else { // draft (no saves, and thus no date specified)
-	$stamp = __('Publish immediately');
-	$date = mysql2date(get_option('date_format'), current_time('mysql'));
-	$time = mysql2date(get_option('time_format'), current_time('mysql'));
-}
-?>
-<?php if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
-<div class="insidebox curtime"><span id="timestamp"><?php printf($stamp, $date, $time); ?></span>
-&nbsp;<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
-
-<div id="timestampdiv" class="hide-if-js"><?php touch_time(($action == 'edit'),1,4); ?></div></div>
-<?php endif; ?>
 
 </div>
 
-<p class="submit">
-<?php do_action('post_submitbox_start'); ?>
+<div id="minor-publishing-actions">
 <?php if ( 'publish' == $post->post_status || 'private' == $post->post_status )
 	$savebtn = attribute_escape( __('Save') );
 else
@@ -170,11 +175,25 @@ else
 <input type="submit" name="save" id="save-post" value="<?php echo $savebtn; ?>" tabindex="4" class="button button-highlighted" />
 
 <?php if ( 'publish' == $post->post_status ) { ?>
-<a class="preview button" href="<?php echo clean_url(get_permalink($post->ID)); ?>" target="_blank" tabindex="4"><?php _e('View this Post'); ?></a>
+<a class="preview button" href="<?php echo clean_url(get_permalink($post->ID)); ?>" target="_blank" tabindex="4"><?php _e('View Post'); ?></a>
 <?php } else { ?>
 <a class="preview button" href="<?php echo clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>" target="_blank" tabindex="4"><?php _e('Preview'); ?></a>
 <?php } ?>
+</div>
+<div class="clear"></div>
+</div>
+</div>
 
+<div id="major-publishing-actions">
+<?php do_action('post_submitbox_start'); ?>
+<div id="delete-action">
+<?php
+if ( ( 'edit' == $action ) && current_user_can('delete_post', $post->ID) ) { ?>
+<a class="submitdelete deletion" href="<?php echo wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this post '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )); ?>') ) {return true;}return false;"><?php _e('Delete'); ?></a>
+<?php } ?>
+</div>
+
+<div id="publishing-action">
 <?php
 if ( !in_array( $post->post_status, array('publish', 'future') ) || 0 == $post->ID ) { ?>
 <?php if ( current_user_can('publish_posts') ) : ?>
@@ -183,8 +202,8 @@ if ( !in_array( $post->post_status, array('publish', 'future') ) || 0 == $post->
 	<input name="publish" type="submit" class="button" id="publish" tabindex="5" accesskey="p" value="<?php _e('Submit for Review') ?>" />
 <?php endif; ?>
 <?php } ?>
-
-</p>
+</div>
+</div>
 <div class="clear"></div>
 </div>
 
@@ -192,6 +211,13 @@ if ( !in_array( $post->post_status, array('publish', 'future') ) || 0 == $post->
 }
 add_meta_box('submitdiv', __('Publish'), 'post_submit_meta_box', 'post', 'side', 'core');
 
+/**
+ * Display post tags form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_tags_meta_box($post) {
 ?>
 <p id="jaxtag"><label class="hidden" for="newtag"><?php _e('Tags'); ?></label><input type="text" name="tags_input" class="tags-input" id="tags-input" size="40" tabindex="3" value="<?php echo get_tags_to_edit( $post->ID ); ?>" /></p>
@@ -201,42 +227,13 @@ function post_tags_meta_box($post) {
 }
 add_meta_box('tagsdiv', __('Tags'), 'post_tags_meta_box', 'post', 'side', 'core');
 
-function post_media_meta_box($post) {
-	echo "<p><small><em>This feature isn't fully functional in this prototype.</em></small></p>";
-
-	if ( empty( $post->ID ) )
-		return;
-
-	$atts = get_children( array(
-		'post_parent' => $post->ID,
-		'post_type' => 'attachment'
-	) );
-
-	if ( !$atts ) {
-		_e( 'No media.' );
-		return;
-	}
-
-	foreach ( $atts as $att ) {
-		if ( $thumb = wp_get_attachment_image( $att->ID, array(60, 45), true ) ) {
-?>
-			<a href="media.php?action=edit&amp;attachment_id=<?php echo $att->ID  ?>" title="<?php echo attribute_escape(sprintf(__('Edit "%s"'), $att->post_title)); ?>">
-				<?php echo $thumb; ?>
-			</a>
-
-<?php
-		}
-		echo "<h4>$att->post_title</h4>";
-
-		echo "<a href='#' class='no-crazy'>Remove</a> | ";
-		echo "<a href='media.php?action=edit&amp;attachment_id=$att->ID'>Edit</a>";
-
-		echo "<br class='clear' />";
-	}
-
-}
-add_meta_box( 'mediadiv', __('Media' ), 'post_media_meta_box', 'post', 'side', 'core' );
-
+/**
+ * Display post categories form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_categories_meta_box($post) {
 ?>
 <ul id="category-tabs">
@@ -271,6 +268,13 @@ function post_categories_meta_box($post) {
 }
 add_meta_box('categorydiv', __('Categories'), 'post_categories_meta_box', 'post', 'side', 'core');
 
+/**
+ * Display post excerpt form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_excerpt_meta_box($post) {
 ?>
 <label class="hidden" for="excerpt"><?php _e('Excerpt') ?></label><textarea rows="1" cols="40" name="excerpt" tabindex="6" id="excerpt"><?php echo $post->post_excerpt ?></textarea>
@@ -279,6 +283,13 @@ function post_excerpt_meta_box($post) {
 }
 add_meta_box('postexcerpt', __('Excerpt'), 'post_excerpt_meta_box', 'post', 'normal', 'core');
 
+/**
+ * Display trackback links form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_trackback_meta_box($post) {
 	$form_trackback = '<input type="text" name="trackback_url" id="trackback_url" tabindex="7" value="'. attribute_escape( str_replace("\n", ' ', $post->to_ping) ) .'" />';
 	if ('' != $post->pinged) {
@@ -302,6 +313,13 @@ if ( ! empty($pings) )
 }
 add_meta_box('trackbacksdiv', __('Trackbacks and Pings'), 'post_trackback_meta_box', 'post', 'normal', 'core');
 
+/**
+ * Display custom fields for the post form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_custom_meta_box($post) {
 ?>
 <div id="postcustomstuff">
@@ -324,6 +342,13 @@ add_meta_box('postcustom', __('Custom Fields'), 'post_custom_meta_box', 'post', 
 
 do_action('dbx_post_advanced');
 
+/**
+ * Display comment status for post form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_comment_status_meta_box($post) {
 	global $wpdb, $post_ID;
 ?>
@@ -332,18 +357,15 @@ function post_comment_status_meta_box($post) {
 	<label for="comment_status" class="selectit"> <input name="comment_status" type="checkbox" id="comment_status" value="open" <?php checked($post->comment_status, 'open'); ?> /> <?php _e('Allow comments on this post') ?></label>
 </p>
 <?php
+	$total = $wpdb->get_var($wpdb->prepare("SELECT count(1) FROM $wpdb->comments WHERE comment_post_ID = '%d' AND ( comment_approved = '0' OR comment_approved = '1')", $post_ID));
 
-	if ( !$post_ID || $post_ID < 0 )
+	if ( !$post_ID || $post_ID < 0 || 1 > $total )
 		return;
 
-	if ( !$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved != 'spam' ORDER BY comment_date", $post_ID) ) )
-		return;
-
-	// Make sure comments, post, and post_author are cached
-//	update_comment_cache($comments);
+wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 ?>
 
-<table class="widefat">
+<table class="widefat comments-box" style="display:none;">
 <thead>
 	<tr>
 		<th scope="col"><?php _e('Comments') ?></th>
@@ -352,17 +374,25 @@ function post_comment_status_meta_box($post) {
 	</tr>
 </thead>
 <tbody id="the-comment-list" class="list:comment">
-<?php
-	foreach ($comments as $comment)
-		_wp_comment_row( $comment, 'single', false, false );
-?>
 </tbody>
 </table>
-
+<p class="hide-if-no-js"><a href="#commentstatusdiv" id="show-comments" onclick="commentsBox.get(<?php echo $total; ?>);return false;"><?php _e('Show comments'); ?></a> <img class="waiting" style="display:none;" src="images/loading.gif" alt="" /></p>
 <?php
+	$hidden = (array) get_user_option( "meta-box-hidden_post" );
+	if ( ! in_array('commentstatusdiv', $hidden) ) { ?>
+		<script type="text/javascript">commentsBox.get(<?php echo $total; ?>, 10);</script>
+<?php
+	}
 }
 add_meta_box('commentstatusdiv', __('Comments on this Post'), 'post_comment_status_meta_box', 'post', 'normal', 'core');
 
+/**
+ * Display post password form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_password_meta_box($post) {
 ?>
 <p>
@@ -375,17 +405,32 @@ function post_password_meta_box($post) {
 }
 add_meta_box('passworddiv', __('Privacy Options'), 'post_password_meta_box', 'post', 'normal', 'core');
 
+/**
+ * Display post slug form fields.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_slug_meta_box($post) {
 ?>
 <label class="hidden" for="post_name"><?php _e('Post Slug') ?></label><input name="post_name" type="text" size="13" id="post_name" value="<?php echo attribute_escape( $post->post_name ); ?>" />
 <?php
 }
-add_meta_box('slugdiv', __('Post Slug'), 'post_slug_meta_box', 'post', 'normal', 'core');
+if ( !( 'pending' == $post->post_status && !current_user_can( 'publish_posts' ) ) )
+	add_meta_box('slugdiv', __('Post Slug'), 'post_slug_meta_box', 'post', 'normal', 'core');
 
 $authors = get_editable_user_ids( $current_user->id ); // TODO: ROLE SYSTEM
 if ( $post->post_author && !in_array($post->post_author, $authors) )
 	$authors[] = $post->post_author;
 if ( $authors && count( $authors ) > 1 ) :
+/**
+ * Display form field with list of authors.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_author_meta_box($post) {
 	global $current_user, $user_ID;
 	$authors = get_editable_user_ids( $current_user->id ); // TODO: ROLE SYSTEM
@@ -399,6 +444,13 @@ add_meta_box('authordiv', __('Post Author'), 'post_author_meta_box', 'post', 'no
 endif;
 
 if ( 0 < $post_ID && wp_get_post_revisions( $post_ID ) ) :
+/**
+ * Display list of post revisions.
+ *
+ * @since 2.6.0
+ *
+ * @param object $post
+ */
 function post_revisions_meta_box($post) {
 	wp_list_post_revisions();
 }
@@ -406,6 +458,15 @@ add_meta_box('revisionsdiv', __('Post Revisions'), 'post_revisions_meta_box', 'p
 endif;
 
 ?>
+
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php meta_box_prefs('post') ?>
+<br class="clear" />
+</div></form>
+</div>
 
 <?php if ( $notice ) : ?>
 <div id="notice" class="error"><p><?php echo $notice ?></p></div>
@@ -419,26 +480,8 @@ endif;
 <?php endif; ?>
 
 <div class="wrap">
-
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php meta_box_prefs('post') ?>
-<br class="clear" />
-</div></div>
-</div>
-
-<h2><?php
-	if ( !isset($post_ID) || 0 == $post_ID)
-		printf( __( '<a href="%s">Posts</a> / Write New Post' ), 'edit.php' );
-	else
-		printf( __( '<a href="%s">Posts</a> / Edit Post' ), 'edit.php' );
-?></h2>
-
+<h2><?php echo wp_specialchars( $title ); ?></h2>
+<form name="post" action="post.php" method="post" id="post">
 <?php
 
 if ( 0 == $post_ID)
@@ -459,26 +502,7 @@ else
 
 <?php echo $form_extra ?>
 
-<div id="poststuff">
-
-<div id="side-info" style="display: none;"><?php // TODO ?>
-
-<h5><?php _e('Related') ?></h5>
-<ul>
-<?php if ($post_ID): ?>
-<li><a href="edit.php?p=<?php echo $post_ID ?>"><?php _e('See Comments on this Post') ?></a></li>
-<?php endif; ?>
-<li><a href="edit-comments.php"><?php _e('Manage All Comments') ?></a></li>
-<li><a href="edit.php"><?php _e('Manage All Posts') ?></a></li>
-<li><a href="categories.php"><?php _e('Manage All Categories') ?></a></li>
-<li><a href="edit-tags.php"><?php _e('Manage All Tags') ?></a></li>
-<li><a href="edit.php?post_status=draft"><?php _e('View Drafts'); ?></a></li>
-<?php do_action('post_relatedlinks_list'); ?>
-</ul>
-
-<h5><?php _e('Shortcuts') ?></h5>
-<p><?php _e('Drag-and-drop the following link to your bookmarks bar or right click it and add it to your favorites for a posting shortcut.') ?>  <a href="<?php echo get_shortcut_link(); ?>" title="<?php echo attribute_escape(__('Press This')) ?>"><?php _e('Press This') ?></a></p>
-</div>
+<div id="poststuff" class="metabox-holder">
 
 <div id="side-info-column" class="inner-sidebar">
 
@@ -496,11 +520,13 @@ else
 </div>
 <div class="inside">
 <?php $sample_permalink_html = get_sample_permalink_html($post->ID); ?>
+<?php if ( !( 'pending' == $post->post_status && !current_user_can( 'publish_posts' ) ) ) { ?>
 	<div id="edit-slug-box">
 <?php if ( ! empty($post->ID) && ! empty($sample_permalink_html) ) :
 	echo $sample_permalink_html;
 endif; ?>
 	</div>
+<?php } ?>
 </div>
 </div>
 
@@ -554,10 +580,10 @@ do_action('dbx_post_sidebar');
 
 </div>
 </div>
+<br class="clear" />
 </div><!-- /poststuff -->
-
-</div>
 </form>
+</div>
 
 <?php wp_comment_reply(); ?>
 

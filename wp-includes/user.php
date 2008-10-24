@@ -123,7 +123,8 @@ function get_profile($field, $user = false) {
 function get_usernumposts($userid) {
 	global $wpdb;
 	$userid = (int) $userid;
-	return $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM $wpdb->posts WHERE post_author = %d AND post_type = 'post' AND ", $userid) . get_private_posts_cap_sql('post'));
+	$count = $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM $wpdb->posts WHERE post_author = %d AND post_type = 'post' AND ", $userid) . get_private_posts_cap_sql('post'));
+	return apply_filters('get_usernumposts', $count, $userid);
 }
 
 /**
@@ -425,6 +426,7 @@ function setup_userdata($user_id = '') {
  * <li>order - Default is 'ASC'. Can also be 'DESC'.</li>
  * <li>include - User IDs to include.</li>
  * <li>exclude - User IDs to exclude.</li>
+ * <li>multi - Default is 'false'. Whether to skip the ID attribute on the 'select' element.</li> 
  * <li>show - Default is 'display_name'. User table column to display.</li>
  * <li>echo - Default is '1'. Whether to display or retrieve content.</li>
  * <li>selected - Which User ID is selected.</li>
@@ -443,7 +445,7 @@ function wp_dropdown_users( $args = '' ) {
 	$defaults = array(
 		'show_option_all' => '', 'show_option_none' => '',
 		'orderby' => 'display_name', 'order' => 'ASC',
-		'include' => '', 'exclude' => '',
+		'include' => '', 'exclude' => '', 'multi' => 0,
 		'show' => 'display_name', 'echo' => 1,
 		'selected' => 0, 'name' => 'user', 'class' => ''
 	);
@@ -478,7 +480,9 @@ function wp_dropdown_users( $args = '' ) {
 
 	$output = '';
 	if ( !empty($users) ) {
-		$output = "<select name='$name' id='$name' class='$class'>\n";
+		$id = $multi ? "" : "id='$name'";
+
+		$output = "<select name='$name' $id class='$class'>\n";
 
 		if ( $show_option_all )
 			$output .= "\t<option value='0'>$show_option_all</option>\n";

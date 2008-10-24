@@ -10,14 +10,15 @@
 require_once ('admin.php');
 
 // Handle bulk deletes
-if ( isset($_GET['action']) && isset($_GET['linkcheck']) && isset($_GET['doaction']) ) {
+if ( isset($_GET['action']) && isset($_GET['linkcheck']) ) {
 	check_admin_referer('bulk-bookmarks');
+	$doaction = $_GET['action'] ? $_GET['action'] : $_GET['action2'];
 
 	if ( ! current_user_can('manage_links') )
 		wp_die( __('You do not have sufficient permissions to edit the links for this blog.') );
-	
-	if ( $_GET['action'] == 'delete' ) {
-		foreach ( (array) $_GET['linkcheck'] as $link_id) {
+
+	if ( 'delete' == $doaction ) {
+		foreach ( (array) $_GET['linkcheck'] as $link_id ) {
 			$link_id = (int) $link_id;
 
 			wp_delete_link($link_id);
@@ -28,8 +29,8 @@ if ( isset($_GET['action']) && isset($_GET['linkcheck']) && isset($_GET['doactio
 		wp_redirect($sendback);
 		exit;
 	}
-} elseif ( !empty($_GET['_wp_http_referer']) ) {
-	 wp_redirect(remove_query_arg(array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI'])));
+} elseif ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
+	 wp_redirect( remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']) ) );
 	 exit;
 }
 
@@ -38,13 +39,13 @@ wp_enqueue_script('links');
 
 wp_reset_vars(array('action', 'cat_id', 'linkurl', 'name', 'image', 'description', 'visible', 'target', 'category', 'link_id', 'submit', 'order_by', 'links_show_cat_id', 'rating', 'rel', 'notes', 'linkcheck[]'));
 
-if (empty ($cat_id))
+if ( empty($cat_id) )
 	$cat_id = 'all';
 
-if (empty ($order_by))
+if ( empty($order_by) )
 	$order_by = 'order_name';
 
-$title = __('Manage Links');
+$title = __('Edit Links');
 $this_file = $parent_file = 'edit.php';
 include_once ("./admin-header.php");
 
@@ -71,16 +72,17 @@ switch ($order_by) {
 	default :
 		$sqlorderby = 'name';
 		break;
-}
-?>
+} ?>
 
-<form class="search-form" action="" method="get">
-	<p id="link-search" class="search-box">
-		<label class="hidden" for="link-search-input"><?php _e( 'Search Links' ); ?></label>
-		<input type="text" id="link-search-input" name="s" value="<?php the_search_query(); ?>" />
-		<input type="submit" value="<?php _e( 'Search Links' ); ?>" class="button" />
-	</p>
-</form>
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php manage_columns_prefs('link') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+<br class="clear" />
+</div></form>
+</div>
 
 <?php
 if ( isset($_GET['deleted']) ) {
@@ -93,34 +95,10 @@ if ( isset($_GET['deleted']) ) {
 ?>
 
 <div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
-<form id="adv-settings" action="" method="get">
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php manage_columns_prefs('link') ?>
-<br class="clear" />
-</div></div>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-</div></form>
-
-<h2><?php printf( __('Links (<a href="%s">Add New</a>)' ), 'link-add.php' ); ?></h2>
-
-<br class="clear" />
-
-<form id="posts-filter" action="" method="get">
-<div class="tablenav">
-
-<div class="alignleft">
-<select name="action">
-<option value="" selected><?php _e('Actions'); ?></option>
-<option value="delete"><?php _e('Delete'); ?></option>
-</select>
-<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
+<div class="filter">
+<form id="list-filter" action="" method="get">
 <?php
 $categories = get_terms('link_category', "hide_empty=1");
 $select_cat = "<select name=\"cat_id\">\n";
@@ -141,13 +119,33 @@ echo $select_order;
 
 ?>
 <input type="submit" id="post-query-submit" value="<?php _e('Filter'); ?>" class="button-secondary" />
+</form></div>
 
+<ul class="subsubsub"><li><a class="current"><br /></a></li></ul>
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="post-search-input"><?php _e( 'Search Links' ); ?>:</label>
+	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Links' ); ?>" class="button" />
+</p>
+</form>
+<br class="clear" />
+
+<form id="posts-filter" action="" method="get">
+<div class="tablenav">
+
+<div class="alignleft">
+<select name="action">
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
 </div>
 
 <br class="clear" />
 </div>
 
-<br class="clear" />
+<div class="clear"></div>
 
 <?php
 if ( 'all' == $cat_id )
@@ -168,6 +166,13 @@ if ( $links ) {
 <?php print_column_headers('link'); ?>
 	</tr>
 	</thead>
+
+	<tfoot>
+	<tr>
+<?php print_column_headers('link', false); ?>
+	</tr>
+	</tfoot>
+
 	<tbody>
 <?php
 	$alt = 0;
@@ -258,14 +263,22 @@ if ( $links ) {
 <p><?php _e('No links found.') ?></p>
 <?php } ?>
 
-</form>
-
-<div id="ajax-response"></div>
-
 <div class="tablenav">
+
+<div class="alignleft">
+<select name="action2">
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
+</div>
+
 <br class="clear" />
 </div>
 
+</form>
+
+<div id="ajax-response"></div>
 
 </div>
 

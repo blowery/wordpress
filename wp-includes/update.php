@@ -158,8 +158,10 @@ function wp_update_plugins() {
 
 	$response = unserialize( $raw_response['body'] );
 
-	if ( $response )
+	if ( false !== $response )
 		$new_option->response = $response;
+	else
+		$new_option->response = array();
 
 	update_option( 'update_plugins', $new_option );
 }
@@ -273,11 +275,11 @@ add_action( 'wp_update_plugins', 'wp_update_plugins' );
 add_action( 'admin_init', '_maybe_update_themes' );
 add_action( 'wp_update_themes', 'wp_update_themes' );
 
-if ( !wp_next_scheduled('wp_update_plugins') )
+if ( !wp_next_scheduled('wp_update_plugins') && !defined('WP_INSTALLING') )
 	wp_schedule_event(time(), 'twicedaily', 'wp_update_plugins');
 
 
-if ( !wp_next_scheduled('wp_update_themes') )
+if ( !wp_next_scheduled('wp_update_themes') && !defined('WP_INSTALLING') )
 	wp_schedule_event(time(), 'twicedaily', 'wp_update_themes');
 
 ?>

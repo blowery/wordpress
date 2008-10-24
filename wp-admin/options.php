@@ -23,7 +23,7 @@ wp_reset_vars(array('action'));
 
 $whitelist_options = array(
 	'general' => array('blogname', 'blogdescription', 'admin_email', 'users_can_register', 'gmt_offset', 'date_format', 'time_format', 'start_of_week', 'comment_registration', 'default_role' ),
-	'discussion' => array( 'default_pingback_flag', 'default_ping_status', 'default_comment_status', 'comments_notify', 'moderation_notify', 'comment_moderation', 'require_name_email', 'comment_whitelist', 'comment_max_links', 'moderation_keys', 'blacklist_keys', 'show_avatars', 'avatar_rating', 'close_comments_for_old_posts', 'close_comments_days_old', 'thread_comments', 'thread_comments_depth', 'page_comments', 'comments_per_page' ),
+	'discussion' => array( 'default_pingback_flag', 'default_ping_status', 'default_comment_status', 'comments_notify', 'moderation_notify', 'comment_moderation', 'require_name_email', 'comment_whitelist', 'comment_max_links', 'moderation_keys', 'blacklist_keys', 'show_avatars', 'avatar_rating', 'avatar_default', 'close_comments_for_old_posts', 'close_comments_days_old', 'thread_comments', 'thread_comments_depth', 'page_comments', 'comments_per_page', 'default_comments_page', 'comment_order' ),
 	'misc' => array( 'hack_file', 'use_linksupdate', 'uploads_use_yearmonth_folders', 'upload_path' ),
 	'media' => array( 'thumbnail_size_w', 'thumbnail_size_h', 'thumbnail_crop', 'medium_size_w', 'medium_size_h', 'large_size_w', 'large_size_h', 'image_default_size', 'image_default_align', 'image_default_link_type' ),
 	'privacy' => array( 'blog_public' ),
@@ -41,46 +41,58 @@ if ( !current_user_can('manage_options') )
 switch($action) {
 
 case 'update':
-	$any_changed = 0;
-
-	$option_page = $_POST[ 'option_page' ];
-	check_admin_referer( $option_page . '-options' );
+	if ( isset($_POST[ 'option_page' ]) ) {
+		$option_page = $_POST[ 'option_page' ];
+		check_admin_referer( $option_page . '-options' );
+	} else {
+		// This is for back compat and will eventually be removed.
+		$option_page = 'options';
+		check_admin_referer( 'update-options' );
+	}
 
 	if ( !isset( $whitelist_options[ $option_page ] ) )
 		wp_die( __( 'Error! Options page not found.' ) );
 
-	if ( $option_page == 'options' ) {
+	if ( 'options' == $option_page ) {
 		$options = explode(',', stripslashes( $_POST[ 'page_options' ] ));
 	} else {
 		$options = $whitelist_options[ $option_page ];
 	}
 
-	if ($options) {
-		foreach ($options as $option) {
+	// Handle custom date/time formats
+	if ( 'general' == $option_page ) {
+		if ( !empty($_POST['date_format']) && isset($_POST['date_format_custom']) && '\c\u\s\t\o\m' == stripslashes( $_POST['date_format'] ) )
+			$_POST['date_format'] = $_POST['date_format_custom'];
+		if ( !empty($_POST['time_format']) && isset($_POST['time_format_custom']) && '\c\u\s\t\o\m' == stripslashes( $_POST['time_format'] ) )
+			$_POST['time_format'] = $_POST['time_format_custom'];
+	}
+
+	if ( $options ) {
+		foreach ( $options as $option ) {
 			$option = trim($option);
 			$value = $_POST[$option];
-			if(!is_array($value))	$value = trim($value);
+			if ( !is_array($value) ) $value = trim($value);
 			$value = stripslashes_deep($value);
 			update_option($option, $value);
 		}
 	}
 
-	$goback = add_query_arg('updated', 'true', wp_get_referer());
-	wp_redirect($goback);
-    break;
+	$goback = add_query_arg( 'updated', 'true', wp_get_referer() );
+	wp_redirect( $goback );
+	break;
 
 default:
 	include('admin-header.php'); ?>
 
 <div class="wrap">
-<ul class="wp-menu">
-<?php $array = array(); _wp_menu_output( $submenu['options-general.php'], $array ); unset($array); ?>
-</ul>
   <h2><?php _e('All Settings'); ?></h2>
   <form name="form" action="options.php" method="post" id="all-options">
   <?php wp_nonce_field('options-options') ?>
   <input type="hidden" name="action" value="update" />
   <input type='hidden' name='option_page' value='options' />
+<p class="submit submit-top">
+	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" class="button" />
+</p>
   <table class="form-table">
 <?php
 $options = $wpdb->get_results("SELECT * FROM $wpdb->options ORDER BY option_name");

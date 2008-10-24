@@ -94,6 +94,31 @@ function get_sidebar( $name = null ) {
 }
 
 /**
+ * Display search form.
+ *
+ * Will first attempt to locate the searchform.php file in either the child or
+ * the parent, then load it. If it doesn't exist, then the default search form
+ * will be displayed.
+ *
+ * @since 2.7.0
+ */
+function get_search_form() {
+	do_action( 'get_search_form' );
+
+	if ( '' != locate_template(array('searchform.php'), true) )
+		return;
+
+	$form = '<form method="get" id="searchform" action="' . get_option('siteurl') . '/" >
+	<label class="hidden" for="s">' . __('Search for:') . '</label>
+	<div><input type="text" value="' . the_search_query() . '" name="s" id="s" />
+	<input type="submit" id="searchsubmit" value="Search" />
+	</div>
+	</form>';
+
+	echo apply_filters('get_search_form', $form);
+}
+
+/**
  * Display the Log In/Out link.
  *
  * Displays a link, which allows the user to navigate to the Login page to login
@@ -104,11 +129,46 @@ function get_sidebar( $name = null ) {
  */
 function wp_loginout() {
 	if ( ! is_user_logged_in() )
-		$link = '<a href="' . site_url('wp-login.php', 'login') . '">' . __('Log in') . '</a>';
+		$link = '<a href="' . wp_login_url() . '">' . __('Log in') . '</a>';
 	else
-		$link = '<a href="' . site_url('wp-login.php?action=logout', 'login') . '">' . __('Log out') . '</a>';
+		$link = '<a href="' . wp_logout_url() . '">' . __('Log out') . '</a>';
 
 	echo apply_filters('loginout', $link);
+}
+
+/**
+ * Returns the Log Out URL.
+ *
+ * Returns the URL that allows the user to log out of the site
+ *
+ * @since 2.7
+ * @uses wp_nonce_url() To protect against CSRF
+ * @uses site_url() To generate the log in URL
+ * 
+ * @param string $redirect Path to redirect to on logout.
+ */
+function wp_logout_url($redirect = '') {
+	if ( strlen($redirect) )
+		$redirect = "&redirect_to=$redirect";
+	
+	return wp_nonce_url( site_url("wp-login.php?action=logout$redirect", 'login'), 'log-out' );
+}
+
+/**
+ * Returns the Log In URL.
+ *
+ * Returns the URL that allows the user to log in to the site
+ *
+ * @since 2.7
+ * @uses site_url() To generate the log in URL
+ * 
+ * @param string $redirect Path to redirect to on login.
+ */
+function wp_login_url($redirect = '') {
+	if ( strlen($redirect) )
+		$redirect = "?redirect_to=$redirect";
+	
+	return site_url("wp-login.php$redirect", 'login');
 }
 
 /**
@@ -1430,15 +1490,15 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 	<?php if ( user_can_richedit() ) {
 		$wp_default_editor = wp_default_editor(); ?>
 		<div class="zerosize"><input accesskey="e" type="button" onclick="switchEditors.go('<?php echo $id; ?>')" /></div>
-		<?php if ( 'tinymce' == $wp_default_editor ) {
-			add_filter('the_editor_content', 'wp_richedit_pre'); ?>
-			<a id="edButtonHTML" onclick="switchEditors.go('<?php echo $id; ?>');"><?php _e('HTML'); ?></a>
-			<a id="edButtonPreview" class="active"><?php _e('Visual'); ?></a>
-		<?php } elseif ( 'html' == $wp_default_editor ) {
+		<?php if ( 'html' == $wp_default_editor ) {
 			add_filter('the_editor_content', 'wp_htmledit_pre'); ?>
-			<a id="edButtonHTML" class="active"><?php _e('HTML'); ?></a>
-			<a id="edButtonPreview" onclick="switchEditors.go('<?php echo $id; ?>');"><?php _e('Visual'); ?></a>
-		<?php }
+			<a id="edButtonHTML" class="active" onclick="switchEditors.go('<?php echo $id; ?>', 'html');"><?php _e('HTML'); ?></a>
+			<a id="edButtonPreview" onclick="switchEditors.go('<?php echo $id; ?>', 'tinymce');"><?php _e('Visual'); ?></a>
+		<?php } else {
+			add_filter('the_editor_content', 'wp_richedit_pre'); ?>
+			<a id="edButtonHTML" onclick="switchEditors.go('<?php echo $id; ?>', 'html');"><?php _e('HTML'); ?></a>
+			<a id="edButtonPreview" class="active" onclick="switchEditors.go('<?php echo $id; ?>', 'tinymce');"><?php _e('Visual'); ?></a>
+		<?php } 
 	}
 
 /*	if ( $media_buttons ) { ?>
@@ -1598,7 +1658,8 @@ function paginate_links( $args = '' ) {
 		'end_size' => 1,
 		'mid_size' => 2,
 		'type' => 'plain',
-		'add_args' => false // array of query args to add
+		'add_args' => false, // array of query args to add
+		'add_fragment' => ''
 	);
 
 	$args = wp_parse_args( $args, $defaults );
@@ -1622,6 +1683,7 @@ function paginate_links( $args = '' ) {
 		$link = str_replace('%#%', $current - 1, $link);
 		if ( $add_args )
 			$link = add_query_arg( $add_args, $link );
+		$link .= $add_fragment;
 		$page_links[] = "<a class='prev page-numbers' href='" . clean_url($link) . "'>$prev_text</a>";
 	endif;
 	for ( $n = 1; $n <= $total; $n++ ) :
@@ -1634,6 +1696,7 @@ function paginate_links( $args = '' ) {
 				$link = str_replace('%#%', $n, $link);
 				if ( $add_args )
 					$link = add_query_arg( $add_args, $link );
+				$link .= $add_fragment;
 				$page_links[] = "<a class='page-numbers' href='" . clean_url($link) . "'>$n</a>";
 				$dots = true;
 			elseif ( $dots && !$show_all ) :
@@ -1647,6 +1710,7 @@ function paginate_links( $args = '' ) {
 		$link = str_replace('%#%', $current + 1, $link);
 		if ( $add_args )
 			$link = add_query_arg( $add_args, $link );
+		$link .= $add_fragment;
 		$page_links[] = "<a class='next page-numbers' href='" . clean_url($link) . "'>$next_text</a>";
 	endif;
 	switch ( $type ) :

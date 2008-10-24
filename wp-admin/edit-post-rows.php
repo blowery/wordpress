@@ -14,8 +14,14 @@ if ( ! defined('ABSPATH') ) die();
 <?php print_column_headers('post'); ?>
 	</tr>
 	</thead>
-	<tbody>
 
+	<tfoot>
+	<tr>
+<?php print_column_headers('post', false); ?>
+	</tr>
+	</tfoot>
+
+	<tbody>
 <?php
 if ( have_posts() ) {
 	post_rows();

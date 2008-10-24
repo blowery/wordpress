@@ -470,12 +470,53 @@ function &separate_comments(&$comments) {
 	$count = count($comments);
 	for ( $i = 0; $i < $count; $i++ ) {
 		$type = $comments[$i]->comment_type;
+		if ( empty($type) )
+			$type = 'comment';
 		$comments_by_type[$type][] = &$comments[$i];
 		if ( 'trackback' == $type || 'pingback' == $type )
 			$comments_by_type['pings'][] = &$comments[$i];
 	}
 
 	return $comments_by_type;
+}
+
+/**
+ * Calculate the total number of comment pages.
+ *
+ * @since 2.7.0
+ *
+ * @param array $comments Optional array of comment objects.  Defaults to $wp_query->comments
+ * @param int $per_page Optional comments per page.
+ * @param boolean $threaded Optional control over flat or threaded comments.
+ * @return int Number of comment pages.
+ */
+function get_comment_pages_count( $comments = null, $per_page = null, $threaded = null ) {
+	global $wp_query;
+
+	if ( !$comments || !is_array($comments) )
+		$comments = $wp_query->comments;
+
+	if ( empty($comments) )
+		return 0;
+
+	if ( !isset($per_page) )
+		$per_page = (int) get_query_var('comments_per_page');
+	if ( 0 === $per_page )
+		$per_page = (int) get_option('comments_per_page');
+	if ( 0 === $per_page )
+		return 1;
+
+	if ( !isset($threaded) )
+		$threaded = get_option('thread_comments');
+
+	if ( $threaded ) {
+		$walker = new Walker_Comment;
+		$count = ceil( $walker->get_number_of_root_elements( $comments ) / $per_page );
+	} else {
+		$count = ceil( count( $comments ) / $per_page );
+	}
+
+	return $count;
 }
 
 /**
@@ -596,6 +637,7 @@ function wp_count_comments( $post_id = 0 ) {
  * @uses $wpdb
  * @uses do_action() Calls 'delete_comment' hook on comment ID
  * @uses do_action() Calls 'wp_set_comment_status' hook on comment ID with 'delete' set for the second parameter
+ * @uses wp_transition_comment_status() Passes new and old comment status along with $comment object
  *
  * @param int $comment_id Comment ID
  * @return bool False if delete comment query failure, true on success.
@@ -616,6 +658,7 @@ function wp_delete_comment($comment_id) {
 	clean_comment_cache($comment_id);
 
 	do_action('wp_set_comment_status', $comment_id, 'delete');
+	wp_transition_comment_status('delete', $comment->comment_approved, $comment);
 	return true;
 }
 
@@ -644,6 +687,46 @@ function wp_get_comment_status($comment_id) {
 		return 'spam';
 	else
 		return false;
+}
+
+/**
+ * Call hooks for when a comment status transition occurs.
+ *
+ * Calls hooks for comment status transitions. If the new comment status is not the same
+ * as the previous comment status, then two hooks will be ran, the first is
+ * 'transition_comment_status' with new status, old status, and comment data. The
+ * next action called is 'comment_OLDSTATUS_to_NEWSTATUS' the NEWSTATUS is the
+ * $new_status parameter and the OLDSTATUS is $old_status parameter; it has the
+ * comment data.
+ *
+ * The final action will run whether or not the comment statuses are the same. The
+ * action is named 'comment_NEWSTATUS_COMMENTTYPE', NEWSTATUS is from the $new_status
+ * parameter and COMMENTTYPE is comment_type comment data.
+ *
+ * @since 2.7.0
+ *
+ * @param string $new_status New comment status.
+ * @param string $old_status Previous comment status.
+ * @param object $comment Comment data.
+ */
+function wp_transition_comment_status($new_status, $old_status, $comment) {
+	// Translate raw statuses to human readable formats for the hooks
+	// This is not a complete list of comment status, it's only the ones that need to be renamed
+	$comment_statuses = array(
+		0         => 'unapproved',
+		'hold'    => 'unapproved', // wp_set_comment_status() uses "hold"
+		1         => 'approved',
+		'approve' => 'approved', // wp_set_comment_status() uses "approve"
+	);
+	if ( isset($comment_statuses[$new_status]) ) $new_status = $comment_statuses[$new_status];
+	if ( isset($comment_statuses[$old_status]) ) $old_status = $comment_statuses[$old_status];
+
+	// Call the hooks
+	if ( $new_status != $old_status ) {
+		do_action('transition_comment_status', $new_status, $old_status, $comment);
+		do_action("comment_${old_status}_to_$new_status", $comment);
+	}
+	do_action("comment_${new_status}_$comment->comment_type", $comment->ID, $comment);
 }
 
 /**
@@ -832,6 +915,7 @@ function wp_new_comment( $commentdata ) {
  * action.
  *
  * @since 1.0.0
+ * @uses wp_transition_comment_status() Passes new and old comment status along with $comment object
  *
  * @param int $comment_id Comment ID.
  * @param string $comment_status New comment status, either 'hold', 'approve', 'spam', or 'delete'.
@@ -866,8 +950,11 @@ function wp_set_comment_status($comment_id, $comment_status) {
 
 	clean_comment_cache($comment_id);
 
-	do_action('wp_set_comment_status', $comment_id, $comment_status);
 	$comment = get_comment($comment_id);
+
+	do_action('wp_set_comment_status', $comment_id, $comment_status);
+	wp_transition_comment_status($comment_status, $comment->comment_approved, $comment);
+
 	wp_update_comment_count($comment->comment_post_ID);
 
 	return true;
@@ -880,6 +967,7 @@ function wp_set_comment_status($comment_id, $comment_status) {
  *
  * @since 2.0.0
  * @uses $wpdb
+ * @uses wp_transition_comment_status() Passes new and old comment status along with $comment object
  *
  * @param array $commentarr Contains information on the comment.
  * @return int Comment was updated if value is 1, or was not updated if value is 0.
@@ -936,6 +1024,7 @@ function wp_update_comment($commentarr) {
 	clean_comment_cache($comment_ID);
 	wp_update_comment_count($comment_post_ID);
 	do_action('edit_comment', $comment_ID);
+	wp_transition_comment_status($comment_approved, $comment->comment_approved, $comment);
 	return $rval;
 }
 
@@ -1051,93 +1140,53 @@ function wp_update_comment_count_now($post_id) {
  * check for the rel="pingback" has more overhead than just the header.
  *
  * @since 1.5.0
- * @uses $wp_version
  *
  * @param string $url URL to ping.
- * @param int $timeout_bytes Number of bytes to timeout at. Prevents big file downloads, default is 2048.
+ * @param int $deprecated Not Used.
  * @return bool|string False on failure, string containing URI on success.
  */
-function discover_pingback_server_uri($url, $timeout_bytes = 2048) {
-	global $wp_version;
+function discover_pingback_server_uri($url, $deprecated = 2048) {
 
-	$byte_count = 0;
-	$contents = '';
-	$headers = '';
 	$pingback_str_dquote = 'rel="pingback"';
 	$pingback_str_squote = 'rel=\'pingback\'';
-	$x_pingback_str = 'x-pingback: ';
 
-	extract(parse_url($url), EXTR_SKIP);
+	/** @todo Should use Filter Extension or custom preg_match instead. */
+	$parsed_url = parse_url($url);
 
-	if ( !isset($host) ) // Not an URL. This should never happen.
+	if ( ! isset( $parsed_url['host'] ) ) // Not an URL. This should never happen.
 		return false;
 
-	$path  = ( !isset($path) ) ? '/'          : $path;
-	$path .= ( isset($query) ) ? '?' . $query : '';
-	$port  = ( isset($port)  ) ? $port        : 80;
+	$response = wp_remote_get( $url, array( 'timeout' => 2, 'httpversion' => '1.1' ) );
 
-	// Try to connect to the server at $host
-	$fp = @fsockopen($host, $port, $errno, $errstr, 2);
-	if ( !$fp ) // Couldn't open a connection to $host
+	if ( is_wp_error( $response ) )
 		return false;
 
-	// Send the GET request
-	$request = "GET $path HTTP/1.1\r\nHost: $host\r\nUser-Agent: WordPress/$wp_version \r\n\r\n";
-	// ob_end_flush();
-	fputs($fp, $request);
+	if ( isset( $response['headers']['x-pingback'] ) )
+		return $response['headers']['x-pingback'];
 
-	// Let's check for an X-Pingback header first
-	while ( !feof($fp) ) {
-		$line = fgets($fp, 512);
-		if ( trim($line) == '' )
-			break;
-		$headers .= trim($line)."\n";
-		$x_pingback_header_offset = strpos(strtolower($headers), $x_pingback_str);
-		if ( $x_pingback_header_offset ) {
-			// We got it!
-			preg_match('#x-pingback: (.+)#is', $headers, $matches);
-			$pingback_server_url = trim($matches[1]);
+	// Not an (x)html, sgml, or xml page, no use going further.
+	if ( isset( $response['headers']['content-type'] ) && preg_match('#(image|audio|video|model)/#is', $response['headers']['content-type']) )
+		return false;
+
+	$contents = $response['body'];
+
+	$pingback_link_offset_dquote = strpos($contents, $pingback_str_dquote);
+	$pingback_link_offset_squote = strpos($contents, $pingback_str_squote);
+	if ( $pingback_link_offset_dquote || $pingback_link_offset_squote ) {
+		$quote = ($pingback_link_offset_dquote) ? '"' : '\'';
+		$pingback_link_offset = ($quote=='"') ? $pingback_link_offset_dquote : $pingback_link_offset_squote;
+		$pingback_href_pos = @strpos($contents, 'href=', $pingback_link_offset);
+		$pingback_href_start = $pingback_href_pos+6;
+		$pingback_href_end = @strpos($contents, $quote, $pingback_href_start);
+		$pingback_server_url_len = $pingback_href_end - $pingback_href_start;
+		$pingback_server_url = substr($contents, $pingback_href_start, $pingback_server_url_len);
+
+		// We may find rel="pingback" but an incomplete pingback URL
+		if ( $pingback_server_url_len > 0 ) { // We got it!
 			return $pingback_server_url;
 		}
-		if ( strpos(strtolower($headers), 'content-type: ') ) {
-			preg_match('#content-type: (.+)#is', $headers, $matches);
-			$content_type = trim($matches[1]);
-		}
 	}
 
-	if ( preg_match('#(image|audio|video|model)/#is', $content_type) ) // Not an (x)html, sgml, or xml page, no use going further
-		return false;
-
-	while ( !feof($fp) ) {
-		$line = fgets($fp, 1024);
-		$contents .= trim($line);
-		$pingback_link_offset_dquote = strpos($contents, $pingback_str_dquote);
-		$pingback_link_offset_squote = strpos($contents, $pingback_str_squote);
-		if ( $pingback_link_offset_dquote || $pingback_link_offset_squote ) {
-			$quote = ($pingback_link_offset_dquote) ? '"' : '\'';
-			$pingback_link_offset = ($quote=='"') ? $pingback_link_offset_dquote : $pingback_link_offset_squote;
-			$pingback_href_pos = @strpos($contents, 'href=', $pingback_link_offset);
-			$pingback_href_start = $pingback_href_pos+6;
-			$pingback_href_end = @strpos($contents, $quote, $pingback_href_start);
-			$pingback_server_url_len = $pingback_href_end - $pingback_href_start;
-			$pingback_server_url = substr($contents, $pingback_href_start, $pingback_server_url_len);
-			// We may find rel="pingback" but an incomplete pingback URL
-			if ( $pingback_server_url_len > 0 ) { // We got it!
-				fclose($fp);
-				return $pingback_server_url;
-			}
-		}
-		$byte_count += strlen($line);
-		if ( $byte_count > $timeout_bytes ) {
-			// It's no use going further, there probably isn't any pingback
-			// server to find in this file. (Prevents loading large files.)
-			fclose($fp);
-			return false;
-		}
-	}
-
-	// We didn't find anything.
-	fclose($fp);
 	return false;
 }
 
@@ -1332,7 +1381,6 @@ function privacy_ping_filter($sites) {
  *
  * @since 0.71
  * @uses $wpdb
- * @uses $wp_version WordPress version
  *
  * @param string $trackback_url URL to send trackbacks.
  * @param string $title Title of post.
@@ -1341,32 +1389,26 @@ function privacy_ping_filter($sites) {
  * @return mixed Database query from update.
  */
 function trackback($trackback_url, $title, $excerpt, $ID) {
-	global $wpdb, $wp_version;
+	global $wpdb;
 
 	if ( empty($trackback_url) )
 		return;
 
-	$title = urlencode($title);
-	$excerpt = urlencode($excerpt);
-	$blog_name = urlencode(get_option('blogname'));
-	$tb_url = $trackback_url;
-	$url = urlencode(get_permalink($ID));
-	$query_string = "title=$title&url=$url&blog_name=$blog_name&excerpt=$excerpt";
-	$trackback_url = parse_url($trackback_url);
-	$http_request = 'POST ' . $trackback_url['path'] . ($trackback_url['query'] ? '?'.$trackback_url['query'] : '') . " HTTP/1.0\r\n";
-	$http_request .= 'Host: '.$trackback_url['host']."\r\n";
-	$http_request .= 'Content-Type: application/x-www-form-urlencoded; charset='.get_option('blog_charset')."\r\n";
-	$http_request .= 'Content-Length: '.strlen($query_string)."\r\n";
-	$http_request .= "User-Agent: WordPress/" . $wp_version;
-	$http_request .= "\r\n\r\n";
-	$http_request .= $query_string;
-	if ( '' == $trackback_url['port'] )
-		$trackback_url['port'] = 80;
-	$fs = @fsockopen($trackback_url['host'], $trackback_url['port'], $errno, $errstr, 4);
-	@fputs($fs, $http_request);
-	@fclose($fs);
+	$options = array();
+	$options['timeout'] = 4;
+	$options['body'] = array(
+		'title' => $title,
+		'url' => get_permalink($ID),
+		'blog_name' => get_option('blogname'),
+		'excerpt' => $excerpt
+	);
 
-	$tb_url = addslashes( $tb_url );
+	$response = wp_remote_post($trackback_url, $options);
+	
+	if ( is_wp_error( $response ) )
+		return;
+
+	$tb_url = addslashes( $trackback_url );
 	$wpdb->query( $wpdb->prepare("UPDATE $wpdb->posts SET pinged = CONCAT(pinged, '\n', '$tb_url') WHERE ID = %d", $ID) );
 	return $wpdb->query( $wpdb->prepare("UPDATE $wpdb->posts SET to_ping = TRIM(REPLACE(to_ping, '$tb_url', '')) WHERE ID = %d", $ID) );
 }
@@ -1437,7 +1479,7 @@ function update_comment_cache($comments) {
 //
 
 /**
- * Close comments on old posts on the fly, without any extra DB queries.
+ * Close comments on old posts on the fly, without any extra DB queries.  Hooked to the_posts.
  *
  * @access private
  * @since 2.7.0
@@ -1459,6 +1501,35 @@ function _close_comments_for_old_posts( $posts ) {
 	}
 
 	return $posts;
+}
+
+/**
+ * Close comments on an old post.  Hooked to comments_open.
+ *
+ * @access private
+ * @since 2.7.0
+ *
+ * @param bool $open Comments open or closed
+ * @param int $post_id Post ID
+ * @return bool $open
+ */
+function _close_comments_for_old_post( $open, $post_id ) {
+	if ( ! $open )
+		return $open;
+
+	if ( !get_option('close_comments_for_old_posts') )
+		return $open;
+
+	$days_old = (int) get_option('close_comments_days_old');
+	if ( !$days_old )
+		return $open;
+
+	$post = get_post($post_id);
+
+	if ( time() - strtotime( $post->post_date_gmt ) > ( $days_old * 24 * 60 * 60 ) )
+		return false;
+
+	return $open;
 }
 
 ?>

@@ -14,6 +14,13 @@ if ( ! defined('ABSPATH') ) die();
 <?php print_column_headers('media'); ?>
 	</tr>
 	</thead>
+	
+	<tfoot>
+	<tr>
+<?php print_column_headers('media', false); ?>
+	</tr>
+	</tfoot>
+	
 	<tbody id="the-list" class="list:post">
 <?php
 if ( have_posts() ) {
@@ -23,9 +30,7 @@ while (have_posts()) : the_post();
 $class = 'alternate' == $class ? '' : 'alternate';
 global $current_user;
 $post_owner = ( $current_user->ID == $post->post_author ? 'self' : 'other' );
-$att_title = get_the_title();
-if ( empty($att_title) )
-	$att_title = __('(no title)');
+$att_title = _draft_or_post_title();
 
 ?>
 	<tr id='post-<?php echo $id; ?>' class='<?php echo trim( $class . ' author-' . $post_owner . ' status-' . $post->post_status ); ?>' valign="top">
@@ -89,6 +94,12 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 		<?php
 		break;
 
+	case 'author':
+		?>
+		<td <?php echo $attributes ?>><?php the_author() ?></td>
+		<?php
+		break;
+
 	case 'tags':
 		?>
 		<td <?php echo $attributes ?>><?php
@@ -133,12 +144,9 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 		break;
 
 	case 'parent':
-		$title = __('(no title)'); // override below
 		if ( $post->post_parent > 0 ) {
 			if ( get_post($post->post_parent) ) {
-				$parent_title = get_the_title($post->post_parent);
-				if ( !empty($parent_title) )
-					$title = $parent_title;
+				$title =_draft_or_post_title($post->post_parent);
 			}
 			?>
 			<td <?php echo $attributes ?>><strong><a href="<?php echo get_edit_post_link( $post->post_parent ); ?>"><?php echo $title ?></a></strong>, <?php echo get_the_time(__('Y/m/d')); ?></td>

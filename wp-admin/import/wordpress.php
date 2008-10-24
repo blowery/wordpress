@@ -339,7 +339,6 @@ class WP_Import {
 	}
 
 	function process_posts() {
-		$i = -1;
 		echo '<ol>';
 
 		$this->get_entries(array(&$this, 'process_post'));
@@ -430,6 +429,7 @@ class WP_Import {
 			$post_author = $this->checkauthor($post_author); //just so that if a post already exists, new users are not created by checkauthor
 
 			$postdata = compact('post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_excerpt', 'post_title', 'post_status', 'post_name', 'comment_status', 'ping_status', 'guid', 'post_parent', 'menu_order', 'post_type', 'post_password');
+			$postdata['import_id'] = $post_ID;
 			if ($post_type == 'attachment') {
 				$remote_url = $this->get_tag( $post, 'wp:attachment_url' );
 				if ( !$remote_url )
@@ -716,10 +716,12 @@ class WP_Import {
 
 		$this->import_start();
 		$this->get_authors_from_post();
+		wp_suspend_cache_invalidation(true);
 		$this->get_entries();
 		$this->process_categories();
 		$this->process_tags();
 		$result = $this->process_posts();
+		wp_suspend_cache_invalidation(false);
 		$this->backfill_parents();
 		$this->backfill_attachment_urls();
 		$this->import_end();

@@ -59,9 +59,47 @@ $page_links = paginate_links( array(
 
 $themes = array_slice( $themes, $start, $per_page );
 
+/**
+ * Check if there is an update for a theme available.
+ *
+ * Will display link, if there is an update available.
+ *
+ * @since 2.7.0
+ *
+ * @param object $theme Theme data object.
+ * @return bool False if no valid info was passed.
+ */
+function theme_update_available( $theme ) {
+	static $themes_update;
+	if ( !isset($themes_update) )
+		$themes_update = get_option('update_themes');
+
+	if ( is_object($theme) && isset($theme->stylesheet) )
+		$stylesheet = $theme->stylesheet;
+	elseif ( is_array($theme) && isset($theme['Stylesheet']) )
+		$stylesheet = $theme['Stylesheet'];
+	else
+		return false; //No valid info passed.
+
+	if ( isset($themes_update->response[ $stylesheet ]) ) {
+		$update = $themes_update->response[ $stylesheet ];
+		$details_url = add_query_arg(array('TB_iframe' => 'true', 'width' => 1024, 'height' => 800), $update['url']); //Theme browser inside WP? replace this, Also, theme preview JS will override this on the available list.
+		$update_url = wp_nonce_url('update.php?action=upgrade-theme&amp;theme=' . urlencode($stylesheet), 'upgrade-theme_' . $stylesheet);
+
+		if ( ! current_user_can('update_themes') )
+			printf( __('<p>There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a>.</p>'), $ct->name, $details_url, $update['new_version']);
+		else if ( empty($update->package) )
+			printf( __('<p>There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> <em>automatic upgrade unavailable for this theme</em>.</p>'), $ct->name, $details_url, $update['new_version']);
+		else
+			printf( __('<p>There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> or <a href="%4$s">upgrade automatically</a>.</p>'), $ct->name, $details_url, $update['new_version'], $update_url );
+	}
+}
+
 ?>
 
 <div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
 <h2><?php _e('Current Theme'); ?></h2>
 <div id="current-theme">
 <?php if ( $ct->screenshot ) : ?>
@@ -77,6 +115,8 @@ $themes = array_slice( $themes, $start, $per_page );
 <?php if ( $ct->tags ) : ?>
 <p><?php _e('Tags:'); ?> <?php echo join(', ', $ct->tags); ?></p>
 <?php endif; ?>
+<?php theme_update_available($ct); ?>
+
 </div>
 
 <h2><?php _e('Available Themes'); ?></h2>
@@ -125,7 +165,7 @@ foreach ( $cols as $col => $theme_name ) {
 	$screenshot = $themes[$theme_name]['Screenshot'];
 	$stylesheet_dir = $themes[$theme_name]['Stylesheet Dir'];
 	$preview_link = clean_url( get_option('home') . '/');
-	$preview_link = add_query_arg( array('preview' => 1, 'template' => $template, 'stylesheet' => $stylesheet, 'TB_iframe' => 'true', 'width' => 600, 'height' => 400 ), $preview_link );
+	$preview_link = htmlspecialchars( add_query_arg( array('preview' => 1, 'template' => $template, 'stylesheet' => $stylesheet, 'TB_iframe' => 'true', 'width' => 600, 'height' => 400 ), $preview_link ) );
 	$preview_text = attribute_escape( sprintf( __('Preview of "%s"'), $title ) );
 	$tags = $themes[$theme_name]['Tags'];
 	$thickbox_class = 'thickbox';
@@ -141,8 +181,9 @@ foreach ( $cols as $col => $theme_name ) {
 		<p><?php echo $description; ?></p>
 <?php if ( $tags ) : ?>
 		<p><?php _e('Tags:'); ?> <?php echo join(', ', $tags); ?></p>
-		<noscript><p class="themeactions"><a href="<?php echo $preview_link; ?>" title="<?php echo $preview_text; ?>"><?php _e('Preview'); ?></a> <a href="<?php echo $activate_link; ?>" title="<?php echo $activate_text; ?>"><?php _e('Activate'); ?></a></p></noscript>
 <?php endif; ?>
+		<?php theme_update_available( $themes[$theme_name] ); ?>
+		<noscript><p class="themeactions"><a href="<?php echo $preview_link; ?>" title="<?php echo $preview_text; ?>"><?php _e('Preview'); ?></a> <a href="<?php echo $activate_link; ?>" title="<?php echo $activate_text; ?>"><?php _e('Activate'); ?></a></p></noscript>
 		<div style="display:none;"><a class="previewlink" href="<?php echo $preview_link; ?>"><?php echo $preview_text; ?></a> <a class="activatelink" href="<?php echo $activate_link; ?>"><?php echo $activate_text; ?></a></div>
 <?php endif; // end if not empty theme_name ?>
 	</td>

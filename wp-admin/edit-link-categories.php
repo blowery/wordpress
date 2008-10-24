@@ -12,11 +12,12 @@ require_once('admin.php');
 // Handle bulk actions
 if ( isset($_GET['action']) && isset($_GET['delete']) ) {
 	check_admin_referer('bulk-link-categories');
+	$doaction = $_GET['action'] ? $_GET['action'] : $_GET['action2'];
 
 	if ( !current_user_can('manage_categories') )
 		wp_die(__('Cheatin&#8217; uh?'));
-	
-	if ( $_GET['action'] == 'delete' ) {
+
+	if ( 'delete' == $doaction ) {
 		foreach( (array) $_GET['delete'] as $cat_ID ) {
 			$cat_name = get_term_field('name', $cat_ID, 'link_category');
 			$default_cat_id = get_option('default_link_category');
@@ -38,8 +39,8 @@ if ( isset($_GET['action']) && isset($_GET['delete']) ) {
 		wp_redirect($location);
 		exit();
 	}
-} elseif ( !empty($_GET['_wp_http_referer']) ) {
-	 wp_redirect(remove_query_arg(array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI'])));
+} elseif ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
+	 wp_redirect( remove_query_arg( array('_wp_http_referer', '_wpnonce'), stripslashes($_SERVER['REQUEST_URI']) ) );
 	 exit;
 }
 
@@ -47,6 +48,8 @@ $title = __('Link Categories');
 
 wp_enqueue_script( 'admin-categories' );
 wp_enqueue_script('admin-forms');
+if ( current_user_can('manage_categories') )
+	wp_enqueue_script('inline-edit-tax');
 
 require_once ('admin-header.php');
 
@@ -55,41 +58,34 @@ $messages[2] = __('Category deleted.');
 $messages[3] = __('Category updated.');
 $messages[4] = __('Category not added.');
 $messages[5] = __('Category not updated.');
-$messages[6] = __('Categories deleted.');
-?>
+$messages[6] = __('Categories deleted.'); ?>
 
-<form class="search-form" action="" method="get">
-	<p id="link-category-search" class="search-box">
-		<label class="hidden" for="link-category-search-input"><?php _e( 'Search Categories' ); ?></label>
-		<input type="text" id="link-category-search-input" class="search-input" name="s" value="<?php the_search_query(); ?>" />
-		<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
-	</p>
-</form>
+<div id="screen-options-wrap" class="hidden">
+<h5><?php _e('Show on screen') ?></h5>
+<form id="adv-settings" action="" method="get">
+<div class="metabox-prefs">
+<?php manage_columns_prefs('link-category') ?>
+<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
+<br class="clear" />
+</div></form>
+</div>
 
-<?php
-if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
+<?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
 <div id="message" class="updated fade"><p><?php echo $messages[$msg]; ?></p></div>
 <?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('message'), $_SERVER['REQUEST_URI']);
 endif; ?>
 
 <div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
-<form id="adv-settings" action="" method="get">
-<div id="show-settings"><a href="#edit_settings" id="show-settings-link" class="hide-if-no-js"><?php _e('Advanced Options') ?></a>
-<a href="#edit_settings" id="hide-settings-link" class="hide-if-js hide-if-no-js"><?php _e('Hide Options') ?></a></div>
-
-<div id="edit-settings" class="hide-if-js hide-if-no-js">
-<div id="edit-settings-wrap">
-<h5><?php _e('Show on screen') ?></h5>
-<div class="metabox-prefs">
-<?php manage_columns_prefs('link-category') ?>
-<br class="clear" />
-</div></div>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-</div></form>
-
-	<h2><?php printf( current_user_can('manage_categories') ? __('Link Categories (<a href="%s">Add New</a>)') : __('Manage Tags'), '#addcat' ); ?></h2>
-
+<ul class="subsubsub"><li><a class="current"><br /></a></li></ul>
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="post-search-input"><?php _e( 'Search Categories' ); ?>:</label>
+	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
+</p>
+</form>
 <br class="clear" />
 
 <form id="posts-filter" action="" method="get">
@@ -115,7 +111,7 @@ if ( $page_links )
 
 <div class="alignleft">
 <select name="action">
-<option value="" selected><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -125,7 +121,7 @@ if ( $page_links )
 <br class="clear" />
 </div>
 
-<br class="clear" />
+<div class="clear"></div>
 
 <table class="widefat">
 	<thead>
@@ -133,6 +129,13 @@ if ( $page_links )
 <?php print_column_headers('link-category'); ?>
 	</tr>
 	</thead>
+
+	<tfoot>
+	<tr>
+<?php print_column_headers('link-category', false); ?>
+	</tr>
+	</tfoot>
+
 	<tbody id="the-list" class="list:link-cat">
 <?php
 $start = ($pagenum - 1) * $catsperpage;
@@ -156,17 +159,24 @@ if ( $categories ) {
 	</tbody>
 </table>
 
-</form>
-
 <div class="tablenav">
-
 <?php
 if ( $page_links )
 	echo "<div class='tablenav-pages'>$page_links</div>";
 ?>
+
+<div class="alignleft">
+<select name="action2">
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
+</div>
+
 <br class="clear" />
 </div>
 <br class="clear" />
+</form>
 
 </div>
 
@@ -176,6 +186,7 @@ if ( $page_links )
 </div>
 
 <?php include('edit-link-category-form.php'); ?>
+<?php inline_edit_term_row('link-category'); ?>
 
 <?php endif; ?>
 

@@ -183,15 +183,18 @@ class WP_Http {
 		global $wp_version;
 
 		$defaults = array(
-			'method' => 'GET', 'timeout' => apply_filters('http_request_timeout', 3),
-			'redirection' => 5, 'httpversion' => '1.0',
-			'user-agent' => apply_filters('http_headers_useragent', 'WordPress/' . $wp_version ),
+			'method' => 'GET',
+			'timeout' => apply_filters( 'http_request_timeout', 5),
+			'redirection' => apply_filters( 'http_request_redirection_count', 5),
+			'httpversion' => apply_filters( 'http_request_version', '1.0'),
+			'user-agent' => apply_filters( 'http_headers_useragent', 'WordPress/' . $wp_version ),
 			'blocking' => true,
 			'headers' => array(), 'body' => null
 		);
 
 		$r = wp_parse_args( $args, $defaults );
-
+		$r = apply_filters( 'http_request_args', $r );
+		
 		if ( is_null( $r['headers'] ) )
 			$r['headers'] = array();
 
@@ -423,7 +426,7 @@ class WP_Http_Fsockopen {
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
-			'method' => 'GET', 'timeout' => 3,
+			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
 			'headers' => array(), 'body' => null
@@ -530,18 +533,18 @@ class WP_Http_Fsockopen {
 		if ( (int) $arrHeaders['response']['code'] >= 400 && (int) $arrHeaders['response']['code'] < 500 )
 			return new WP_Error('http_request_failed', $arrHeaders['response']['code'] . ': ' . $arrHeaders['response']['message']);
 
-		// If the body was chunk encoded, then decode it.
-		if ( ! empty( $process['body'] ) && isset( $arrHeaders['headers']['transfer-encoding'] ) && 'chunked' == $arrHeaders['headers']['transfer-encoding'] )
-			$process['body'] = WP_Http::chunkTransferDecode($process['body']);
-
 		// If location is found, then assume redirect and redirect to location.
 		if ( isset($arrHeaders['headers']['location']) ) {
 			if ( $r['redirection']-- > 0 ) {
 				return $this->request($arrHeaders['headers']['location'], $r);
-			}
-			else
+			} else {
 				return new WP_Error('http_request_failed', __('Too many redirects.'));
+			}
 		}
+
+		// If the body was chunk encoded, then decode it.
+		if ( ! empty( $process['body'] ) && isset( $arrHeaders['headers']['transfer-encoding'] ) && 'chunked' == $arrHeaders['headers']['transfer-encoding'] )
+			$process['body'] = WP_Http::chunkTransferDecode($process['body']);
 
 		return array('headers' => $arrHeaders['headers'], 'body' => $process['body'], 'response' => $arrHeaders['response']);
 	}
@@ -597,7 +600,7 @@ class WP_Http_Fopen {
 		global $http_response_header;
 
 		$defaults = array(
-			'method' => 'GET', 'timeout' => 3,
+			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
 			'headers' => array(), 'body' => null
@@ -691,7 +694,7 @@ class WP_Http_Streams {
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
-			'method' => 'GET', 'timeout' => 3,
+			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
 			'headers' => array(), 'body' => null
@@ -815,7 +818,7 @@ class WP_Http_ExtHTTP {
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
-			'method' => 'GET', 'timeout' => 3,
+			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
 			'headers' => array(), 'body' => null
@@ -832,15 +835,13 @@ class WP_Http_ExtHTTP {
 		}
 
 		switch ( $r['method'] ) {
-			case 'GET':
-				$r['method'] = HTTP_METH_GET;
-				break;
 			case 'POST':
 				$r['method'] = HTTP_METH_POST;
 				break;
 			case 'HEAD':
 				$r['method'] = HTTP_METH_HEAD;
 				break;
+			case 'GET':
 			default:
 				$r['method'] = HTTP_METH_GET;
 		}
@@ -858,9 +859,12 @@ class WP_Http_ExtHTTP {
 			'headers' => $r['headers'],
 		);
 
-		$strResponse = http_request($r['method'], $url, $r['body'], $options, $info);
+		if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) ) //Emits warning level notices for max redirects and timeouts
+			$strResponse = @http_request($r['method'], $url, $r['body'], $options, $info);
+		else
+			$strResponse = http_request($r['method'], $url, $r['body'], $options, $info); //Emits warning level notices for max redirects and timeouts
 
-		if ( false === $strResponse )
+		if ( false === $strResponse || ! empty($info['error']) ) //Error may still be set, Response may return headers or partial document, and error contains a reason the request was aborted, eg, timeout expired or max-redirects reached
 			return new WP_Error('http_request_failed', $info['response_code'] . ': ' . $info['error']);
 
 		if ( ! $r['blocking'] )
@@ -869,8 +873,12 @@ class WP_Http_ExtHTTP {
 		list($theHeaders, $theBody) = explode("\r\n\r\n", $strResponse, 2);
 		$theHeaders = WP_Http::processHeaders($theHeaders);
 
-		if ( ! empty( $theBody ) && isset( $theHeaders['headers']['transfer-encoding'] ) && 'chunked' == $theHeaders['headers']['transfer-encoding'] )
-			$theBody = http_chunked_decode($theBody);
+		if ( ! empty( $theBody ) && isset( $theHeaders['headers']['transfer-encoding'] ) && 'chunked' == $theHeaders['headers']['transfer-encoding'] ) {
+			if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) )
+				$theBody = @http_chunked_decode($theBody);
+			else
+				$theBody = http_chunked_decode($theBody);
+		}
 
 		$theResponse = array();
 		$theResponse['code'] = $info['response_code'];
@@ -917,7 +925,7 @@ class WP_Http_Curl {
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
-			'method' => 'GET', 'timeout' => 3,
+			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
 			'headers' => array(), 'body' => null
@@ -970,12 +978,24 @@ class WP_Http_Curl {
 
 		$theResponse = curl_exec( $handle );
 
-		list($theHeaders, $theBody) = explode("\r\n\r\n", $theResponse, 2);
-		$theHeaders = WP_Http::processHeaders($theHeaders);
-
-		if ( ! empty( $theBody ) && isset( $theHeaders['headers']['transfer-encoding'] ) && 'chunked' == $theHeaders['headers']['transfer-encoding'] )
-			$theBody = WP_Http::chunkTransferDecode($theBody);
-
+		if ( !empty($theResponse) ) {
+			$headerLength = curl_getinfo($handle, CURLINFO_HEADER_SIZE);
+			$theHeaders = trim( substr($theResponse, 0, $headerLength) );
+			$theBody = substr( $theResponse, $headerLength );
+			if ( false !== strrpos($theHeaders, "\r\n\r\n") ) {
+				$headerParts = explode("\r\n\r\n", $theHeaders);
+				$theHeaders = $headerParts[ count($headerParts) -1 ];
+			}
+			$theHeaders = WP_Http::processHeaders($theHeaders);
+		} else {
+			if ( $curl_error = curl_error($handle) )
+				return new WP_Error('http_request_failed', $curl_error);
+			if ( in_array( curl_getinfo( $handle, CURLINFO_HTTP_CODE ), array(301, 302) ) )
+				return new WP_Error('http_request_failed', __('Too many redirects.'));
+			
+			$theHeaders = array( 'headers' => array() );
+			$theBody = '';
+		}
 		$response = array();
 		$response['code'] = curl_getinfo( $handle, CURLINFO_HTTP_CODE );
 		$response['message'] = get_status_header_desc($response['code']);

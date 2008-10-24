@@ -16,10 +16,17 @@ include('admin-header.php');
 ?>
 
 <div class="wrap">
-<h2><?php _e('Writing Settings') ?></h2>
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
+
 <form method="post" action="options.php">
 <?php wp_nonce_field('writing-options') ?>
 <input type='hidden' name='option_page' value='writing' />
+<input type="hidden" name="action" value="update" />
+
+<p class="submit submit-top">
+	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
+</p>
+
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><label for="default_post_edit_rows"> <?php _e('Size of the post box') ?></label></th>
@@ -140,11 +147,13 @@ endforeach;
 
 <?php endif; ?>
 
+<h3><?php _e('Press This') ?></h3>
+<p><?php _e('Drag-and-drop the following link to your bookmarks bar or right click it and add it to your favorites for a posting shortcut.') ?>  <a href="<?php echo htmlspecialchars( get_shortcut_link() ); ?>" title="<?php echo attribute_escape(__('Press This')) ?>"><?php _e('Press This') ?></a></p>
+
 <?php do_settings_sections('writing'); ?>
 
 <p class="submit">
-<input type="hidden" name="action" value="update" />
-<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
+	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
 </p>
 </form>
 </div>

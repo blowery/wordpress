@@ -61,7 +61,7 @@ function redirect_post($post_ID = '') {
 	} elseif (!empty($referredby) && $referredby != $referer) {
 		$location = $_POST['referredby'];
 		$location = remove_query_arg('_wp_original_http_referer', $location);
-		if ( false !== strpos($location, 'edit.php') )
+		if ( false !== strpos($location, 'edit.php') || false !== strpos($location, 'edit-post-drafts.php') )
 			$location = add_query_arg('posted', $post_ID, $location);
 		elseif ( false !== strpos($location, 'wp-admin') )
 			$location = "post-new.php?posted=$post_ID";
@@ -86,7 +86,6 @@ case 'postajaxpost':
 case 'post':
 case 'post-quickpress-publish':
 case 'post-quickpress-save':
-case 'post-quickpress-save-cont':
 	check_admin_referer('add-post');
 
 	if ( 'post-quickpress-publish' == $action )
@@ -104,13 +103,11 @@ case 'post-quickpress-save-cont':
 		$post_ID = 'postajaxpost' == $action ? edit_post() : write_post();
 	}
 
-	if ( 'post-quickpress-save-cont' != $action && 0 === strpos( $action, 'post-quickpress' ) ) {
+	if ( 0 === strpos( $action, 'post-quickpress' ) ) {
 		$_POST['post_ID'] = $post_ID;
 		// output the quickpress dashboard widget
 		require_once(ABSPATH . 'wp-admin/includes/dashboard.php');
-		add_filter( 'wp_dashboard_widgets', create_function( '$a', 'return array( "dashboard_quick_press" );' ) );
-		wp_dashboard_setup();
-		wp_dashboard();
+		wp_dashboard_quick_press();
 		exit;
 	}
 
@@ -119,7 +116,6 @@ case 'post-quickpress-save-cont':
 	break;
 
 case 'edit':
-	$title = __('Edit');
 	$editing = true;
 
 	if ( empty( $_GET['post'] ) ) {
@@ -143,7 +139,7 @@ case 'edit':
 	wp_enqueue_script('media-upload');
 	wp_enqueue_script('word-count');
 	wp_enqueue_script( 'admin-comments' );
-	wp_enqueue_script( 'jquery-table-hotkeys' );
+	enqueue_comment_hotkeys_js();
 
 	if ( current_user_can('edit_post', $post_ID) ) {
 		if ( $last = wp_check_post_lock( $post->ID ) ) {
@@ -157,6 +153,8 @@ case 'edit':
 			wp_enqueue_script('autosave');
 		}
 	}
+
+	$title = sprintf(__('Edit "%s"'), wp_html_excerpt(_draft_or_post_title($post->ID), 50));
 
 	require_once('admin-header.php');
 

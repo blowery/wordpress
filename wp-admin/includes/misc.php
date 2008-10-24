@@ -1,12 +1,32 @@
 <?php
+/**
+ * Misc WordPress Administration API.
+ *
+ * @package WordPress
+ * @subpackage Administration
+ */
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @return unknown
+ */
 function got_mod_rewrite() {
 	$got_rewrite = apache_mod_loaded('mod_rewrite', true);
 	return apply_filters('got_rewrite', $got_rewrite);
 }
 
-// Returns an array of strings from a file (.htaccess ) from between BEGIN
-// and END markers.
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $filename
+ * @param unknown_type $marker
+ * @return array An array of strings from a file (.htaccess ) from between BEGIN and END markers.
+ */
 function extract_from_markers( $filename, $marker ) {
 	$result = array ();
 
@@ -30,10 +50,20 @@ function extract_from_markers( $filename, $marker ) {
 	return $result;
 }
 
-// Inserts an array of strings into a file (.htaccess ), placing it between
-// BEGIN and END markers.  Replaces existing marked info.  Retains surrounding
-// data.  Creates file if none exists.
-// Returns true on write success, false on failure.
+/**
+ * {@internal Missing Short Description}}
+ *
+ * Inserts an array of strings into a file (.htaccess ), placing it between
+ * BEGIN and END markers. Replaces existing marked info. Retains surrounding
+ * data. Creates file if none exists.
+ *
+ * @since unknown
+ *
+ * @param unknown_type $filename
+ * @param unknown_type $marker
+ * @param unknown_type $insertion
+ * @return bool True on write success, false on failure.
+ */
 function insert_with_markers( $filename, $marker, $insertion ) {
 	if (!file_exists( $filename ) || is_writeable( $filename ) ) {
 		if (!file_exists( $filename ) ) {
@@ -82,9 +112,11 @@ function insert_with_markers( $filename, $marker, $insertion ) {
 /**
  * Updates the htaccess file with the current rules if it is writable.
  *
- * Always writes to the file if it exists and is writable to ensure that we blank out old rules.
+ * Always writes to the file if it exists and is writable to ensure that we
+ * blank out old rules.
+ *
+ * @since unknown
  */
-
 function save_mod_rewrite_rules() {
 	global $wp_rewrite;
 
@@ -103,6 +135,13 @@ function save_mod_rewrite_rules() {
 	return false;
 }
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $file
+ */
 function update_recently_edited( $file ) {
 	$oldfiles = (array ) get_option( 'recently_edited' );
 	if ( $oldfiles ) {
@@ -118,7 +157,14 @@ function update_recently_edited( $file ) {
 	update_option( 'recently_edited', $oldfiles );
 }
 
-// If siteurl or home changed, flush rewrite rules.
+/**
+ * If siteurl or home changed, flush rewrite rules.
+ *
+ * @since unknown
+ *
+ * @param unknown_type $old_value
+ * @param unknown_type $value
+ */
 function update_home_siteurl( $old_value, $value ) {
 	global $wp_rewrite;
 
@@ -132,6 +178,14 @@ function update_home_siteurl( $old_value, $value ) {
 add_action( 'update_option_home', 'update_home_siteurl', 10, 2 );
 add_action( 'update_option_siteurl', 'update_home_siteurl', 10, 2 );
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $url
+ * @return unknown
+ */
 function url_shorten( $url ) {
 	$short_url = str_replace( 'http://', '', stripslashes( $url ));
 	$short_url = str_replace( 'www.', '', $short_url );
@@ -142,6 +196,13 @@ function url_shorten( $url ) {
 	return $short_url;
 }
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $vars
+ */
 function wp_reset_vars( $vars ) {
 	for ( $i=0; $i<count( $vars ); $i += 1 ) {
 		$var = $vars[$i];
@@ -160,6 +221,13 @@ function wp_reset_vars( $vars ) {
 	}
 }
 
+/**
+ * {@internal Missing Short Description}}
+ *
+ * @since unknown
+ *
+ * @param unknown_type $message
+ */
 function show_message($message) {
 	if( is_wp_error($message) ){
 		if( $message->get_error_data() )
@@ -168,73 +236,6 @@ function show_message($message) {
 			$message = $message->get_error_message();
 	}
 	echo "<p>$message</p>\n";
-}
-
-/* Whitelist functions */
-function register_setting($option_group, $option_name, $sanitize_callback = '') {
-	return add_option_update_handler($option_group, $option_name, $sanitize_callback);
-}
-
-function unregister_setting($option_group, $option_name, $sanitize_callback = '') {
-	return remove_option_update_handler($option_group, $option_name, $sanitize_callback);
-}
-
-function add_option_update_handler($option_group, $option_name, $sanitize_callback = '') {
-	global $new_whitelist_options;
-	$new_whitelist_options[ $option_group ][] = $option_name;
-	if ( $sanitize_callback != '' )
-		add_filter( "sanitize_option_{$option_name}", $sanitize_callback );
-}
-
-function remove_option_update_handler($option_group, $option_name, $sanitize_callback = '') {
-	global $new_whitelist_options;
-	$pos = array_search( $option_name, $new_whitelist_options );
-	if ( $pos !== false )
-		unset( $new_whitelist_options[ $option_group ][ $pos ] );
-	if ( $sanitize_callback != '' )
-		remove_filter( "sanitize_option_{$option_name}", $sanitize_callback );
-}
-
-function option_update_filter( $options ) {
-	global $new_whitelist_options;
-
-	if ( is_array( $new_whitelist_options ) )
-		$options = add_option_whitelist( $new_whitelist_options, $options );
-
-	return $options;
-}
-add_filter( 'whitelist_options', 'option_update_filter' );
-
-function add_option_whitelist( $new_options, $options = '' ) {
-	if( $options == '' ) {
-		global $whitelist_options;
-	} else {
-		$whitelist_options = $options;
-	}
-	foreach( $new_options as $page => $keys ) {
-		foreach( $keys as $key ) {
-			$pos = array_search( $key, $whitelist_options[ $page ] );
-			if( $pos === false )
-				$whitelist_options[ $page ][] = $key;
-		}
-	}
-	return $whitelist_options;
-}
-
-function remove_option_whitelist( $del_options, $options = '' ) {
-	if( $options == '' ) {
-		global $whitelist_options;
-	} else {
-		$whitelist_options = $options;
-	}
-	foreach( $del_options as $page => $keys ) {
-		foreach( $keys as $key ) {
-			$pos = array_search( $key, $whitelist_options[ $page ] );
-			if( $pos !== false )
-				unset( $whitelist_options[ $page ][ $pos ] );
-		}
-	}
-	return $whitelist_options;
 }
 
 ?>

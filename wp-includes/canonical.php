@@ -39,12 +39,12 @@
 function redirect_canonical($requested_url=null, $do_redirect=true) {
 	global $wp_rewrite, $is_IIS, $wp_query, $wpdb;
 
-	if ( is_feed() || is_trackback() || is_search() || is_comments_popup() || is_admin() || $is_IIS || ( isset($_POST) && count($_POST) ) || is_preview() || is_robots() )
+	if ( is_trackback() || is_search() || is_comments_popup() || is_admin() || $is_IIS || ( isset($_POST) && count($_POST) ) || is_preview() || is_robots() )
 		return;
 
 	if ( !$requested_url ) {
 		// build the URL in the address bar
-		$requested_url  = ( isset($_SERVER['HTTPS'] ) && strtolower($_SERVER['HTTPS']) == 'on' ) ? 'https://' : 'http://';
+		$requested_url  = ( !empty($_SERVER['HTTPS'] ) && strtolower($_SERVER['HTTPS']) == 'on' ) ? 'https://' : 'http://';
 		$requested_url .= $_SERVER['HTTP_HOST'];
 		$requested_url .= $_SERVER['REQUEST_URI'];
 	}
@@ -54,7 +54,10 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 		return;
 
 	// Some PHP setups turn requests for / into /index.php in REQUEST_URI
-	$original['path'] = preg_replace('|/index\.php$|', '/', $original['path']);
+	// See: http://trac.wordpress.org/ticket/5017
+	// See: http://trac.wordpress.org/ticket/7173
+	// Disabled, for now:
+	// $original['path'] = preg_replace('|/index\.php$|', '/', $original['path']);
 
 	$redirect = $original;
 	$redirect_url = false;
@@ -77,13 +80,15 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 		$redirect_url = redirect_guess_404_permalink();
 	} elseif ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() ) {
 		// rewriting of old ?p=X, ?m=2004, ?m=200401, ?m=20040101
-		if ( is_single() && isset($_GET['p']) && ! $redirect_url ) {
+		if ( is_single() && !empty($_GET['p']) && ! $redirect_url ) {
 			if ( $redirect_url = get_permalink(get_query_var('p')) )
 				$redirect['query'] = remove_query_arg('p', $redirect['query']);
-		} elseif ( is_page() && isset($_GET['page_id']) && ! $redirect_url ) {
+		} elseif ( is_single() && ! $redirect_url ) {
+			$redirect_url = get_permalink( url_to_postid( $requested_url ) );
+		} elseif ( is_page() && !empty($_GET['page_id']) && ! $redirect_url ) {
 			if ( $redirect_url = get_permalink(get_query_var('page_id')) )
 				$redirect['query'] = remove_query_arg('page_id', $redirect['query']);
-		} elseif ( isset($_GET['m']) && ( is_year() || is_month() || is_day() ) ) {
+		} elseif ( !empty($_GET['m']) && ( is_year() || is_month() || is_day() ) ) {
 			$m = get_query_var('m');
 			switch ( strlen($m) ) {
 				case 4: // Yearly
@@ -99,44 +104,59 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 			if ( $redirect_url )
 				$redirect['query'] = remove_query_arg('m', $redirect['query']);
 		// now moving on to non ?m=X year/month/day links
-		} elseif ( is_day() && get_query_var('year') && get_query_var('monthnum') && isset($_GET['day']) ) {
+		} elseif ( is_day() && get_query_var('year') && get_query_var('monthnum') && !empty($_GET['day']) ) {
 			if ( $redirect_url = get_day_link(get_query_var('year'), get_query_var('monthnum'), get_query_var('day')) )
 				$redirect['query'] = remove_query_arg(array('year', 'monthnum', 'day'), $redirect['query']);
-		} elseif ( is_month() && get_query_var('year') && isset($_GET['monthnum']) ) {
+		} elseif ( is_month() && get_query_var('year') && !empty($_GET['monthnum']) ) {
 			if ( $redirect_url = get_month_link(get_query_var('year'), get_query_var('monthnum')) )
 				$redirect['query'] = remove_query_arg(array('year', 'monthnum'), $redirect['query']);
-		} elseif ( is_year() && isset($_GET['year']) ) {
+		} elseif ( is_year() && !empty($_GET['year']) ) {
 			if ( $redirect_url = get_year_link(get_query_var('year')) )
 				$redirect['query'] = remove_query_arg('year', $redirect['query']);
-		} elseif ( is_category() && isset($_GET['cat']) ) {
+		} elseif ( is_category() && !empty($_GET['cat']) ) {
 			if ( $redirect_url = get_category_link(get_query_var('cat')) )
 				$redirect['query'] = remove_query_arg('cat', $redirect['query']);
-		} elseif ( is_author() && isset($_GET['author']) ) {
+		} elseif ( is_author() && !empty($_GET['author']) ) {
 			$author = get_userdata(get_query_var('author'));
 			if ( false !== $author && $redirect_url = get_author_link(false, $author->ID, $author->user_nicename) )
 				$redirect['query'] = remove_query_arg('author', $redirect['author']);
 		}
 
-	// paging
-		if ( $paged = get_query_var('paged') ) {
-			if ( $paged > 0 ) {
-				if ( !$redirect_url )
-					$redirect_url = $requested_url;
-				$paged_redirect = @parse_url($redirect_url);
-				$paged_redirect['path'] = preg_replace('|/page/[0-9]+?(/+)?$|', '/', $paged_redirect['path']); // strip off any existing paging
-				$paged_redirect['path'] = preg_replace('|/index.php/?$|', '/', $paged_redirect['path']); // strip off trailing /index.php/
+	// paging and feeds
+		if ( get_query_var('paged') || is_feed() || get_query_var('cpage') ) {
+			if ( !$redirect_url )
+				$redirect_url = $requested_url;
+			$paged_redirect = @parse_url($redirect_url);
+			while ( preg_match( '#page/[0-9]+?(/+)?$#', $paged_redirect['path'] ) || preg_match( '#/feed(/[a-z0-9-]*?(/+)?)?$#', $paged_redirect['path'] ) || preg_match( '#comment-page-[0-9]+/?$#', $paged_redirect['path'] ) ) {
+				// Strip off paging and feed
+				$paged_redirect['path'] = preg_replace('#/page/[0-9]+?(/+)?$#', '/', $paged_redirect['path']); // strip off any existing paging
+				$paged_redirect['path'] = preg_replace('#/feed(/[a-z0-9-]*?(/+)?)?$#', '/', $paged_redirect['path']); // strip off any existing feed
+				$paged_redirect['path'] = preg_replace('#comment-page-[0-9]+?(/+)?$#', '/', $paged_redirect['path']); // strip off any existing comment paging
+			}
+
+			$paged_redirect['path'] = preg_replace('|/index.php/?$|', '/', $paged_redirect['path']); // strip off trailing /index.php/
+			if ( get_query_var('paged') > 0 ) {
+				$paged = get_query_var('paged');
 				if ( $paged > 1 && !is_single() ) {
 					$paged_redirect['path'] = trailingslashit($paged_redirect['path']);
 					if ( $wp_rewrite->using_index_permalinks() && strpos($paged_redirect['path'], '/index.php/') === false )
 						$paged_redirect['path'] .= 'index.php/';
 					$paged_redirect['path'] .= user_trailingslashit("page/$paged", 'paged');
-				} elseif ( !is_home() && !is_single() ){
+				} elseif ( !is_single() ) {
 					$paged_redirect['path'] = user_trailingslashit($paged_redirect['path'], 'paged');
 				}
-				$redirect_url = $paged_redirect['scheme'] . '://' . $paged_redirect['host'] . $paged_redirect['path'];
-				$redirect['path'] = $paged_redirect['path'];
 			}
-			$redirect['query'] = remove_query_arg('paged', $redirect['query']);
+			if ( is_feed() ) {
+				$paged_redirect['path'] = user_trailingslashit( trailingslashit( $paged_redirect['path'] ) . 'feed/' . ( ( 'rss2' ==  get_query_var('feed') || 'feed' == get_query_var('feed') ) ? '' : get_query_var('feed') ), 'feed' );
+			}
+			if ( get_option('page_comments') && ( ( 'newest' == get_option('default_comments_page') && get_query_var('cpage') > 0 ) || ( 'newest' != get_option('default_comments_page') && get_query_var('cpage') > 1 ) ) ) {
+				$paged_redirect['path'] = user_trailingslashit( trailingslashit( $paged_redirect['path'] ) . 'comment-page-' . get_query_var('cpage'), 'commentpaged' );
+			}
+			$redirect_url = $paged_redirect['scheme'] . '://' . $paged_redirect['host'] . $paged_redirect['path'];
+			$redirect['path'] = $paged_redirect['path'];
+			$redirect['query'] = remove_query_arg( 'paged', $redirect['query'] );
+			$redirect['query'] = remove_query_arg( 'feed', $redirect['query'] );
+			$redirect['query'] = remove_query_arg( 'cpage', $redirect['query'] );
 		}
 	}
 
@@ -154,22 +174,24 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 
 	// www.example.com vs example.com
 	$user_home = @parse_url(get_option('home'));
-	if ( isset($user_home['host']) )
+	if ( !empty($user_home['host']) )
 		$redirect['host'] = $user_home['host'];
+	if ( empty($user_home['path']) )
+		$user_home['path'] = '/';
 
 	// Handle ports
-	if ( isset($user_home['port']) )
+	if ( !empty($user_home['port']) )
 		$redirect['port'] = $user_home['port'];
 	else
 		unset($redirect['port']);
 
-	// trailing /index.php/
-	$redirect['path'] = preg_replace('|/index.php/$|', '/', $redirect['path']);
+	// trailing /index.php
+	$redirect['path'] = preg_replace('|/index.php/*?$|', '/', $redirect['path']);
 
 	// Remove trailing spaces from the path
 	$redirect['path'] = preg_replace( '#(%20| )+$#', '', $redirect['path'] );
 
-	if ( isset( $redirect['query'] ) ) {
+	if ( !empty( $redirect['query'] ) ) {
 		// Remove trailing slashes from certain terminating query string args
 		$redirect['query'] = preg_replace( '#((p|page_id|cat|tag)=[^&]*?)(%20| )+$#', '$1', $redirect['query'] );
 
@@ -182,12 +204,12 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 		$redirect['path'] = str_replace('/index.php/', '/', $redirect['path']);
 
 	// trailing slashes
-	if ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() && !is_404() && (!is_home() || ( is_home() && (get_query_var('paged') > 1) ) ) ) {
+	if ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() && !is_404() && (!is_front_page() || ( is_front_page() && (get_query_var('paged') > 1) ) ) ) {
 		$user_ts_type = '';
 		if ( get_query_var('paged') > 0 ) {
 			$user_ts_type = 'paged';
 		} else {
-			foreach ( array('single', 'category', 'page', 'day', 'month', 'year') as $type ) {
+			foreach ( array('single', 'category', 'page', 'day', 'month', 'year', 'home') as $type ) {
 				$func = 'is_' . $type;
 				if ( call_user_func($func) ) {
 					$user_ts_type = $type;
@@ -196,12 +218,12 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 			}
 		}
 		$redirect['path'] = user_trailingslashit($redirect['path'], $user_ts_type);
-	} elseif ( is_home() ) {
+	} elseif ( is_front_page() ) {
 		$redirect['path'] = trailingslashit($redirect['path']);
 	}
 
-	// Always trailing slash the 'home' URL
-	if ( $redirect['path'] == $user_home['path'] )
+	// Always trailing slash the Front Page URL
+	if ( trailingslashit( $redirect['path'] ) == trailingslashit( $user_home['path'] ) )
 		$redirect['path'] = trailingslashit($redirect['path']);
 
 	// Ignore differences in host capitalization, as this can lead to infinite redirects
@@ -210,26 +232,26 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 
 	$compare_original = array($original['host'], $original['path']);
 
-	if ( isset( $original['port'] ) )
+	if ( !empty( $original['port'] ) )
 		$compare_original[] = $original['port'];
 
-	if ( isset( $original['query'] ) )
+	if ( !empty( $original['query'] ) )
 		$compare_original[] = $original['query'];
 
 	$compare_redirect = array($redirect['host'], $redirect['path']);
 
-	if ( isset( $redirect['port'] ) )
+	if ( !empty( $redirect['port'] ) )
 		$compare_redirect[] = $redirect['port'];
 
-	if ( isset( $redirect['query'] ) )
+	if ( !empty( $redirect['query'] ) )
 		$compare_redirect[] = $redirect['query'];
 
 	if ( $compare_original !== $compare_redirect ) {
 		$redirect_url = $redirect['scheme'] . '://' . $redirect['host'];
-		if ( isset($redirect['port']) )
+		if ( !empty($redirect['port']) )
 		 	$redirect_url .= ':' . $redirect['port'];
 		$redirect_url .= $redirect['path'];
-		if ( $redirect['query'] )
+		if ( !empty($redirect['query']) )
 			$redirect_url .= '?' . $redirect['query'];
 	}
 
@@ -248,6 +270,8 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 			wp_redirect($redirect_url, 301);
 			exit();
 		} else {
+			// Debug
+			// die("1: $redirect_url<br />2: " . redirect_canonical( $redirect_url, false ) );
 			return false;
 		}
 	} else {
