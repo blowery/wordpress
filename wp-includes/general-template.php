@@ -1219,8 +1219,8 @@ function get_the_modified_date($d = '') {
  *
  * @param string $d Either 'G', 'U', or php date format.
  */
-function the_time( $d = '' ) {
-	echo apply_filters('the_time', get_the_time( $d ), $d);
+function the_time( $d = '' , $gmt=false) {
+	echo apply_filters('the_time', get_the_time( $d, $gmt ), $d);
 }
 
 /**
@@ -1231,11 +1231,11 @@ function the_time( $d = '' ) {
  * @param string $d Either 'G', 'U', or php date format defaults to the value specified in the time_format option.
  * @return string
  */
-function get_the_time( $d = '' ) {
+function get_the_time( $d = '', $gmt = false ) {
 	if ( '' == $d )
-		$the_time = get_post_time(get_option('time_format'));
+		$the_time = get_post_time(get_option('time_format'), $gmt);
 	else
-		$the_time = get_post_time($d);
+		$the_time = get_post_time($d, $gmt);
 	return apply_filters('get_the_time', $the_time, $d);
 }
 

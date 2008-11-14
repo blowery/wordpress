@@ -20,7 +20,10 @@ this software, even if advised of the possibility of such damage.
 For full license details see license.txt
 ============================================================================================================ */
 
-include ('../../../wp-config.php');
+if (file_exists ('../../../wp-load.php'))
+	include ('../../../wp-load.php');
+else
+	include ('../../../wp-config.php');
 
 function urldecode_deep ($data)
 {
