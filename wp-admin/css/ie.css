@@ -1,13 +1,10 @@
 /* Fixes for IE bugs */
 
 * html #wpbody-content {
-	margin-left: 160px;
+	float: right;
 }
 
 * html #wpbody {
-	clear: right;
-	float: right;
-	margin-left: -185px;
 	width: 100%;
 }
 
@@ -27,21 +24,34 @@
 	width: 100%;
 }
 
-.metabox-holder .postbox h3 {
-	padding-left: 23px;
-}
-
-input.button, input.button-secondary, input.button-highlighted {
+input.button,
+input.button-secondary,
+input.button-highlighted {
 	padding: 0;
 }
 
-#side-info-column {
-	position: absolute;
-	right: 15px;
+#minor-publishing-actions input,
+#major-publishing-actions input,
+#minor-publishing-actions .preview {
+	min-width: auto;
+	padding-left: 0;
+	padding-right: 0;
 }
 
 #wphead-info {
 	float: right;
+}
+
+* html #wpbody-content #screen-options-link-wrap {
+	display: inline-block;
+	width: 150px;
+	text-align: center;
+}
+
+* html #wpbody-content #contextual-help-link-wrap {
+	display: inline-block;
+	width: 100px;
+	text-align: center;
 }
 
 /*
@@ -54,87 +64,167 @@ input.button, input.button-secondary, input.button-highlighted {
 }
 */
 
-#adminmenu {
+* html #adminmenu {
 	z-index: 1;
+	width: 145px;
+	margin: 12px;
+	padding: 0;
 }
 
-#adminmenu li.wp-has-submenu {
+#wpcontent #adminmenu.folded li.menu-top {
+	display: block;
+}
+
+* html #wpcontent #adminmenu li.menu-top {
+	display: inline;
 	padding: 0;
 	margin: 0;
 }
 
-#adminmenu a.wp-has-submenu {
-
+#adminmenu li.menu-top a.menu-top {
+	min-width: auto;
+	width: auto;
 }
 
-ul.wp-submenu, ul.wp-submenu li,
-ul.wp-submenu a,
-#adminmenu a.wp-has-submenu,
-#adminmenu .wp-menu-image  {
-	display: block;
+#wpcontent #adminmenu li.wp-has-current-submenu a.wp-has-submenu {
+	font-style: normal;
+}
+
+* html #wpcontent #adminmenu .wp-menu-open .wp-menu-toggle {
+	background: none;
+}
+
+* html #wpcontent #adminmenu .wp-has-submenu .wp-menu-toggle {
+	background: url(../images/menu-bits.gif) no-repeat scroll left -108px;
+}
+
+* html #wpcontent #adminmenu li.wp-has-current-submenu .wp-menu-toggle {
+	background: url(../images/menu-bits.gif) no-repeat scroll left -206px;
+}
+
+* html #adminmenu div.wp-menu-image {
+	height: 31px;
+}
+
+#wpcontent #adminmenu .wp-submenu li {
+	padding: 0;
+}
+
+#adminmenu,
+.wp-submenu,
+.wp-submenu li,
+.wp-menu-toggle {
 	zoom: 100%;
 }
 
-#adminmenu.folded .wp-submenu {
-	margin: -1px 0 0 4px;
-}
-
-#adminmenu.folded li.wp-has-submenu {
-	height: 24px;
-}
-
-#wpcontent #adminmenu ul.wp-submenu a {
-	padding: 2px 4px 2px 10px;
-	margin: 0;
-	line-height: 18px;
-}
-
-* html #wpcontent #adminmenu {
-	margin: 8px 9px;
-}
-
-#wpcontent #adminmenu ul.wp-submenu li {
-	padding: 0;
+#wpcontent #adminmenu.folded li.wp-menu-separator {
+	width: 28px;
 }
 
 #wpcontent #adminmenu .wp-submenu li.wp-submenu-head {
 	padding: 3px 4px 4px 10px;
-}
-
-/*
-ul#adminmenu li.wp-menu-separator {
-	background-color: #fff;
-	height: 3px;
-	line-height: 3px;
-	font-size: 3px;
-}
-*/
-
-
-#template, #template div, #editcat, #addcat {
 	zoom: 100%;
 }
 
+#wpcontent #adminmenu.folded .menu-top {
+	height: 30px;
+}
 
-* html #poststuff .postarea, * html #poststuff #titlediv {
-	
+#adminmenu.folded .wp-submenu {
+	margin: -1px 0 0 0;
+}
+
+#template,
+#template div,
+#editcat,
+#addcat {
+	zoom: 100%;
 }
 
 .submitbox {
 	margin-top: 10px;
 }
 
-* html div.widget-liquid-left-holder, * html div.widget-liquid-right {
+/* Inline Editor */
+#wpbody-content .quick-edit-row-post .inline-edit-col-left {
+	width: 39%;
+}
+
+#wpbody-content .inline-edit-row-post .inline-edit-col-center {
+	width: 19%;
+}
+
+#wpbody-content .quick-edit-row-page .inline-edit-col-left {
+	width: 49%;
+}
+
+#wpbody-content .bulk-edit-row .inline-edit-col-left {
+	width: 29%;
+}
+
+.inline-edit-row p.submit {
+	zoom: 100%;
+}
+
+.inline-edit-row fieldset label span.title {
+	display: block;
+	float: left;
+	width: 5em;
+}
+
+.inline-edit-row fieldset label span.input-text-wrap {
+	margin-left: 0;
+	zoom: 100%;
+}
+
+#wpbody-content .inline-edit-row fieldset label span.input-text-wrap input {
+	line-height: 130%;
+}
+/* end Inline Editor */
+
+* html div.widget-liquid-left-holder,
+* html div.widget-liquid-right {
 	display: block;
 	position: relative;
 }
 
-#wpwrap, #wpcontent, #post, #wrap, #postdivrich, #postdiv, #poststuff, .metabox-holder, #titlediv, #post-body, #editorcontainer, .tablenav, .widget-control-list, li.widget-list-control-item, #dragHelper, li.widget-list-control-item h4, .widget-sortable, .widget-control-actions, #tagchecklist {
+#screen-options-wrap {
+	overflow: hidden;
+}
+
+#favorite-actions {
+	z-index: 12;
+}
+
+#wpwrap,
+#wpcontent,
+#post,
+#wrap,
+#postdivrich,
+#postdiv,
+#poststuff,
+.metabox-holder,
+#titlediv,
+#post-body,
+#editorcontainer,
+.tablenav,
+.widget-control-list,
+li.widget-list-control-item,
+#dragHelper,
+li.widget-list-control-item h4,
+.widget-sortable,
+.widget-control-actions,
+#tagchecklist,
+#col-container,
+#col-left,
+#col-right {
 	display: block;
 	zoom: 100%;
 }
 
-#favorite-inside, #favorite-inside a, .favorite-action {
+#favorite-inside,
+#favorite-inside a,
+.favorite-action {
 	z-index: 11;
 	zoom: 100%;
 }
@@ -158,10 +248,8 @@ p.search-box {
 	padding: 0;
 }
 
-* html #editorcontainer #content {
-	position: relative;
+#editorcontainer #content {
 	overflow: auto;
-	padding: 6px;
 	margin: auto;
 	width: 98%;
 }

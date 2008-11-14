@@ -112,12 +112,12 @@ function current_time( $type, $gmt = 0 ) {
  * @param int $unixtimestamp Unix timestamp
  * @return string The date, translated if locale specifies it.
  */
-function date_i18n( $dateformatstring, $unixtimestamp ) {
+function date_i18n( $dateformatstring, $unixtimestamp = false, $gmt = false ) {
 	global $wp_locale;
 	$i = $unixtimestamp;
 	// Sanity check for PHP 5.1.0-
-	if ( -1 == $i )
-		$i = false;
+	if ( false === $i || intval($i) < 0 )
+		$i = time();
 
 	if ( ( !empty( $wp_locale->month ) ) && ( !empty( $wp_locale->weekday ) ) ) {
 		$datemonth = $wp_locale->get_month( date( 'm', $i ) );
@@ -136,7 +136,7 @@ function date_i18n( $dateformatstring, $unixtimestamp ) {
 
 		$dateformatstring = substr( $dateformatstring, 1, strlen( $dateformatstring ) -1 );
 	}
-	$j = @date( $dateformatstring, $i );
+	$j = $gmt? @gmdate( $dateformatstring, $i ) : @date( $dateformatstring, $i );
 	return $j;
 }
 
@@ -675,8 +675,8 @@ function wp_user_settings() {
 			$saved = isset($_COOKIE['wp-settings-time-'.$user->ID]) ? preg_replace( '/[^0-9]/', '', $_COOKIE['wp-settings-time-'.$user->ID] ) : 0;
 
 			if ( $saved > $last_time ) {
-				update_user_option( $user->ID, 'user-settings', $cookie );
-				update_user_option( $user->ID, 'user-settings-time', time() - 5 );
+				update_user_option( $user->ID, 'user-settings', $cookie, true );
+				update_user_option( $user->ID, 'user-settings-time', time() - 5, true );
 				return;
 			}
 		}
@@ -1051,6 +1051,8 @@ function wp_get_http( $url, $file_path = false, $deprecated = false ) {
 		return false;
 
 	$headers = wp_remote_retrieve_headers( $response );
+	$headers['response'] = $response['response']['code'];
+
 	if ( false == $file_path )
 		return $headers;
 
@@ -1993,9 +1995,9 @@ function wp_ext2type( $ext ) {
 	$ext2type = apply_filters('ext2type', array(
 		'audio' => array('aac','ac3','aif','aiff','mp1','mp2','mp3','m3a','m4a','m4b','ogg','ram','wav','wma'),
 		'video' => array('asf','avi','divx','dv','mov','mpg','mpeg','mp4','mpv','ogm','qt','rm','vob','wmv'),
-		'document' => array('doc','pages','odt','rtf','pdf'),
-		'spreadsheet' => array('xls','numbers','ods'),
-		'interactive' => array('ppt','key','odp','swf'),
+		'document' => array('doc','docx','pages','odt','rtf','pdf'),
+		'spreadsheet' => array('xls','xlsx','numbers','ods'),
+		'interactive' => array('ppt','pptx','key','odp','swf'),
 		'text' => array('txt'),
 		'archive' => array('tar','bz2','gz','cab','dmg','rar','sea','sit','sqx','zip'),
 		'code' => array('css','html','php','js'),
@@ -2042,10 +2044,10 @@ function wp_check_filetype( $filename, $mimes = null ) {
 		'rtf' => 'application/rtf',
 		'js' => 'application/javascript',
 		'pdf' => 'application/pdf',
-		'doc' => 'application/msword',
-		'pot|pps|ppt' => 'application/vnd.ms-powerpoint',
+		'doc|docx' => 'application/msword',
+		'pot|pps|ppt|pptx' => 'application/vnd.ms-powerpoint',
 		'wri' => 'application/vnd.ms-write',
-		'xla|xls|xlt|xlw' => 'application/vnd.ms-excel',
+		'xla|xls|xlsx|xlt|xlw' => 'application/vnd.ms-excel',
 		'mdb' => 'application/vnd.ms-access',
 		'mpp' => 'application/vnd.ms-project',
 		'swf' => 'application/x-shockwave-flash',
@@ -2206,9 +2208,13 @@ function wp_nonce_ays( $action ) {
  *
  * @param string $message Error message.
  * @param string $title Error title.
+ * @param string|array $args Optional arguements to control behaviour.
  */
-function wp_die( $message, $title = '' ) {
+function wp_die( $message, $title = '', $args = array() ) {
 	global $wp_locale;
+
+	$defaults = array( 'response' => 500 );
+	$r = wp_parse_args($args, $defaults);
 
 	if ( function_exists( 'is_wp_error' ) && is_wp_error( $message ) ) {
 		if ( empty( $title ) ) {
@@ -2243,7 +2249,7 @@ function wp_die( $message, $title = '' ) {
 
 	if ( !function_exists( 'did_action' ) || !did_action( 'admin_head' ) ) :
 	if( !headers_sent() ){
-		status_header( 500 );
+		status_header( $r['response'] );
 		nocache_headers();
 		header( 'Content-Type: text/html; charset=utf-8' );
 	}

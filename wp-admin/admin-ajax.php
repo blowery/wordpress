@@ -51,8 +51,8 @@ case 'ajax-tag-search' :
 	}
 	$s = trim( $s );
 	if ( strlen( $s ) < 2 )
-	 die; // require 2 chars for matching
-	$results = $wpdb->get_col( "SELECT name FROM $wpdb->terms WHERE name LIKE ('%". $s . "%')" );
+		die; // require 2 chars for matching
+	$results = $wpdb->get_col( "SELECT t.name FROM $wpdb->term_taxonomy AS tt INNER JOIN $wpdb->terms AS t ON tt.term_id = t.term_id WHERE tt.taxonomy = 'post_tag' AND t.name LIKE ('%". $s . "%')" );
 	echo join( $results, "\n" );
 	die;
 	break;
@@ -343,6 +343,7 @@ case 'add-cat' : // From Manage->Categories
 	$x = new WP_Ajax_Response( array(
 		'what' => 'cat',
 		'id' => $cat->term_id,
+		'position' => -1,
 		'data' => _cat_row( $cat, $level, $cat_full_name ),
 		'supplemental' => array('name' => $cat_full_name, 'show-link' => sprintf(__( 'Category <a href="#%s">%s</a> added' ), "cat-$cat->term_id", $cat_full_name))
 	) );
@@ -378,6 +379,7 @@ case 'add-link-cat' : // From Blogroll -> Categories
 	$x = new WP_Ajax_Response( array(
 		'what' => 'link-cat',
 		'id' => $term_id,
+		'position' => -1,
 		'data' => $link_cat
 	) );
 	$x->send();
@@ -414,10 +416,34 @@ case 'add-tag' : // From Manage->Tags
 	$x = new WP_Ajax_Response( array(
 		'what' => 'tag',
 		'id' => $tag->term_id,
+		'position' => '-1',
 		'data' => _tag_row( $tag ),
 		'supplemental' => array('name' => $tag_full_name, 'show-link' => sprintf(__( 'Tag <a href="#%s">%s</a> added' ), "tag-$tag->term_id", $tag_full_name))
 	) );
 	$x->send();
+	break;
+case 'get-tagcloud' :
+	if ( !current_user_can( 'manage_categories' ) )
+		die('-1');
+
+	$tags = get_tags( array( 'number' => 45, 'orderby' => 'count', 'order' => 'DESC' ) );
+	
+	if ( empty( $tags ) )
+		die('0');
+	
+	foreach ( $tags as $key => $tag ) {
+		$tags[ $key ]->link = '#';
+		$tags[ $key ]->id = $tag->term_id;
+	}
+
+	$return = wp_generate_tag_cloud( $tags );
+
+	if ( empty($return) )
+		die('0');
+	
+	echo $return;
+	
+	exit;
 	break;
 case 'add-comment' :
 	check_ajax_referer( $action );
@@ -491,8 +517,8 @@ case 'replyto-comment' :
 
 	if ( empty($status) )
 		die('1');
-	elseif ( in_array($status->post_status, array('draft', 'pending') ) )
-		die( __('Error: you are replying to comment on a draft post.') );
+	elseif ( in_array($status, array('draft', 'pending') ) )
+		die( __('Error: you are replying to a comment on a draft post.') );
 
 	$user = wp_get_current_user();
 	if ( $user->ID ) {

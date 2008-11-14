@@ -34,9 +34,6 @@ if ( isset($_GET['action']) && isset($_GET['linkcheck']) ) {
 	 exit;
 }
 
-wp_enqueue_script('admin-forms');
-wp_enqueue_script('links');
-
 wp_reset_vars(array('action', 'cat_id', 'linkurl', 'name', 'image', 'description', 'visible', 'target', 'category', 'link_id', 'submit', 'order_by', 'links_show_cat_id', 'rating', 'rel', 'notes', 'linkcheck[]'));
 
 if ( empty($cat_id) )
@@ -74,15 +71,8 @@ switch ($order_by) {
 		break;
 } ?>
 
-<div id="screen-options-wrap" class="hidden">
-<h5><?php _e('Show on screen') ?></h5>
-<form id="adv-settings" action="" method="get">
-<div class="metabox-prefs">
-<?php manage_columns_prefs('link') ?>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-<br class="clear" />
-</div></form>
-</div>
+<div class="wrap nosubsub">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <?php
 if ( isset($_GET['deleted']) ) {
@@ -94,11 +84,25 @@ if ( isset($_GET['deleted']) ) {
 }
 ?>
 
-<div class="wrap">
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="link-search-input"><?php _e( 'Search Links' ); ?>:</label>
+	<input type="text" class="search-input" id="link-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Links' ); ?>" class="button" />
+</p>
+</form>
+<br class="clear" />
 
-<div class="filter">
-<form id="list-filter" action="" method="get">
+<form id="posts-filter" action="" method="get">
+<div class="tablenav">
+
+<div class="alignleft actions">
+<select name="action">
+<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
+
 <?php
 $categories = get_terms('link_category', "hide_empty=1");
 $select_cat = "<select name=\"cat_id\">\n";
@@ -119,27 +123,7 @@ echo $select_order;
 
 ?>
 <input type="submit" id="post-query-submit" value="<?php _e('Filter'); ?>" class="button-secondary" />
-</form></div>
 
-<ul class="subsubsub"><li><a class="current"><br /></a></li></ul>
-<form class="search-form" action="" method="get">
-<p class="search-box">
-	<label class="hidden" for="post-search-input"><?php _e( 'Search Links' ); ?>:</label>
-	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Links' ); ?>" class="button" />
-</p>
-</form>
-<br class="clear" />
-
-<form id="posts-filter" action="" method="get">
-<div class="tablenav">
-
-<div class="alignleft">
-<select name="action">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
-<option value="delete"><?php _e('Delete'); ?></option>
-</select>
-<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
 </div>
 
 <br class="clear" />
@@ -265,7 +249,7 @@ if ( $links ) {
 
 <div class="tablenav">
 
-<div class="alignleft">
+<div class="alignleft actions">
 <select name="action2">
 <option value="" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
@@ -281,5 +265,21 @@ if ( $links ) {
 <div id="ajax-response"></div>
 
 </div>
+
+<script type="text/javascript">
+/* <![CDATA[ */
+(function($){
+	$(document).ready(function(){
+		$('#doaction, #doaction2').click(function(){
+			if ( $('select[name^="action"]').val() == 'delete' ) {
+				var m = '<?php echo js_escape(__("You are about to delete the selected links.\n  'Cancel' to stop, 'OK' to delete.")); ?>';
+				return showNotice.warn(m);
+			}
+		});
+	});
+})(jQuery);
+columns.init('link');
+/* ]]> */
+</script>
 
 <?php include('admin-footer.php'); ?>

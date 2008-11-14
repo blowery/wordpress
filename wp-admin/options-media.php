@@ -25,10 +25,6 @@ include('admin-header.php');
 <input type='hidden' name='option_page' value='media' />
 <input type="hidden" name="page_options" value="thumbnail_size_w,thumbnail_size_h,thumbnail_crop,medium_size_w,medium_size_h,image_default_size,image_default_align,image_default_link_type,large_size_w,large_size_h" /> <!-- is this needed anymore TODO -->
 
-<p class="submit submit-top">
-	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
-</p>
-
 <p><?php _e('The setting below determines where images, documents, and other media files will be linked to when inserted into the body of a post.'); ?></p>
 
 <table class="form-table">
@@ -53,16 +49,16 @@ include('admin-header.php');
 </table>
 
 <h3><?php _e('Image sizes') ?></h3>
-<p><?php _e('The sizes listed below determine the maximum dimensions to use when inserting an image into the body of a post.'); ?></p>
+<p><?php _e('The sizes listed below determine the maximum dimensions in pixels to use when inserting an image into the body of a post.'); ?></p>
 
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><?php _e('Thumbnail size') ?></th>
 <td>
 <label for="thumbnail_size_w"><?php _e('Width'); ?></label>
-<input name="thumbnail_size_w" type="text" id="thumbnail_size_w" value="<?php form_option('thumbnail_size_w'); ?>" size="6" />
+<input name="thumbnail_size_w" type="text" id="thumbnail_size_w" value="<?php form_option('thumbnail_size_w'); ?>" class="small-text" />
 <label for="thumbnail_size_h"><?php _e('Height'); ?></label>
-<input name="thumbnail_size_h" type="text" id="thumbnail_size_h" value="<?php form_option('thumbnail_size_h'); ?>" size="6" /><br />
+<input name="thumbnail_size_h" type="text" id="thumbnail_size_h" value="<?php form_option('thumbnail_size_h'); ?>" class="small-text" /><br />
 <input name="thumbnail_crop" type="checkbox" id="thumbnail_crop" value="1" <?php checked('1', get_option('thumbnail_crop')); ?>/>
 <label for="thumbnail_crop"><?php _e('Crop thumbnail to exact dimensions (normally thumbnails are proportional)'); ?></label>
 </td>
@@ -72,9 +68,9 @@ include('admin-header.php');
 <th scope="row"><?php _e('Medium size') ?></th>
 <td><fieldset><legend class="hidden"><?php _e('Medium size') ?></legend>
 <label for="medium_size_w"><?php _e('Max Width'); ?></label>
-<input name="medium_size_w" type="text" id="medium_size_w" value="<?php form_option('medium_size_w'); ?>" size="6" />
+<input name="medium_size_w" type="text" id="medium_size_w" value="<?php form_option('medium_size_w'); ?>" class="small-text" />
 <label for="medium_size_h"><?php _e('Max Height'); ?></label>
-<input name="medium_size_h" type="text" id="medium_size_h" value="<?php form_option('medium_size_h'); ?>" size="6" />
+<input name="medium_size_h" type="text" id="medium_size_h" value="<?php form_option('medium_size_h'); ?>" class="small-text" />
 </fieldset></td>
 </tr>
 
@@ -82,9 +78,9 @@ include('admin-header.php');
 <th scope="row"><?php _e('Large size') ?></th> 
 <td><fieldset><legend class="hidden"><?php _e('Large size') ?></legend> 
 <label for="large_size_w"><?php _e('Max Width'); ?></label> 
-<input name="large_size_w" type="text" id="large_size_w" value="<?php form_option('large_size_w'); ?>" size="6" /> 
+<input name="large_size_w" type="text" id="large_size_w" value="<?php form_option('large_size_w'); ?>" class="small-text" /> 
 <label for="large_size_h"><?php _e('Max Height'); ?></label> 
-<input name="large_size_h" type="text" id="large_size_h" value="<?php form_option('large_size_h'); ?>" size="6" /> 
+<input name="large_size_h" type="text" id="large_size_h" value="<?php form_option('large_size_h'); ?>" class="small-text" /> 
 </fieldset></td> 
 </tr> 
  
@@ -92,10 +88,10 @@ include('admin-header.php');
 <th scope="row"><?php _e('Default image size') ?></th> 
 <td><fieldset><legend class="hidden"><?php _e('Default image size') ?></legend> 
 <?php 
-    $size_names = array('' => 'Auto', 'thumbnail' => 'Thumbnail', 'medium' => 'Medium', 'large' => 'Large', 'full' => 'Full size'); 
+    $size_names = array('' => __('Auto'), 'thumbnail' => __('Thumbnail'), 'medium' => __('Medium'), 'large' => __('Large'), 'full' => __('Full size')); 
     foreach ($size_names as $size => $name) { ?> 
         <input type="radio" name="image_default_size" id="image_default_size_<?php echo $size; ?>" value="<?php echo $size; ?>"<?php echo (get_option('image_default_size') == $size ? ' checked="checked"' : ''); ?> />             
-        <label for="image_default_size_<?php echo $size; ?>"><?php _e($name); ?></label> 
+        <label for="image_default_size_<?php echo $size; ?>"><?php echo $name; ?></label> 
     <?php 
 	} 
 ?> 
@@ -126,7 +122,7 @@ include('admin-header.php');
 <?php do_settings_sections('media'); ?>
 
 <p class="submit">
-	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
+	<input type="submit" name="Submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
 </p>
 
 </form>

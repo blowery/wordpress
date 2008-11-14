@@ -53,6 +53,8 @@ $start = $offset = ( $page - 1 ) * $per_page;
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ) . '#themenav',
 	'format' => '',
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil($theme_total / $per_page),
 	'current' => $page
 ));
@@ -100,12 +102,12 @@ function theme_update_available( $theme ) {
 <div class="wrap">
 <h2><?php echo wp_specialchars( $title ); ?></h2> 
 
-<h2><?php _e('Current Theme'); ?></h2>
+<h3><?php _e('Current Theme'); ?></h3>
 <div id="current-theme">
 <?php if ( $ct->screenshot ) : ?>
 <img src="<?php echo WP_CONTENT_URL . $ct->stylesheet_dir . '/' . $ct->screenshot; ?>" alt="<?php _e('Current theme preview'); ?>" />
 <?php endif; ?>
-<h3><?php printf(_c('%1$s %2$s by %3$s|1: theme title, 2: theme version, 3: theme author'), $ct->title, $ct->version, $ct->author) ; ?></h3>
+<h4><?php printf(_c('%1$s %2$s by %3$s|1: theme title, 2: theme version, 3: theme author'), $ct->title, $ct->version, $ct->author) ; ?></h4>
 <p class="description"><?php echo $ct->description; ?></p>
 <?php if ($ct->parent_theme) { ?>
 	<p><?php printf(__('The template files are located in <code>%2$s</code>.  The stylesheet files are located in <code>%3$s</code>.  <strong>%4$s</strong> uses templates from <strong>%5$s</strong>.  Changes made to the templates will affect both themes.'), $ct->title, $ct->template_dir, $ct->stylesheet_dir, $ct->title, $ct->parent_theme); ?></p>
@@ -119,15 +121,16 @@ function theme_update_available( $theme ) {
 
 </div>
 
-<h2><?php _e('Available Themes'); ?></h2>
-<br class="clear" />
+<h3><?php _e('Available Themes'); ?></h3>
+<div class="clear"></div>
 
 <?php if ( $page_links ) : ?>
-<div class="tablenav">
-<?php echo "<div class='tablenav-pages'>$page_links</div>"; ?>
-<br class="clear" />
-</div>
-<br class="clear" />
+<div class="tablenav-pages"><?php $page_links_text = sprintf( '<span class="displaying-num">' . __( 'Displaying %s&#8211;%s of %s' ) . '</span>%s',
+	number_format_i18n( $start + 1 ),
+	number_format_i18n( min( $page * $per_page, $theme_total ) ),
+	number_format_i18n( $theme_total ),
+	$page_links
+); echo $page_links_text; ?></div>
 <?php endif; ?>
 
 <?php if ( 1 < $theme_total ) { ?>
@@ -197,7 +200,7 @@ foreach ( $cols as $col => $theme_name ) {
 
 <?php if ( $page_links ) : ?>
 <div class="tablenav">
-<?php echo "<div class='tablenav-pages'>$page_links</div>"; ?>
+<?php echo "<div class='tablenav-pages'>$page_links_text</div>"; ?>
 <br class="clear" />
 </div>
 <?php endif; ?>

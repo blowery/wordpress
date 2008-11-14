@@ -86,8 +86,8 @@ add_action('install_plugins_search', 'install_search', 10, 1);
  * @param string $page
  */
 function install_search($page) {
-	$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
-	$term = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+	$type = isset($_REQUEST['type']) ? stripslashes( $_REQUEST['type'] ) : '';
+	$term = isset($_REQUEST['s']) ? stripslashes( $_REQUEST['s'] ) : '';
 
 	$args = array();
 
@@ -136,7 +136,7 @@ function install_dashboard() {
 	<form method="post" enctype="multipart/form-data" action="<?php echo admin_url('plugin-install.php?tab=upload') ?>">
 		<?php wp_nonce_field( 'plugin-upload') ?>
 		<input type="file" name="pluginzip" />
-		<input type="submit" value="<?php _e('Install Now') ?>" />
+		<input type="submit" class="button" value="<?php _e('Install Now') ?>" />
 	</form>
 	
 	<h4><?php _e('Popular tags') ?></h4>
@@ -162,8 +162,8 @@ function install_dashboard() {
  * @since 2.7.0
  */
 function install_search_form(){
-	$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
-	$term = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+	$type = isset($_REQUEST['type']) ? stripslashes( $_REQUEST['type'] ) : '';
+	$term = isset($_REQUEST['s']) ? stripslashes( $_REQUEST['s'] ) : '';
 
 	?><form id="search-plugins" method="post" action="<?php echo admin_url('plugin-install.php?tab=search') ?>">
 		<select name="type" id="typeselector">
@@ -173,7 +173,6 @@ function install_search_form(){
 		</select>
 		<input type="text" name="s" id="search-field" value="<?php echo attribute_escape($term) ?>" />
 		<input type="submit" name="search" value="<?php echo attribute_escape(__('Search')) ?>" class="button" />
-		<?php echo $after_submit ?>
 	</form><?php
 }
 
@@ -250,8 +249,8 @@ function install_updated($page = 1) {
 function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 	global $tab;
 
-	$type = isset($_REQUEST['type']) ? $_REQUEST['type'] : '';
-	$term = isset($_REQUEST['s']) ? $_REQUEST['s'] : '';
+	$type = isset($_REQUEST['type']) ? stripslashes( $_REQUEST['type'] ) : '';
+	$term = isset($_REQUEST['s']) ? stripslashes( $_REQUEST['s'] ) : '';
 
 	$plugins_allowedtags = array('a' => array('href' => array(),'title' => array(), 'target' => array()),
 								'abbr' => array('title' => array()),'acronym' => array('title' => array()),
@@ -259,7 +258,7 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 
 ?>
 	<div class="tablenav">
-		<div class="alignleft">
+		<div class="alignleft actions">
 		<?php do_action('install_plugins_table_header'); ?>
 		</div>
 		<?php
@@ -272,6 +271,8 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 			$page_links = paginate_links( array(
 				'base' => add_query_arg('paged', '%#%', $url),
 				'format' => '',
+				'prev_text' => __('&laquo;'),
+				'next_text' => __('&raquo;'),
 				'total' => $totalpages,
 				'current' => $page
 			));
@@ -337,7 +338,7 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 				<td class="name"><?php echo $title; ?></td>
 				<td class="vers"><?php echo $version; ?></td>
 				<td class="vers">
-					<div class="star-holder" title="<?php printf(__ngettext('(based on %d rating)', '(based on %d ratings)', $plugin['num_ratings']), number_format_i18n($plugin['num_ratings'])) ?>">
+					<div class="star-holder" title="<?php printf(__ngettext('(based on %s rating)', '(based on %s ratings)', $plugin['num_ratings']), number_format_i18n($plugin['num_ratings'])) ?>">
 						<div class="star star-rating" style="width: <?php echo attribute_escape($plugin['rating']) ?>px"></div>
 						<div class="star star5"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('5 stars') ?>" /></div>
 						<div class="star star4"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('4 stars') ?>" /></div>
@@ -374,7 +375,7 @@ add_action('install_plugins_pre_plugin-information', 'install_plugin_information
 function install_plugin_information() {
 	global $tab;
 
-	$api = plugins_api('plugin_information', array('slug' => $_REQUEST['plugin']));
+	$api = plugins_api('plugin_information', array('slug' => stripslashes( $_REQUEST['plugin'] ) ));
 
 	if ( is_wp_error($api) )
 		wp_die($api);
@@ -389,7 +390,7 @@ function install_plugin_information() {
 	foreach ( array('version', 'author', 'requires', 'tested', 'homepage', 'downloaded', 'slug') as $key )
 		$api->$key = wp_kses($api->$key, $plugins_allowedtags);
 
-	$section = isset($_REQUEST['section']) ? $_REQUEST['section'] : 'description'; //Default to the Description tab, Do not translate, API returns English.
+	$section = isset($_REQUEST['section']) ? stripslashes( $_REQUEST['section'] ) : 'description'; //Default to the Description tab, Do not translate, API returns English.
 	if( empty($section) || ! isset($api->sections[ $section ]) )
 		$section = array_shift( $section_titles = array_keys((array)$api->sections) );
 
@@ -462,7 +463,7 @@ function install_plugin_information() {
 <?php endif; if ( ! empty($api->tested) ) : ?>
 			<li><strong><?php _e('Compatible up to:') ?></strong> <?php echo $api->tested ?></li>
 <?php endif; if ( ! empty($api->downloaded) ) : ?>
-			<li><strong><?php _e('Downloaded:') ?></strong> <?php printf('%s times', number_format_i18n($api->downloaded)) ?></li>
+			<li><strong><?php _e('Downloaded:') ?></strong> <?php printf(__ngettext('%s time', '%s times', $api->downloaded), number_format_i18n($api->downloaded)) ?></li>
 <?php endif; if ( ! empty($api->slug) ) : ?>
 			<li><a target="_blank" href="http://wordpress.org/extend/plugins/<?php echo $api->slug ?>/"><?php _e('WordPress.org Plugin Page &#187;') ?></a></li>
 <?php endif; if ( ! empty($api->homepage) ) : ?>
@@ -485,7 +486,7 @@ function install_plugin_information() {
 		if ( version_compare($GLOBALS['wp_version'], $api->tested, '>') ) 
 			echo '<div class="updated"><p>' . __('<strong>Warning:</strong> This plugin has <strong>not been tested</strong> with your current version of WordPress.') . '</p></div>';
 		else if ( version_compare($GLOBALS['wp_version'], $api->requires, '<') ) 
-			echo '<div class="updated"><p>' . __('<strong>Warning:</strong> This plugin has not been marked as being <strong>not compatible</strong> with your version of WordPress.') . '</p></div>';
+			echo '<div class="updated"><p>' . __('<strong>Warning:</strong> This plugin has not been marked as <strong>compatible</strong> with your version of WordPress.') . '</p></div>';
 		foreach ( (array)$api->sections as $section_name => $content ) {
 			$title = $section_name;
 			$title[0] = strtoupper($title[0]);
@@ -551,7 +552,7 @@ add_action('install_plugins_install', 'install_plugin');
  */
 function install_plugin() {
 
-	$plugin = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
+	$plugin = isset($_REQUEST['plugin']) ? stripslashes( $_REQUEST['plugin'] ) : '';
 
 	check_admin_referer('install-plugin_' . $plugin);
 	$api = plugins_api('plugin_information', array('slug' => $plugin, 'fields' => array('sections' => false) ) ); //Save on a bit of bandwidth.
@@ -583,10 +584,10 @@ function do_plugin_install($download_url, $plugin_information = null) {
 		return;
 	}
 
-	$plugin = isset($_REQUEST['plugin']) ? $_REQUEST['plugin'] : '';
+	$plugin = isset($_REQUEST['plugin']) ? stripslashes( $_REQUEST['plugin'] ) : '';
 
 	$url = 'plugin-install.php?tab=install';
-	$url = add_query_arg(array('plugin' => $plugin, 'plugin_name' => $_REQUEST['plugin_name'], 'download_url' => $_REQUEST['download_url']), $url);
+	$url = add_query_arg(array('plugin' => $plugin, 'plugin_name' => stripslashes( $_REQUEST['plugin_name'] ), 'download_url' => stripslashes( $_REQUEST['download_url'] ) ), $url);
 
 	$url = wp_nonce_url($url, 'install-plugin_' . $plugin);
 	if ( false === ($credentials = request_filesystem_credentials($url)) )

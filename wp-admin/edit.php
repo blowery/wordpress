@@ -15,7 +15,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 
 	switch ( $doaction ) {
 		case 'delete':
-			if ( isset($_GET['post']) &&  (isset($_GET['doaction']) || isset($_GET['doaction2'])) ) {
+			if ( isset($_GET['post']) && ! isset($_GET['bulk_edit']) && (isset($_GET['doaction']) || isset($_GET['doaction2'])) ) {
 				check_admin_referer('bulk-posts');
 				foreach( (array) $_GET['post'] as $post_id_del ) {
 					$post_del = & get_post($post_id_del);
@@ -34,7 +34,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 			}
 			break;
 		case 'edit':
-			if ( isset($_GET['post']) ) {
+			if ( isset($_GET['post']) && isset($_GET['bulk_edit']) ) {
 				check_admin_referer('bulk-posts');
 
 				if ( -1 == $_GET['_status'] ) {
@@ -69,9 +69,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 if ( empty($title) )
 	$title = __('Edit Posts');
 $parent_file = 'edit.php';
-wp_enqueue_script('admin-forms');
 wp_enqueue_script('inline-edit-post');
-wp_enqueue_script('posts');
 
 list($post_stati, $avail_post_stati) = wp_edit_posts_query();
 
@@ -90,15 +88,8 @@ if ( empty($_GET['mode']) )
 else
 	$mode = attribute_escape($_GET['mode']); ?>
 
-<div id="screen-options-wrap" class="hidden">
-<h5><?php _e('Show on screen') ?></h5>
-<form id="adv-settings" action="" method="get">
-<div class="metabox-prefs">
-<?php manage_columns_prefs('post') ?>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-<br class="clear" />
-</div></form>
-</div>
+<div class="wrap">
+<h2><?php echo wp_specialchars( $title ); ?></h2>
 
 <?php
 if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET['posted']; ?>
@@ -109,7 +100,7 @@ endif; ?>
 <?php if ( isset($_GET['locked']) || isset($_GET['skipped']) || isset($_GET['updated']) ) { ?>
 <div id="message" class="updated fade"><p>
 <?php if ( (int) $_GET['updated'] ) {
-	printf( __ngettext( '%d post updated.', '%d posts updated.', $_GET['updated'] ), number_format_i18n( $_GET['updated'] ) );
+	printf( __ngettext( '%s post updated.', '%s posts updated.', $_GET['updated'] ), number_format_i18n( $_GET['updated'] ) );
 	unset($_GET['updated']);
 }
 
@@ -117,22 +108,25 @@ if ( (int) $_GET['skipped'] )
 	unset($_GET['skipped']);
 
 if ( (int) $_GET['locked'] ) {
-	printf( __ngettext( ' %d post not updated, somebody is editing it.', ' %d posts not updated, somebody is editing them.', $_GET['locked'] ), number_format_i18n( $_GET['locked'] ) );
+	printf( __ngettext( '%s post not updated, somebody is editing it.', '%s posts not updated, somebody is editing them.', $_GET['locked'] ), number_format_i18n( $_GET['locked'] ) );
 	unset($_GET['locked']);
-} ?>
+} 
+$_SERVER['REQUEST_URI'] = remove_query_arg( array('locked', 'skipped', 'updated'), $_SERVER['REQUEST_URI'] );
+?>
 </p></div>
 <?php } ?>
 
-<div class="wrap">
-<h2><?php echo wp_specialchars( $title ); ?></h2>
-
+<form id="posts-filter" action="" method="get">
 <ul class="subsubsub">
 <?php
 if ( empty($locked_post_status) ) :
 $status_links = array();
 $num_posts = wp_count_posts( 'post', 'readable' );
+$total_posts = array_sum( (array) $num_posts );
 $class = empty( $_GET['post_status'] ) ? ' class="current"' : '';
-$status_links[] = "<li><a href='edit.php' $class>" . __('All Posts') . '</a>';
+$status_links[] = "<li><a href='edit.php' $class>" . sprintf( __ngettext( 'All <span class="count">(%s)</span>', 'All <span class="count">(%s)</span>', $total_posts ), number_format_i18n( $total_posts ) ) . '</a>';
+
+
 foreach ( $post_stati as $status => $label ) {
 	$class = '';
 
@@ -144,18 +138,48 @@ foreach ( $post_stati as $status => $label ) {
 	if ( isset($_GET['post_status']) && $status == $_GET['post_status'] )
 		$class = ' class="current"';
 
-	$status_links[] = "<li><a href='edit.php?post_status=$status' $class>" .
-	sprintf( __ngettext( $label[2][0], $label[2][1], $num_posts->$status ), number_format_i18n( $num_posts->$status ) ) . '</a>';
+	$status_links[] = "<li><a href='edit.php?post_status=$status' $class>" . sprintf( __ngettext( $label[2][0], $label[2][1], $num_posts->$status ), number_format_i18n( $num_posts->$status ) ) . '</a>';
 }
-echo implode( ' | </li>', $status_links ) . '</li>';
+echo implode( " |</li>\n", $status_links ) . '</li>';
 unset( $status_links );
 endif;
 ?>
 </ul>
 
-<div class="filter">
-<form id="list-filter" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="post-search-input"><?php _e( 'Search Posts' ); ?>:</label>
+	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php the_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Posts' ); ?>" class="button" />
+</p>
+
+<?php if ( isset($_GET['post_status'] ) ) : ?>
+<input type="hidden" name="post_status" value="<?php echo attribute_escape($_GET['post_status']) ?>" />
+<?php endif; ?>
+<input type="hidden" name="mode" value="<?php echo $mode; ?>" />
+
+<div class="tablenav">
 <?php
+$page_links = paginate_links( array(
+	'base' => add_query_arg( 'paged', '%#%' ),
+	'format' => '',
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
+	'total' => $wp_query->max_num_pages,
+	'current' => $_GET['paged']
+));
+
+?>
+
+<div class="alignleft actions">
+<select name="action">
+<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="edit"><?php _e('Edit'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
+<?php wp_nonce_field('bulk-posts'); ?>
+
+<?php // view filters
 if ( !is_singular() ) {
 $arc_query = "SELECT DISTINCT YEAR(post_date) AS yyear, MONTH(post_date) AS mmonth FROM $wpdb->posts WHERE post_type = 'post' ORDER BY post_date DESC";
 
@@ -196,47 +220,15 @@ do_action('restrict_manage_posts');
 <input type="submit" id="post-query-submit" value="<?php _e('Filter'); ?>" class="button-secondary" />
 
 <?php } ?>
-</form>
-</div>
-
-<form class="search-form" action="" method="get">
-<p class="search-box">
-	<label class="hidden" for="post-search-input"><?php _e( 'Search Posts' ); ?>:</label>
-	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php the_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Posts' ); ?>" class="button" />
-</p>
-</form>
-
-<form id="posts-filter" action="" method="get">
-
-<?php if ( isset($_GET['post_status'] ) ) : ?>
-<input type="hidden" name="post_status" value="<?php echo attribute_escape($_GET['post_status']) ?>" />
-<?php endif; ?>
-<input type="hidden" name="mode" value="<?php echo $mode; ?>" />
-
-<div class="tablenav">
-<?php
-$page_links = paginate_links( array(
-	'base' => add_query_arg( 'paged', '%#%' ),
-	'format' => '',
-	'total' => $wp_query->max_num_pages,
-	'current' => $_GET['paged']
-));
-
-?>
-
-<div class="alignleft">
-<select name="action">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
-<option value="edit"><?php _e('Edit'); ?></option>
-<option value="delete"><?php _e('Delete'); ?></option>
-</select>
-<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
-<?php wp_nonce_field('bulk-posts'); ?>
 </div>
 
 <?php if ( $page_links ) { ?>
-<div class="tablenav-pages"><?php echo $page_links; ?></div>
+<div class="tablenav-pages"><?php $page_links_text = sprintf( '<span class="displaying-num">' . __( 'Displaying %s&#8211;%s of %s' ) . '</span>%s',
+	number_format_i18n( ( $_GET['paged'] - 1 ) * $wp_query->query_vars['posts_per_page'] + 1 ),
+	number_format_i18n( min( $_GET['paged'] * $wp_query->query_vars['posts_per_page'], $wp_query->found_posts ) ),
+	number_format_i18n( $wp_query->found_posts ),
+	$page_links
+); echo $page_links_text; ?></div>
 <?php } ?>
 
 <div class="view-switch">
@@ -255,10 +247,10 @@ $page_links = paginate_links( array(
 
 <?php
 if ( $page_links )
-	echo "<div class='tablenav-pages'>$page_links</div>";
+	echo "<div class='tablenav-pages'>$page_links_text</div>";
 ?>
 
-<div class="alignleft">
+<div class="alignleft actions">
 <select name="action2">
 <option value="-1" selected="selected"><?php _e('Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
@@ -325,5 +317,21 @@ endif; // posts;
 ?>
 
 </div>
+
+<script type="text/javascript">
+/* <![CDATA[ */
+(function($){
+	$(document).ready(function(){
+		$('#doaction, #doaction2').click(function(){
+			if ( $('select[name^="action"]').val() == 'delete' ) {
+				var m = '<?php echo js_escape(__("You are about to delete the selected posts.\n  'Cancel' to stop, 'OK' to delete.")); ?>';
+				return showNotice.warn(m);
+			}
+		});
+	});
+})(jQuery);
+columns.init('post');
+/* ]]> */
+</script>
 
 <?php include('admin-footer.php'); ?>

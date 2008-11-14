@@ -386,9 +386,7 @@ function sticky_class( $post_id = null ) {
  * The formatted output of a list of pages.
  *
  * Displays page links for paginated posts (i.e. includes the <!--nextpage-->.
- * Quicktag one or more times). This works in much the same way as link_pages(),
- * the difference being that arguments are given in query string format. This
- * tag must be within The Loop.
+ * Quicktag one or more times). This tag must be within The Loop.
  *
  * The defaults for overwriting are:
  * 'next_or_number' - Default is 'number' (string). Indicates whether page
@@ -595,7 +593,8 @@ function wp_list_pages($args = '') {
 		'date_format' => get_option('date_format'),
 		'child_of' => 0, 'exclude' => '',
 		'title_li' => __('Pages'), 'echo' => 1,
-		'authors' => '', 'sort_column' => 'menu_order, post_title'
+		'authors' => '', 'sort_column' => 'menu_order, post_title',
+		'link_before' => '', 'link_after' => ''
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -643,7 +642,7 @@ function wp_list_pages($args = '') {
  * @param array|string $args
  */
 function wp_page_menu( $args = array() ) {
-	$defaults = array('sort_column' => 'post_title', 'menu_class' => 'menu', 'echo' => true);
+	$defaults = array('sort_column' => 'post_title', 'menu_class' => 'menu', 'echo' => true, 'link_before' => '', 'link_after' => '');
 	$args = wp_parse_args( $args, $defaults );
 	$args = apply_filters( 'wp_page_menu_args', $args );
 
@@ -658,7 +657,7 @@ function wp_page_menu( $args = array() ) {
 		$class = '';
 		if ( is_home() && !is_paged() )
 			$class = 'class="current_page_item"';
-		$menu .= '<li ' . $class . '><a href="' . get_option('home') . '">' . $text . '</a></li>';
+		$menu .= '<li ' . $class . '><a href="' . get_option('home') . '">' . $link_before . $text . $link_after . '</a></li>';
 	}
 
 	$list_args = $args;

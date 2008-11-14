@@ -213,7 +213,7 @@ function validate_file_to_edit( $file, $allowed_files = '' ) {
  * @param array $overrides Optional. An associative array of names=>values to override default variables with extract( $overrides, EXTR_OVERWRITE ).
  * @return array On success, returns an associative array of file attributes. On failure, returns $overrides['upload_error_handler'](&$file, $message ) or array( 'error'=>$message ).
  */
-function wp_handle_upload( &$file, $overrides = false ) {
+function wp_handle_upload( &$file, $overrides = false, $time = null ) {
 	// The default error handler.
 	if (! function_exists( 'wp_handle_upload_error' ) ) {
 		function wp_handle_upload_error( &$file, $message ) {
@@ -281,7 +281,7 @@ function wp_handle_upload( &$file, $overrides = false ) {
 	}
 
 	// A writable uploads dir will pass this test. Again, there's no point overriding this one.
-	if ( ! ( ( $uploads = wp_upload_dir() ) && false === $uploads['error'] ) )
+	if ( ! ( ( $uploads = wp_upload_dir($time) ) && false === $uploads['error'] ) )
 		return $upload_error_handler( $file, $uploads['error'] );
 
 	$filename = wp_unique_filename( $uploads['path'], $file['name'], $unique_filename_callback );
@@ -469,6 +469,9 @@ function unzip_file($file, $to) {
 	if ( ! $wp_filesystem || !is_object($wp_filesystem) )
 		return new WP_Error('fs_unavailable', __('Could not access filesystem.'));
 
+	// Unzip uses a lot of memory
+	@ini_set('memory_limit', '256M');
+
 	$fs =& $wp_filesystem;
 
 	require_once(ABSPATH . 'wp-admin/includes/class-pclzip.php');
@@ -542,8 +545,12 @@ function copy_dir($from, $to) {
 
 	foreach ( (array) $dirlist as $filename => $fileinfo ) {
 		if ( 'f' == $fileinfo['type'] ) {
-			if ( ! $wp_filesystem->copy($from . $filename, $to . $filename, true) )
-				return new WP_Error('copy_failed', __('Could not copy file'), $to . $filename);
+			if ( ! $wp_filesystem->copy($from . $filename, $to . $filename, true) ) {
+				// If copy failed, chmod file to 0644 and try again.
+				$wp_filesystem->chmod($to . $filename, 0644);
+				if ( ! $wp_filesystem->copy($from . $filename, $to . $filename, true) )
+					return new WP_Error('copy_failed', __('Could not copy file'), $to . $filename);
+			}
 			$wp_filesystem->chmod($to . $filename, 0644);
 		} elseif ( 'd' == $fileinfo['type'] ) {
 			if ( !$wp_filesystem->is_dir($to . $filename) ) {
@@ -720,8 +727,14 @@ jQuery(function($){
 </td>
 </tr>
 </table>
+<?php if ( isset( $_POST['version'] ) ) : ?>
+<input type="hidden" name="version" value="<?php echo attribute_escape($_POST['version']) ?>" />
+<?php endif; ?>
+<?php if ( isset( $_POST['locale'] ) ) : ?>
+<input type="hidden" name="locale" value="<?php echo attribute_escape($_POST['locale']) ?>" />
+<?php endif; ?>
 <p class="submit">
-<input type="submit" name="submit" value="<?php _e('Proceed'); ?>" />
+<input id="upgrade" name="upgrade" type="submit" class="button" value="<?php _e('Proceed'); ?>" />
 </p>
 </div>
 </form>

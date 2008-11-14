@@ -34,18 +34,18 @@ function redirect_page($page_ID) {
 	} elseif ( 'post' == $_POST['originalaction'] && !empty($_POST['mode']) && 'sidebar' == $_POST['mode'] ) {
 		$location = 'sidebar.php?a=b';
 	} elseif ( isset($_POST['save']) && ( empty($referredby) || $referredby == $referer || 'redo' != $referredby ) ) {
-		if ( $_POST['_wp_original_http_referer'] && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/page.php') === false && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/page-new.php') === false )
+		if ( isset($_POST['_wp_original_http_referer']) && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/page.php') === false && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/page-new.php') === false )
 			$location = add_query_arg( array(
 				'_wp_original_http_referer' => urlencode( stripslashes( $_POST['_wp_original_http_referer'] ) ),
 				'message' => 1
 			), get_edit_post_link( $page_ID, 'url' ) );
 		else
 			$location = add_query_arg( 'message', 4, get_edit_post_link( $page_ID, 'url' ) );
-	} elseif ($_POST['addmeta']) {
+	} elseif ( isset($_POST['addmeta']) ) {
 		$location = add_query_arg( 'message', 2, wp_get_referer() );
 		$location = explode('#', $location);
 		$location = $location[0] . '#postcustom';
-	} elseif ($_POST['deletemeta']) {
+	} elseif ( isset($_POST['deletemeta']) ) {
 		$location = add_query_arg( 'message', 3, wp_get_referer() );
 		$location = explode('#', $location);
 		$location = $location[0] . '#postcustom';
@@ -67,9 +67,10 @@ function redirect_page($page_ID) {
 	wp_redirect($location);
 }
 
-if (isset($_POST['deletepost'])) {
-$action = "delete";
-}
+if (isset($_POST['deletepost']))
+	$action = "delete";
+elseif ( isset($_POST['wp-preview']) && 'dopreview' == $_POST['wp-preview'] )
+	$action = 'preview';
 
 switch($action) {
 case 'post':
@@ -113,8 +114,6 @@ case 'edit':
 			wp_enqueue_script('autosave');
 		}
 	}
-
-	require_once('admin-header.php');
 
 	if ( !current_user_can('edit_page', $page_ID) )
 		die ( __('You are not allowed to edit this page.') );
@@ -165,10 +164,19 @@ case 'delete':
 	}
 
 	$sendback = wp_get_referer();
-	if (strpos($sendback, 'page.php') !== false) $sendback = admin_url('page.php');
+	if (strpos($sendback, 'page.php') !== false) $sendback = admin_url('page-new.php');
 	elseif (strpos($sendback, 'attachments.php') !== false) $sendback = admin_url('attachments.php');
 	$sendback = preg_replace('|[^a-z0-9-~+_.?#=&;,/:]|i', '', $sendback);
 	wp_redirect($sendback);
+	exit();
+	break;
+
+case 'preview':
+	check_admin_referer( 'autosave', 'autosavenonce' );
+
+	$url = post_preview();
+
+	wp_redirect($url);
 	exit();
 	break;
 

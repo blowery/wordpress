@@ -22,12 +22,12 @@ $parent_file = 'options-general.php';
 wp_reset_vars(array('action'));
 
 $whitelist_options = array(
-	'general' => array('blogname', 'blogdescription', 'admin_email', 'users_can_register', 'gmt_offset', 'date_format', 'time_format', 'start_of_week', 'comment_registration', 'default_role' ),
-	'discussion' => array( 'default_pingback_flag', 'default_ping_status', 'default_comment_status', 'comments_notify', 'moderation_notify', 'comment_moderation', 'require_name_email', 'comment_whitelist', 'comment_max_links', 'moderation_keys', 'blacklist_keys', 'show_avatars', 'avatar_rating', 'avatar_default', 'close_comments_for_old_posts', 'close_comments_days_old', 'thread_comments', 'thread_comments_depth', 'page_comments', 'comments_per_page', 'default_comments_page', 'comment_order' ),
+	'general' => array( 'blogname', 'blogdescription', 'admin_email', 'users_can_register', 'gmt_offset', 'date_format', 'time_format', 'start_of_week', 'default_role' ),
+	'discussion' => array( 'default_pingback_flag', 'default_ping_status', 'default_comment_status', 'comments_notify', 'moderation_notify', 'comment_moderation', 'require_name_email', 'comment_whitelist', 'comment_max_links', 'moderation_keys', 'blacklist_keys', 'show_avatars', 'avatar_rating', 'avatar_default', 'close_comments_for_old_posts', 'close_comments_days_old', 'thread_comments', 'thread_comments_depth', 'page_comments', 'comments_per_page', 'default_comments_page', 'comment_order', 'comment_registration' ),
 	'misc' => array( 'hack_file', 'use_linksupdate', 'uploads_use_yearmonth_folders', 'upload_path' ),
 	'media' => array( 'thumbnail_size_w', 'thumbnail_size_h', 'thumbnail_crop', 'medium_size_w', 'medium_size_h', 'large_size_w', 'large_size_h', 'image_default_size', 'image_default_align', 'image_default_link_type' ),
 	'privacy' => array( 'blog_public' ),
-	'reading' => array( 'posts_per_page', 'posts_per_rss', 'rss_use_excerpt', 'blog_charset', 'gzipcompression', 'show_on_front', 'page_on_front', 'page_for_posts' ),
+	'reading' => array( 'posts_per_page', 'posts_per_rss', 'rss_use_excerpt', 'blog_charset', 'show_on_front', 'page_on_front', 'page_for_posts' ),
 	'writing' => array( 'default_post_edit_rows', 'use_smilies', 'ping_sites', 'mailserver_url', 'mailserver_port', 'mailserver_login', 'mailserver_pass', 'default_category', 'default_email_category', 'use_balanceTags', 'default_link_category', 'enable_app', 'enable_xmlrpc' ),
 	'options' => array( '' ) );
 if ( !defined( 'WP_SITEURL' ) ) $whitelist_options['general'][] = 'siteurl';
@@ -70,7 +70,9 @@ case 'update':
 	if ( $options ) {
 		foreach ( $options as $option ) {
 			$option = trim($option);
-			$value = $_POST[$option];
+			$value = null;
+			if ( isset($_POST[$option]) )
+				$value = $_POST[$option];
 			if ( !is_array($value) ) $value = trim($value);
 			$value = stripslashes_deep($value);
 			update_option($option, $value);
@@ -91,7 +93,7 @@ default:
   <input type="hidden" name="action" value="update" />
   <input type='hidden' name='option_page' value='options' />
 <p class="submit submit-top">
-	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" class="button" />
+	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" class="button-primary" />
 </p>
   <table class="form-table">
 <?php
@@ -122,7 +124,7 @@ foreach ( (array) $options as $option) :
 <td>";
 
 	if (strpos($value, "\n") !== false) echo "<textarea class='$class' name='$option->option_name' id='$option->option_name' cols='30' rows='5'>" . wp_specialchars($value) . "</textarea>";
-	else echo "<input class='$class' type='text' name='$option->option_name' id='$option->option_name' size='30' value='" . attribute_escape($value) . "'$disabled />";
+	else echo "<input class='regular-text $class' type='text' name='$option->option_name' id='$option->option_name' value='" . attribute_escape($value) . "'$disabled />";
 
 	echo "</td>
 </tr>";
@@ -130,7 +132,7 @@ endforeach;
 ?>
   </table>
 <?php $options_to_update = implode(',', $options_to_update); ?>
-<p class="submit"><input type="hidden" name="page_options" value="<?php echo $options_to_update; ?>" /><input type="submit" name="Update" value="<?php _e('Save Changes') ?>" /></p>
+<p class="submit"><input type="hidden" name="page_options" value="<?php echo $options_to_update; ?>" /><input type="submit" name="Update" value="<?php _e('Save Changes') ?>" class="button-primary" /></p>
   </form>
 </div>
 

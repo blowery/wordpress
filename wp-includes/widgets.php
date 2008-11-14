@@ -1387,7 +1387,7 @@ function wp_widget_recent_comments($args) {
 		$number = 15;
 
 	if ( !$comments = wp_cache_get( 'recent_comments', 'widget' ) ) {
-		$comments = $wpdb->get_results("SELECT comment_author, comment_author_url, comment_ID, comment_post_ID FROM $wpdb->comments WHERE comment_approved = '1' ORDER BY comment_date_gmt DESC LIMIT $number");
+		$comments = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE comment_approved = '1' ORDER BY comment_date_gmt DESC LIMIT $number");
 		wp_cache_add( 'recent_comments', $comments, 'widget' );
 	}
 ?>
@@ -1396,7 +1396,7 @@ function wp_widget_recent_comments($args) {
 			<?php echo $before_title . $title . $after_title; ?>
 			<ul id="recentcomments"><?php
 			if ( $comments ) : foreach ( (array) $comments as $comment) :
-			echo  '<li class="recentcomments">' . sprintf(__('%1$s on %2$s'), get_comment_author_link(), '<a href="'. get_permalink($comment->comment_post_ID) . '#comment-' . $comment->comment_ID . '">' . get_the_title($comment->comment_post_ID) . '</a>') . '</li>';
+			echo  '<li class="recentcomments">' . sprintf(__('%1$s on %2$s'), get_comment_author_link(), '<a href="'. get_comment_link($comment->comment_ID) . '">' . get_the_title($comment->comment_post_ID) . '</a>') . '</li>';
 			endforeach; endif;?></ul>
 		<?php echo $after_widget; ?>
 <?php
@@ -1551,6 +1551,8 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 		return;
 	}
 
+	$default_args = array( 'show_author' => 0, 'show_date' => 0, 'show_summary' => 0 );
+	$args = wp_parse_args( $args, $default_args );
 	extract( $args, EXTR_SKIP );
 
 	$items = (int) $items;
@@ -1705,9 +1707,12 @@ function wp_widget_rss_control($widget_args) {
  * @param array $inputs Override default display options.
  */
 function wp_widget_rss_form( $args, $inputs = null ) {
+
 	$default_inputs = array( 'url' => true, 'title' => true, 'items' => true, 'show_summary' => true, 'show_author' => true, 'show_date' => true );
 	$inputs = wp_parse_args( $inputs, $default_inputs );
 	extract( $args );
+	extract( $inputs, EXTR_SKIP);
+
 	$number = attribute_escape( $number );
 	$title  = attribute_escape( $title );
 	$url    = attribute_escape( $url );

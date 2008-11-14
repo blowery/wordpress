@@ -173,7 +173,11 @@ win.send_to_editor('<?php echo addslashes($html); ?>');
  */
 function media_handle_upload($file_id, $post_id, $post_data = array()) {
 	$overrides = array('test_form'=>false);
-	$file = wp_handle_upload($_FILES[$file_id], $overrides);
+	
+	$post = get_post($post_id);
+	$time = $post->post_date_gmt;
+
+	$file = wp_handle_upload($_FILES[$file_id], $overrides, $time);
 
 	if ( isset($file['error']) )
 		return new WP_Error( 'upload_error', $file['error'] );
@@ -320,15 +324,15 @@ if ( is_string($content_func) )
 function media_buttons() {
 	global $post_ID, $temp_ID;
 	$uploading_iframe_ID = (int) (0 == $post_ID ? $temp_ID : $post_ID);
-	$context = apply_filters('media_buttons_context', __('Add media: %s'));
+	$context = apply_filters('media_buttons_context', __('Upload %s'));
 	$media_upload_iframe_src = "media-upload.php?post_id=$uploading_iframe_ID";
-	$media_title = __('Add Media');
+	$media_title = __('Upload Media');
 	$image_upload_iframe_src = apply_filters('image_upload_iframe_src', "$media_upload_iframe_src&amp;type=image");
-	$image_title = __('Add an Image');
+	$image_title = __('Upload an Image');
 	$video_upload_iframe_src = apply_filters('video_upload_iframe_src', "$media_upload_iframe_src&amp;type=video");
-	$video_title = __('Add Video');
+	$video_title = __('Upload Video');
 	$audio_upload_iframe_src = apply_filters('audio_upload_iframe_src', "$media_upload_iframe_src&amp;type=audio");
-	$audio_title = __('Add Audio');
+	$audio_title = __('Upload Audio');
 	$out = <<<EOF
 
 	<a href="{$image_upload_iframe_src}&amp;TB_iframe=true" id="add_image" class="thickbox" title='$image_title'><img src='images/media-button-image.gif' alt='$image_title' /></a>
@@ -773,13 +777,11 @@ function image_link_input_fields($post, $url_type='') {
 	elseif ( $url_type == 'post' )
 		$url = $link;
 	
-	return "<input type='text' name='attachments[$post->ID][url]' value='" . attribute_escape($url) . "' /><br />
-				<button type='button' class='button url-$post->ID' title=''>" . __('None') . "</button>
-				<button type='button' class='button url-$post->ID' title='" . attribute_escape($file) . "'>" . __('File URL') . "</button>
-				<button type='button' class='button url-$post->ID' title='" . attribute_escape($link) . "'>" . __('Post URL') . "</button>
-				<script type='text/javascript'>
-				jQuery('button.url-$post->ID').bind('click', function(){jQuery(this).siblings('input').val(jQuery(this).attr('title'));});
-				</script>\n";
+	return "<input type='text' class='urlfield' name='attachments[$post->ID][url]' value='" . attribute_escape($url) . "' /><br />
+				<button type='button' class='button urlnone' title=''>" . __('None') . "</button>
+				<button type='button' class='button urlfile' title='" . attribute_escape($file) . "'>" . __('File URL') . "</button>
+				<button type='button' class='button urlpost' title='" . attribute_escape($link) . "'>" . __('Post URL') . "</button>
+";
 }
 
 /**
@@ -1218,10 +1220,16 @@ function media_upload_form( $errors = null ) {
 <?php if ( $flash ) : ?>
 <script type="text/javascript">
 <!--
-jQuery(function($){
+SWFUpload.onload = function() {
 	swfu = new SWFUpload({
+			button_text: '<span class="button"><?php _e('Upload'); ?></span>',
+			button_text_style: '.button { text-align: center; font-weight: bold; font-family:"Lucida Grande","Lucida Sans Unicode",Tahoma,Verdana,sans-serif; }',
+			button_height: "24",
+			button_width: "132",
+			button_image_url: '<?php echo includes_url('images/upload.png'); ?>',
+			button_placeholder_id: "flash-browse-button",
 			upload_url : "<?php echo attribute_escape( $flash_action_url ); ?>",
-			flash_url : "<?php echo includes_url('js/swfupload/swfupload_f9.swf'); ?>",
+			flash_url : "<?php echo includes_url('js/swfupload/swfupload.swf'); ?>",
 			file_post_name: "async-upload",
 			file_types: "<?php echo apply_filters('upload_file_glob', '*.*'); ?>",
 			post_params : {
@@ -1233,8 +1241,6 @@ jQuery(function($){
 				"short" : "1"
 			},
 			file_size_limit : "<?php echo wp_max_upload_size(); ?>b",
-			swfupload_element_id : "flash-upload-ui", // id of the element displayed when swfupload is available
-			degraded_element_id : "html-upload-ui",   // when swfupload is unavailable
 			file_dialog_start_handler : fileDialogStart,
 			file_queued_handler : fileQueued,
 			upload_start_handler : uploadStart,
@@ -1244,17 +1250,22 @@ jQuery(function($){
 			upload_complete_handler : uploadComplete,
 			file_queue_error_handler : fileQueueError,
 			file_dialog_complete_handler : fileDialogComplete,
-
+			swfupload_pre_load_handler: swfuploadPreLoad,
+			swfupload_load_failed_handler: swfuploadLoadFailed,
+			custom_settings : { 
+				degraded_element_id : "html-upload-ui", // id of the element displayed when swfupload is unavailable
+				swfupload_element_id : "flash-upload-ui" // id of the element displayed when swfupload is available
+			},
 			debug: false
 		});
-	$("#flash-browse-button").bind( "click", function(){swfu.selectFiles();});
-});
+};
 //-->
 </script>
 
 <div id="flash-upload-ui">
 <?php do_action('pre-flash-upload-ui'); ?>
-	<p><input id="flash-browse-button" type="button" value="<?php echo attribute_escape( __( 'Choose files to upload' ) ); ?>" class="button" /></p>
+	
+	<div><?php _e( 'Choose files to upload' ); ?> <div id="flash-browse-button"></div></div>
 <?php do_action('post-flash-upload-ui'); ?>
 	<p class="howto"><?php _e('After a file has been uploaded, you can add titles and descriptions.'); ?></p>
 </div>
@@ -1263,7 +1274,7 @@ jQuery(function($){
 
 <div id="html-upload-ui">
 <?php do_action('pre-html-upload-ui'); ?>
-	<p>
+	<p id="async-upload-wrap">
 	<input type="file" name="async-upload" id="async-upload" /> <input type="submit" class="button" name="html-upload" value="<?php echo attribute_escape(__('Upload')); ?>" /> <a href="#" onclick="return top.tb_remove();"><?php _e('Cancel'); ?></a>
 	</p>
 
@@ -1543,6 +1554,8 @@ unset($type_links);
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil($wp_query->found_posts / 10),
 	'current' => $_GET['paged']
 ));
@@ -1551,7 +1564,7 @@ if ( $page_links )
 	echo "<div class='tablenav-pages'>$page_links</div>";
 ?>
 
-<div class="alignleft">
+<div class="alignleft actions">
 <?php
 
 $arc_query = "SELECT DISTINCT YEAR(post_date) AS yyear, MONTH(post_date) AS mmonth FROM $wpdb->posts WHERE post_type = 'attachment' ORDER BY post_date DESC";
@@ -1668,13 +1681,13 @@ function type_form_image() {
 		<tr class="align">
 			<th valign="top" scope="row" class="label"><p><label for="align">' . __('Alignment') . '</label></p></th>
 			<td class="field">
-				<input name="align" id="align-none" value="alignnone" onclick="addExtImage.align=this.value" type="radio"' . ($default_align == 'none' ? ' checked="checked"' : '').' />
+				<input name="align" id="align-none" value="none" onclick="addExtImage.align=\'align\'+this.value" type="radio"' . ($default_align == 'none' ? ' checked="checked"' : '').' />
 				<label for="align-none" class="align image-align-none-label">' . __('None') . '</label>
-				<input name="align" id="align-left" value="alignleft" onclick="addExtImage.align=this.value" type="radio"' . ($default_align == 'left' ? ' checked="checked"' : '').' />
+				<input name="align" id="align-left" value="left" onclick="addExtImage.align=\'align\'+this.value" type="radio"' . ($default_align == 'left' ? ' checked="checked"' : '').' />
 				<label for="align-left" class="align image-align-left-label">' . __('Left') . '</label>
-				<input name="align" id="align-center" value="aligncenter" onclick="addExtImage.align=this.value" type="radio"' . ($default_align == 'center' ? ' checked="checked"' : '').' />
+				<input name="align" id="align-center" value="center" onclick="addExtImage.align=\'align\'+this.value" type="radio"' . ($default_align == 'center' ? ' checked="checked"' : '').' />
 				<label for="align-center" class="align image-align-center-label">' . __('Center') . '</label>
-				<input name="align" id="align-right" value="alignright" onclick="addExtImage.align=this.value" type="radio"' . ($default_align == 'right' ? ' checked="checked"' : '').' />
+				<input name="align" id="align-right" value="right" onclick="addExtImage.align=\'align\'+this.value" type="radio"' . ($default_align == 'right' ? ' checked="checked"' : '').' />
 				<label for="align-right" class="align image-align-right-label">' . __('Right') . '</label>
 			</td>
 		</tr>
@@ -1834,8 +1847,6 @@ function media_upload_flash_bypass() {
 	printf( __('You are using the Flash uploader.  Problems?  Try the <a href="%s">Browser uploader</a> instead.'), clean_url(add_query_arg('flash', 0)) );
 	echo '</p>';
 }
-
-add_action('post-flash-upload-ui', 'media_upload_flash_bypass');
 
 /**
  * {@internal Missing Short Description}}

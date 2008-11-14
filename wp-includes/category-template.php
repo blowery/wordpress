@@ -62,8 +62,10 @@ function get_category_link( $category_id ) {
 			return $category;
 		$category_nicename = $category->slug;
 
-		if ( $parent = $category->parent )
-			$category_nicename = get_category_parents( $parent, false, '/', true ) . $category_nicename;
+		if ( $category->parent == $category_id ) // recursive recursion
+			$category->parent = 0;
+		elseif ($category->parent != 0 )
+			$category_nicename = get_category_parents( $category->parent, false, '/', true ) . $category_nicename;
 
 		$catlink = str_replace( '%category%', $category_nicename, $catlink );
 		$catlink = get_option( 'home' ) . user_trailingslashit( $catlink, 'category' );
@@ -551,7 +553,7 @@ function wp_tag_cloud( $args = '' ) {
 	$defaults = array(
 		'smallest' => 8, 'largest' => 22, 'unit' => 'pt', 'number' => 45,
 		'format' => 'flat', 'orderby' => 'name', 'order' => 'ASC',
-		'exclude' => '', 'include' => ''
+		'exclude' => '', 'include' => '', 'link' => 'view'
 	);
 	$args = wp_parse_args( $args, $defaults );
 
@@ -561,7 +563,10 @@ function wp_tag_cloud( $args = '' ) {
 		return;
 
 	foreach ( $tags as $key => $tag ) {
-		$link = get_tag_link( $tag->term_id );
+		if ( 'edit' == $args['link'] )
+			$link = get_edit_tag_link( $tag->term_id );
+		else
+			$link = get_tag_link( $tag->term_id );
 		if ( is_wp_error( $link ) )
 			return false;
 
@@ -658,7 +663,7 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 
 	foreach ( $tags as $key => $tag ) {
 		$count = $counts[ $key ];
-		$tag_link = clean_url( $tag->link );
+		$tag_link = '#' != $tag->link ? clean_url( $tag->link ) : '#';
 		$tag_id = isset($tags[ $key ]->id) ? $tags[ $key ]->id : $key;
 		$tag_name = $tags[ $key ]->name;
 		$a[] = "<a href='$tag_link' class='tag-link-$tag_id' title='" . attribute_escape( sprintf( __ngettext( $single_text, $multiple_text, $count ), $count ) ) . "'$rel style='font-size: " .

@@ -7,14 +7,14 @@
  */
 ?>
 
-<br class="clear" /></div><!-- wpbody-content -->
+<div class="clear" /></div></div><!-- wpbody-content -->
 </div><!-- wpbody -->
-<br class="clear" /></div><!-- wpcontent -->
+<div class="clear" /></div></div><!-- wpcontent -->
 </div><!-- wpwrap -->
 
 <div id="footer">
 <p><?php
-do_action('in_admin_footer', '');
+do_action( 'in_admin_footer' );
 $upgrade = apply_filters( 'update_footer', '' );
 echo '<span id="footer-thankyou">' . __('Thank you for creating with <a href="http://wordpress.org/">WordPress</a>.').'</span> | '.__('<a href="http://codex.wordpress.org/">Documentation</a>').' | '.__('<a href="http://wordpress.org/support/forum/4">Feedback</a>').' <span id="footer-upgrade">'.$upgrade . '</span>';
 ?>

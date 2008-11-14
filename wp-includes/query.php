@@ -1691,7 +1691,7 @@ class WP_Query {
 				$q['name'] = $q['pagename'];
 				$where .= " AND ($wpdb->posts.ID = '$reqpage')";
 				$reqpage_obj = get_page($reqpage);
-				if ( 'attachment' == $reqpage_obj->post_type ) {
+				if ( is_object($reqpage_obj) && 'attachment' == $reqpage_obj->post_type ) {
 					$this->is_attachment = true;
 					$this->is_page = true;
 					$q['attachment_id'] = $reqpage;
@@ -2294,6 +2294,9 @@ class WP_Query {
 					}
 				}
 			}
+
+			if ( $this->is_preview && current_user_can( "edit_{$post_type}", $this->posts[0]->ID ) )
+				$this->posts[0] = apply_filters('the_preview', $this->posts[0]);
 		}
 
 		// Put sticky posts at the top of the posts array

@@ -39,7 +39,7 @@ function redirect_post($post_ID = '') {
 		elseif ( isset($_POST['publish']) )
 			$location = 'sidebar.php?a=b';
 	} elseif ( ( isset($_POST['save']) || isset($_POST['publish']) ) && ( empty($referredby) || $referredby == $referer || 'redo' != $referredby ) ) {
-		if ( $_POST['_wp_original_http_referer'] && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/post.php') === false && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/post-new.php') === false )
+		if ( isset($_POST['_wp_original_http_referer']) && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/post.php') === false && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/post-new.php') === false )
 			$location = add_query_arg( array(
 				'_wp_original_http_referer' => urlencode( stripslashes( $_POST['_wp_original_http_referer'] ) ),
 				'message' => 1
@@ -80,6 +80,8 @@ function redirect_post($post_ID = '') {
 
 if ( isset( $_POST['deletepost'] ) )
 	$action = 'delete';
+elseif ( isset($_POST['wp-preview']) && 'dopreview' == $_POST['wp-preview'] )
+	$action = 'preview';
 
 switch($action) {
 case 'postajaxpost':
@@ -154,9 +156,7 @@ case 'edit':
 		}
 	}
 
-	$title = sprintf(__('Edit "%s"'), wp_html_excerpt(_draft_or_post_title($post->ID), 50));
-
-	require_once('admin-header.php');
+	$title = __('Edit Post');
 
 	if ( !current_user_can('edit_post', $post_ID) )
 		die ( __('You are not allowed to edit this post.') );
@@ -215,6 +215,15 @@ case 'delete':
 	elseif (strpos($sendback, 'attachments.php') !== false) $sendback = admin_url('attachments.php');
 	$sendback = preg_replace('|[^a-z0-9-~+_.?#=&;,/:]|i', '', $sendback);
 	wp_redirect($sendback);
+	exit();
+	break;
+
+case 'preview':
+	check_admin_referer( 'autosave', 'autosavenonce' );
+
+	$url = post_preview();
+
+	wp_redirect($url);
 	exit();
 	break;
 
