@@ -62,6 +62,10 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 	$redirect = $original;
 	$redirect_url = false;
 
+	// Notice fixing
+	if ( !isset($redirect['path']) )  $redirect['path'] = '';
+	if ( !isset($redirect['query']) ) $redirect['query'] = '';
+
 	if ( is_singular() && 1 > $wp_query->post_count && ($id = get_query_var('p')) ) {
 
 		$vars = $wpdb->get_results( $wpdb->prepare("SELECT post_type, post_parent FROM $wpdb->posts WHERE ID = %d", $id) );
@@ -83,8 +87,10 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 		if ( is_single() && !empty($_GET['p']) && ! $redirect_url ) {
 			if ( $redirect_url = get_permalink(get_query_var('p')) )
 				$redirect['query'] = remove_query_arg('p', $redirect['query']);
-		} elseif ( is_single() && ! $redirect_url ) {
-			$redirect_url = get_permalink( url_to_postid( $requested_url ) );
+			if ( get_query_var( 'page' ) ) {
+				$redirect_url = trailingslashit( $redirect_url ) . user_trailingslashit( get_query_var( 'page' ), 'single_paged' );
+				$redirect['query'] = remove_query_arg( 'page', $redirect['query'] );
+			}
 		} elseif ( is_page() && !empty($_GET['page_id']) && ! $redirect_url ) {
 			if ( $redirect_url = get_permalink(get_query_var('page_id')) )
 				$redirect['query'] = remove_query_arg('page_id', $redirect['query']);
@@ -118,7 +124,7 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 				$redirect['query'] = remove_query_arg('cat', $redirect['query']);
 		} elseif ( is_author() && !empty($_GET['author']) ) {
 			$author = get_userdata(get_query_var('author'));
-			if ( false !== $author && $redirect_url = get_author_link(false, $author->ID, $author->user_nicename) )
+			if ( false !== $author && $redirect_url = get_author_posts_url($author->ID, $author->user_nicename) )
 				$redirect['query'] = remove_query_arg('author', $redirect['author']);
 		}
 
@@ -161,7 +167,7 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 	}
 
 	// tack on any additional query vars
-	if ( $redirect_url && $redirect['query'] ) {
+	if ( $redirect_url && !empty($redirect['query']) ) {
 		if ( strpos($redirect_url, '?') !== false )
 			$redirect_url .= '&';
 		else
@@ -192,11 +198,14 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 	$redirect['path'] = preg_replace( '#(%20| )+$#', '', $redirect['path'] );
 
 	if ( !empty( $redirect['query'] ) ) {
-		// Remove trailing slashes from certain terminating query string args
+		// Remove trailing spaces from certain terminating query string args
 		$redirect['query'] = preg_replace( '#((p|page_id|cat|tag)=[^&]*?)(%20| )+$#', '$1', $redirect['query'] );
 
 		// Clean up empty query strings
-		$redirect['query'] = preg_replace( '#&?(p|page_id|cat|tag)=?$#', '', $redirect['query'] );
+		$redirect['query'] = trim(preg_replace( '#(^|&)(p|page_id|cat|tag)=?(&|$)#', '&', $redirect['query']), '&');
+
+		// Remove redundant leading ampersands
+		$redirect['query'] = preg_replace( '#^\??&+#', '', $redirect['query'] );
 	}
 
 	// strip /index.php/ when we're not using PATHINFO permalinks
@@ -227,7 +236,9 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 		$redirect['path'] = trailingslashit($redirect['path']);
 
 	// Ignore differences in host capitalization, as this can lead to infinite redirects
-	if ( strtolower($original['host']) == strtolower($redirect['host']) )
+	// Only redirect no-www <=> yes-www
+	if ( strtolower($original['host']) == strtolower($redirect['host']) ||
+		( strtolower($original['host']) != 'www.' . strtolower($redirect['host']) && 'www.' . strtolower($original['host']) != strtolower($redirect['host']) ) )
 		$redirect['host'] = $original['host'];
 
 	$compare_original = array($original['host'], $original['path']);
@@ -249,20 +260,20 @@ function redirect_canonical($requested_url=null, $do_redirect=true) {
 	if ( $compare_original !== $compare_redirect ) {
 		$redirect_url = $redirect['scheme'] . '://' . $redirect['host'];
 		if ( !empty($redirect['port']) )
-		 	$redirect_url .= ':' . $redirect['port'];
+			$redirect_url .= ':' . $redirect['port'];
 		$redirect_url .= $redirect['path'];
 		if ( !empty($redirect['query']) )
 			$redirect_url .= '?' . $redirect['query'];
 	}
 
 	if ( !$redirect_url || $redirect_url == $requested_url )
-	 	return false;
+		return false;
 
 	// Note that you can use the "redirect_canonical" filter to cancel a canonical redirect for whatever reason by returning FALSE
 	$redirect_url = apply_filters('redirect_canonical', $redirect_url, $requested_url);
 
 	if ( !$redirect_url || $redirect_url == $requested_url ) // yes, again -- in case the filter aborted the request
-	 	return false;
+		return false;
 
 	if ( $do_redirect ) {
 		// protect against chained redirects

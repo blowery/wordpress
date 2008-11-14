@@ -59,9 +59,8 @@ if( !empty($action) ) {
 				wp_die($valid);
 			error_reporting( E_ALL ^ E_NOTICE );
 			@ini_set('display_errors', true); //Ensure that Fatal errors are displayed.
-			$result = activate_plugin($plugin, false); 
-			if ( is_wp_error( $result ) ) 
-				wp_die($result);
+			include(WP_PLUGIN_DIR . '/' . $plugin);
+			do_action('activate_' . $plugin);
 			exit;
 			break;
 		case 'deactivate':
@@ -119,14 +118,12 @@ if( !empty($action) ) {
 					}
 				?>
 				<p><?php _e('Deleting the selected plugins will remove the following plugin(s) and their files:'); ?></p>
-				<p>
 					<ul>
 						<?php
 						foreach ( $plugin_info as $plugin )
 							echo '<li>', sprintf(__('%s by %s'), $plugin['Name'], $plugin['Author']), '</li>';
 						?>
 					</ul>
-				</p>
 				<p><?php _e('Are you sure you wish to delete these files?') ?></p>
 				<form method="post" action="<?php echo clean_url($_SERVER['REQUEST_URI']); ?>" style="display:inline;">
 					<input type="hidden" name="verify-delete" value="1" />
@@ -166,7 +163,6 @@ if( !empty($action) ) {
 	}
 }
 
-wp_enqueue_script('admin-forms');
 wp_enqueue_script('plugin-install');
 add_thickbox();
 
@@ -312,6 +308,34 @@ function print_plugins_table($plugins, $context = '') {
 </table>
 <?php
 } //End print_plugins_table()
+
+/**
+ * @ignore
+ *
+ * @param string $context
+ */
+function print_plugin_actions($context) {
+?>
+	<div class="alignleft actions">
+		<select name="action">
+			<option value="" selected="selected"><?php _e('Actions'); ?></option>
+	<?php if( 'active' != $context ) : ?>
+			<option value="activate-selected"><?php _e('Activate'); ?></option>
+	<?php endif; ?>
+	<?php if ( 'active' == $context ) : ?>
+			<option value="deactivate-selected"><?php _e('Deactivate'); ?></option>
+	<?php endif; ?>
+	<?php if( current_user_can('delete_plugins') && ( 'recent' == $context || 'inactive' == $context ) ) : ?>
+			<option value="delete-selected"><?php _e('Delete'); ?></option>
+	<?php endif; ?>
+		</select>
+		<input type="submit" name="doaction_active" value="<?php _e('Apply'); ?>" class="button-secondary action" />
+	<?php if( 'recent' == $context ) : ?>
+		<input type="submit" name="clear-recent-list" value="<?php _e('Clear List') ?>" class="button-secondary" />
+	<?php endif; ?>
+	</div>	
+<?php
+}
 ?>
 
 <?php if ( ! empty($active_plugins) ) : ?>
@@ -320,13 +344,7 @@ function print_plugins_table($plugins, $context = '') {
 <?php wp_nonce_field('bulk-manage-plugins') ?>
 
 <div class="tablenav">
-	<div class="alignleft">
-		<select name="action">
-			<option value="" selected="selected"><?php _e('Actions'); ?></option>
-			<option value="deactivate-selected"><?php _e('Deactivate'); ?></option>
-		</select>
-		<input type="submit" name="doaction_active" value="<?php _e('Apply'); ?>" class="button-secondary action" />
-	</div>
+<?php print_plugin_actions('active') ?>
 </div>
 <div class="clear"></div>
 <?php print_plugins_table($active_plugins, 'active') ?>
@@ -342,17 +360,7 @@ function print_plugins_table($plugins, $context = '') {
 <?php wp_nonce_field('bulk-manage-plugins') ?>
 
 <div class="tablenav">
-	<div class="alignleft">
-		<select name="action">
-			<option value="" selected="selected"><?php _e('Actions'); ?></option>
-			<option value="activate-selected"><?php _e('Activate'); ?></option>
-<?php if( current_user_can('delete_plugins') ) : ?>
-			<option value="delete-selected"><?php _e('Delete'); ?></option>
-<?php endif; ?>
-		</select>
-		<input type="submit" value="<?php _e('Apply'); ?>" name="doaction_recent" class="button-secondary action" />
-		<input type="submit" name="clear-recent-list" value="<?php _e('Clear List') ?>" class="button-secondary" />
-	</div>
+<?php print_plugin_actions('recent') ?>
 </div>
 <div class="clear"></div>
 <?php print_plugins_table($recent_plugins, 'recent') ?>
@@ -365,12 +373,7 @@ function print_plugins_table($plugins, $context = '') {
 <?php wp_nonce_field('bulk-manage-plugins') ?>
 
 <div class="tablenav">
-	<div class="alignleft">
-		<input type="submit" name="activate-selected" value="<?php _e('Activate') ?>" class="button-secondary" />
-<?php if( current_user_can('delete_plugins') ) : ?>
-		<input type="submit" name="delete-selected" value="<?php _e('Delete') ?>" class="button-secondary" />
-<?php endif; ?>
-	</div>
+<?php print_plugin_actions('inactive') ?>
 </div>
 <div class="clear"></div>
 <?php print_plugins_table($inactive_plugins, 'inactive') ?>

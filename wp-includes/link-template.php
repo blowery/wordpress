@@ -559,6 +559,48 @@ function get_tag_feed_link($tag_id, $feed = '') {
 }
 
 /**
+ * Retrieve edit tag link.
+ *
+ * @since 2.7.0
+ *
+ * @param int $tag_id Tag ID
+ * @return string
+ */
+function get_edit_tag_link( $tag_id = 0 ) {
+	$tag = get_term($tag_id, 'post_tag');
+
+	if ( !current_user_can('manage_categories') )
+		return;
+
+	$location = admin_url('edit-tags.php?action=edit&amp;tag_ID=') . $tag->term_id;
+	return apply_filters( 'get_edit_tag_link', $location );
+}
+
+/**
+ * Display or retrieve edit tag link with formatting.
+ *
+ * @since 2.7.0
+ *
+ * @param string $link Optional. Anchor text.
+ * @param string $before Optional. Display before edit link.
+ * @param string $after Optional. Display after edit link.
+ * @param int|object $tag Tag object or ID
+ * @return string|null HTML content, if $echo is set to false.
+ */
+function edit_tag_link( $link = '', $before = '', $after = '', $tag = null ) {
+	$tag = get_term($tag, 'post_tag');
+
+	if ( !current_user_can('manage_categories') )
+		return;
+
+	if ( empty($link) )
+		$link = __('Edit This');
+
+	$link = '<a href="' . get_edit_tag_link( $tag->term_id ) . '" title="' . __( 'Edit tag' ) . '">' . $link . '</a>';
+	echo $before . apply_filters( 'edit_tag_link', $link, $tag->term_id ) . $after;
+}
+
+/**
  * Retrieve the permalink for the feed of the search results.
  *
  * @since 2.5.0
@@ -680,7 +722,7 @@ function edit_post_link( $link = 'Edit This', $before = '', $after = '' ) {
 			return;
 	}
 
-	$link = '<a href="' . get_edit_post_link( $post->ID ) . '" title="' . __( 'Edit post' ) . '">' . $link . '</a>';
+	$link = '<a href="' . get_edit_post_link( $post->ID ) . '" title="' . attribute_escape( __( 'Edit post' ) ) . '">' . $link . '</a>';
 	echo $before . apply_filters( 'edit_post_link', $link, $post->ID ) . $after;
 }
 
@@ -716,10 +758,9 @@ function get_edit_comment_link( $comment_id = 0 ) {
  * @param string $link Optional. Anchor text.
  * @param string $before Optional. Display before edit link.
  * @param string $after Optional. Display after edit link.
- * @param bool $echo Optional, defaults to true. Whether to echo or return HTML.
  * @return string|null HTML content, if $echo is set to false.
  */
-function edit_comment_link( $link = 'Edit This', $before = '', $after = '', $echo = true ) {
+function edit_comment_link( $link = 'Edit This', $before = '', $after = '' ) {
 	global $comment, $post;
 
 	if ( $post->post_type == 'attachment' ) {
@@ -732,11 +773,7 @@ function edit_comment_link( $link = 'Edit This', $before = '', $after = '', $ech
 	}
 
 	$link = '<a href="' . get_edit_comment_link( $comment->comment_ID ) . '" title="' . __( 'Edit comment' ) . '">' . $link . '</a>';
-	$link = $before . apply_filters( 'edit_comment_link', $link, $comment->comment_ID ) . $after;
-	if ( $echo )
-		echo $link;
-	else
-		return $link;
+	echo $before . apply_filters( 'edit_comment_link', $link, $comment->comment_ID ) . $after;
 }
 
 /**
@@ -1017,38 +1054,60 @@ function get_next_posts_page_link($max_page = 0) {
 }
 
 /**
- * Display the next posts pages link.
+ * Display or return the next posts pages link.
  *
  * @since 0.71
  *
  * @param int $max_page Optional. Max pages.
+ * @param boolean $echo Optional. Echo or return;
  */
-function next_posts($max_page = 0) {
-	echo clean_url(get_next_posts_page_link($max_page));
+function next_posts( $max_page = 0, $echo = true ) {
+	$output = clean_url( get_next_posts_page_link( $max_page ) );
+
+	if ( $echo )
+		echo $output;
+	else
+		return $output;
+}
+
+/**
+ * Return the next posts pages link.
+ *
+ * @since 2.7.0
+ *
+ * @param string $label Content for link text.
+ * @param int $max_page Optional. Max pages.
+ * @return string|null
+ */
+function get_next_posts_link( $label = 'Next Page &raquo;', $max_page = 0 ) {
+	global $paged, $wp_query;
+
+	if ( !$max_page ) {
+		$max_page = $wp_query->max_num_pages;
+	}
+
+	if ( !$paged )
+		$paged = 1;
+
+	$nextpage = intval($paged) + 1;
+
+	if ( !is_single() && ( empty($paged) || $nextpage <= $max_page) ) {
+		$attr = apply_filters( 'next_posts_link_attributes', '' );
+		return '<a href="' . next_posts( $max_page, false ) . "\" $attr>". preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
+	}
 }
 
 /**
  * Display the next posts pages link.
  *
  * @since 0.71
+ * @uses get_next_posts_link()
  *
  * @param string $label Content for link text.
  * @param int $max_page Optional. Max pages.
  */
-function next_posts_link($label='Next Page &raquo;', $max_page=0) {
-	global $paged, $wp_query;
-	if ( !$max_page ) {
-		$max_page = $wp_query->max_num_pages;
-	}
-	if ( !$paged )
-		$paged = 1;
-	$nextpage = intval($paged) + 1;
-	if ( (! is_single()) && (empty($paged) || $nextpage <= $max_page) ) {
-		echo '<a href="';
-		next_posts($max_page);
-		$attr = apply_filters( 'next_posts_link_attributes', '' );
-		echo "\" $attr>". preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
-	}
+function next_posts_link( $label = 'Next Page &raquo;', $max_page = 0 ) {
+	echo get_next_posts_link( $label, $max_page );
 }
 
 /**
@@ -1074,29 +1133,48 @@ function get_previous_posts_page_link() {
 }
 
 /**
- * Display previous posts pages link.
+ * Display or return the previous posts pages link.
  *
  * @since 0.71
+ *
+ * @param boolean $echo Optional. Echo or return;
  */
-function previous_posts() {
-	echo clean_url(get_previous_posts_page_link());
+function previous_posts( $echo = true ) {
+	$output = clean_url( get_previous_posts_page_link() );
+
+	if ( $echo )
+		echo $output;
+	else
+		return $output;
 }
 
 /**
- * Display previous posts page link.
+ * Return the previous posts pages link.
+ *
+ * @since 2.7.0
+ *
+ * @param string $label Optional. Previous page link text.
+ * @return string|null
+ */
+function get_previous_posts_link( $label = '&laquo; Previous Page' ) {
+	global $paged;
+
+	if ( !is_single() && $paged > 1 ) {
+		$attr = apply_filters( 'previous_posts_link_attributes', '' );
+		return '<a href="' . previous_posts( false ) . "\" $attr>". preg_replace( '/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label ) .'</a>';
+	}
+}
+
+/**
+ * Display the previous posts page link.
  *
  * @since 0.71
+ * @uses get_previous_posts_link()
  *
  * @param string $label Optional. Previous page link text.
  */
-function previous_posts_link($label='&laquo; Previous Page') {
-	global $paged;
-	if ( (!is_single())	&& ($paged > 1) ) {
-		echo '<a href="';
-		previous_posts();
-		$attr = apply_filters( 'previous_posts_link_attributes', '' );
-		echo "\" $attr>". preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
-	}
+function previous_posts_link( $label = '&laquo; Previous Page' ) {
+	echo get_previous_posts_link( $label );
 }
 
 /**
@@ -1108,7 +1186,7 @@ function previous_posts_link($label='&laquo; Previous Page') {
  * @param string $prelabel Optional. Label for previous pages.
  * @param string $nxtlabel Optional Label for next pages.
  */
-function posts_nav_link($sep=' &#8212; ', $prelabel='&laquo; Previous Page', $nxtlabel='Next Page &raquo;') {
+function posts_nav_link( $sep = ' &#8212; ', $prelabel = '&laquo; Previous Page', $nxtlabel = 'Next Page &raquo;' ) {
 	global $wp_query;
 	if ( !is_singular() ) {
 		$max_num_pages = $wp_query->max_num_pages;

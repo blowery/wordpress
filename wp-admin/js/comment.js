@@ -1,8 +1,8 @@
 jQuery(document).ready( function($) {
-	postboxes.add_postbox_toggles('comment');
+//	postboxes.add_postbox_toggles('comment');
 
 	// close postboxes that should be closed
-	jQuery('.if-js-closed').removeClass('if-js-closed').addClass('closed');
+//	jQuery('.if-js-closed').removeClass('if-js-closed').addClass('closed');
 
 	// show things that should be visible, hide what should be hidden
 	jQuery('.hide-if-no-js').show();
@@ -35,11 +35,12 @@ jQuery(document).ready( function($) {
 		$('#timestampdiv').slideUp("normal");
 		$('.edit-timestamp').show();
 		$('#timestamp').html(
+			commentL10n.submittedOn + ' <b>' +
 			$( '#mm option[value=' + $('#mm').val() + ']' ).text() + ' ' +
 			$('#jj').val() + ', ' +
 			$('#aa').val() + ' @ ' +
 			$('#hh').val() + ':' +
-			$('#mn').val() + ' '
+			$('#mn').val() + '</b> '
 		);
 
 		return false;

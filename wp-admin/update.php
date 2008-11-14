@@ -1,6 +1,6 @@
 <?php
 /**
- * Update Plugin / Core administration panel.
+ * Update Plugin/Theme administration panel.
  *
  * @package WordPress
  * @subpackage Administration
@@ -122,91 +122,6 @@ function do_theme_upgrade($theme) {
 	echo '</div>';
 }
 
-/**
- * Display upgrade WordPress for downloading latest or upgrading automatically form.
- *
- * @since 2.7
- *
- * @return null
- */
-function core_upgrade_preamble() {
-	$update = get_option('update_core');
-
-	echo '<div class="wrap">';
-	echo '<h2>' . __('Upgrade WordPress') . '</h2>';
-
-	if ( !isset($update->response) || 'latest' == $update->response ) {
-		_e('You have the latest version of WordPress. You do not need to upgrade.');
-		echo '</div>';
-		return;
-	}
-
-	echo '<p>';
-	_e('A new version of WordPress is available for upgrade.  Before upgrading, please <a href="http://codex.wordpress.org/WordPress_Backups">backup your database and files</a>.');  
-	echo '</p>';
-
-	if ( 'development' == $update->response ) {
-		$message = __('You are using a development version of WordPress.  You can upgrade to the latest nightly build automatically or download the nightly build and install it manually. Which would you like to do?');
-		$submit = __('Download nightly build');
-	} else {
-		$message = 	sprintf(__('You can upgrade to version %s automatically or download the package and install it manually. Which would you like to do?'), $update->current);
-		$submit = sprintf(__('Download %s'), $update->current);
-	}
-
-	echo '<p>';
-	echo $message;
-	echo '</p>';
-	echo '<form id="post" method="post" action="update.php?action=do-core-upgrade" name="upgrade">';
-	wp_nonce_field('upgrade-core');
-	echo '<p>';
-	echo '<input id="upgrade" class="button" type="submit" value="' . __('Upgrade Automatically') . '" name="upgrade" />';
-	echo '<a href="' . $update->package . '" class="button">' . $submit . '</a>';
-	echo '</p>';
-	echo '</form>';
-
-	echo '</div>';
-}
-
-/**
- * Upgrade WordPress core display.
- *
- * @since 2.7
- *
- * @return null
- */
-function do_core_upgrade() {
-	global $wp_filesystem;
-
-	$url = wp_nonce_url('update.php?action=do-core-upgrade', 'upgrade-core');
-	if ( false === ($credentials = request_filesystem_credentials($url)) )
-		return;
-
-	if ( ! WP_Filesystem($credentials) ) {
-		request_filesystem_credentials($url, '', true); //Failed to connect, Error and request again
-		return;
-	}
-
-	echo '<div class="wrap">';
-	echo '<h2>' . __('Upgrade WordPress') . '</h2>';
-	if ( $wp_filesystem->errors->get_error_code() ) {
-		foreach ( $wp_filesystem->errors->get_error_messages() as $message )
-			show_message($message);
-		echo '</div>';
-		return;
-	}
-
-	$result = wp_update_core('show_message');
-
-	if ( is_wp_error($result) ) {
-		show_message($result);
-		if ('up_to_date' != $result->get_error_code() )
-			show_message( __('Installation Failed') );
-	} else {
-		show_message( __('WordPress upgraded successfully') );
-	}
-	echo '</div>';
-}
-
 if ( isset($_GET['action']) ) {
 	$plugin = isset($_GET['plugin']) ? trim($_GET['plugin']) : '';
 	$theme = isset($_REQUEST['theme']) ? urldecode($_REQUEST['theme']) : '';
@@ -238,19 +153,6 @@ if ( isset($_GET['action']) ) {
 			include(WP_PLUGIN_DIR . '/' . $plugin);
 		}
 		iframe_footer();
-	} elseif ( 'upgrade-core' == $action ) {
-		$title = __('Upgrade WordPress');
-		$parent_file = 'index.php';
-		require_once('admin-header.php');
-		core_upgrade_preamble();
-		include('admin-footer.php');
-	} elseif ( 'do-core-upgrade' == $action ) {
-		check_admin_referer('upgrade-core');
-		$title = __('Upgrade WordPress');
-		$parent_file = 'index.php';
-		require_once('admin-header.php');
-		do_core_upgrade();
-		include('admin-footer.php');
 	} elseif ( 'upgrade-theme' == $action ) {	
 		check_admin_referer('upgrade-theme_' . $theme);
 		$title = __('Upgrade Theme');

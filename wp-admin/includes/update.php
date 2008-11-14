@@ -8,11 +8,84 @@
 
 // The admin side of our 1.1 update system
 
+/**
+ * Selects the first update version from the update_core option
+ *
+ * @return object the response from the API
+ */
+function get_preferred_from_update_core() {
+	$updates = get_core_updates();
+	if ( !is_array( $updates ) )
+		return false;
+	if ( empty( $updates ) )
+		return (object)array('response' => 'latest');
+	return $updates[0];
+}
+
+/**
+ * Get available core updates
+ *
+ * @param array $options Set $options['dismissed'] to true to show dismissed upgrades too,
+ * 	set $options['available'] to false to skip not-dimissed updates.
+ * @return array Array of the update objects
+ */
+function get_core_updates( $options = array() ) {
+	$options = array_merge( array('available' => true, 'dismissed' => false ), $options );
+	$dismissed = get_option( 'dismissed_update_core' );
+	if ( !is_array( $dismissed ) ) $dismissed = array();
+	$from_api = get_option( 'update_core' );
+	if ( empty($from_api) )
+		return false;
+	if ( !is_array( $from_api->updates ) ) return false;
+	$updates = $from_api->updates;
+	if ( !is_array( $updates ) ) return false;
+	$result = array();
+	foreach($updates as $update) {
+		if ( array_key_exists( $update->current.'|'.$update->locale, $dismissed ) ) {
+			if ( $options['dismissed'] ) {
+				$update->dismissed = true;
+				$result[]= $update;
+			}
+		} else {
+			if ( $options['available'] ) {
+				$update->dismissed = false;
+				$result[]= $update;
+			}
+		}
+	}
+	return $result;
+}
+
+function dismiss_core_update( $update ) {
+	$dismissed = get_option( 'dismissed_update_core' );
+	$dismissed[ $update->current.'|'.$update->locale ] = true;
+	return update_option( 'dismissed_update_core', $dismissed );
+}
+
+function undismiss_core_update( $version, $locale ) {
+	$dismissed = get_option( 'dismissed_update_core' );
+	$key = $version.'|'.$locale;
+	if ( !isset( $dismissed[$key] ) ) return false;
+	unset( $dismissed[$key] );
+	return update_option( 'dismissed_update_core', $dismissed );
+}
+
+function find_core_update( $version, $locale ) {
+	$from_api = get_option( 'update_core' );
+	if ( !is_array( $from_api->updates ) ) return false;
+	$updates = $from_api->updates;
+	foreach($updates as $update) {
+		if ( $update->current == $version && $update->locale == $locale )
+			return $update;
+	}
+	return false;
+}
+
 function core_update_footer( $msg = '' ) {
 	if ( !current_user_can('manage_options') )
 		return sprintf( '| '.__( 'Version %s' ), $GLOBALS['wp_version'] );
 
-	$cur = get_option( 'update_core' );
+	$cur = get_preferred_from_update_core();
 	if ( ! isset( $cur->current ) )
 		$cur->current = '';
 
@@ -21,12 +94,12 @@ function core_update_footer( $msg = '' ) {
 
 	switch ( $cur->response ) {
 	case 'development' :
-		return sprintf( __( 'You are using a development version (%1$s). Cool! Please <a href="%2$s">stay updated</a>.' ), $GLOBALS['wp_version'], 'update.php?action=upgrade-core');
+		return sprintf( __( 'You are using a development version (%1$s). Cool! Please <a href="%2$s">stay updated</a>.' ), $GLOBALS['wp_version'], 'update-core.php');
 	break;
 
 	case 'upgrade' :
 		if ( current_user_can('manage_options') ) {
-			return sprintf( '<strong>'.__( '<a href="%1$s">Get Version %2$s</a>' ).'</strong>', wp_nonce_url('update.php?action=upgrade-core', 'upgrade-core'), $cur->current);
+			return sprintf( '<strong>'.__( '<a href="%1$s">Get Version %2$s</a>' ).'</strong>', 'update-core.php', $cur->current);
 			break;
 		}
 
@@ -39,27 +112,32 @@ function core_update_footer( $msg = '' ) {
 add_filter( 'update_footer', 'core_update_footer' );
 
 function update_nag() {
-	$cur = get_option( 'update_core' );
+	global $pagenow;
+
+	if ( 'update-core.php' == $pagenow )
+		return;
+
+	$cur = get_preferred_from_update_core();
 
 	if ( ! isset( $cur->response ) || $cur->response != 'upgrade' )
 		return false;
 
 	if ( current_user_can('manage_options') )
-		$msg = sprintf( __('WordPress %1$s is available! <a href="%2$s">Please update now</a>.'), $cur->current, 'update.php?action=upgrade-core' );
+		$msg = sprintf( __('WordPress %1$s is available! <a href="%2$s">Please update now</a>.'), $cur->current, 'update-core.php' );
 	else
 		$msg = sprintf( __('WordPress %1$s is available! Please notify the site administrator.'), $cur->current );
 
 	echo "<div id='update-nag'>$msg</div>";
 }
-//add_action( 'admin_notices', 'update_nag', 3 ); // crazyhorse
+add_action( 'admin_notices', 'update_nag', 3 );
 
 // Called directly from dashboard
 function update_right_now_message() {
-	$cur = get_option( 'update_core' );
+	$cur = get_preferred_from_update_core();
 
-	$msg = sprintf( __('This is WordPress version %s.'), $GLOBALS['wp_version'] );
+	$msg = sprintf( __('You are using <span class="b">WordPress %s</span>.'), $GLOBALS['wp_version'] );
 	if ( isset( $cur->response ) && $cur->response == 'upgrade' && current_user_can('manage_options') )
-		$msg .= " <a href='update.php?action=upgrade-core' class='rbutton'>" . sprintf( __('Update to %s'), $cur->current ? $cur->current : __( 'Latest' ) ) . '</a>';
+		$msg .= " <a href='update-core.php' class='button'>" . sprintf( __('Update to %s'), $cur->current ? $cur->current : __( 'Latest' ) ) . '</a>';
 
 	echo "<span id='wp-version-message'>$msg</span>";
 }
@@ -320,7 +398,7 @@ function wp_update_theme($theme, $feedback = '') {
 }
 
 
-function wp_update_core($feedback = '') {
+function wp_update_core($current, $feedback = '') {
 	global $wp_filesystem;
 
 	@set_time_limit( 300 );
@@ -329,7 +407,6 @@ function wp_update_core($feedback = '') {
 		add_filter('update_feedback', $feedback);
 
 	// Is an update available?
-	$current = get_option( 'update_core' );
 	if ( !isset( $current->response ) || $current->response == 'latest' )
 		return new WP_Error('up_to_date', __('WordPress is at the latest version.'));
 
@@ -394,5 +471,19 @@ function wp_update_core($feedback = '') {
 
 	return update_core($working_dir, $wp_dir);
 }
+
+function maintenance_nag() {
+	global $upgrading;
+	if ( ! isset( $upgrading ) )
+		return false;
+
+	if ( current_user_can('manage_options') )
+		$msg = sprintf( __('An automated WordPress update has failed to complete - <a href="%s">please attempt the update again now</a>.'), 'update-core.php' );
+	else
+		$msg = __('An automated WordPress update has failed to complete! Please notify the site administrator.');
+
+	echo "<div id='update-nag'>$msg</div>";
+}
+add_action( 'admin_notices', 'maintenance_nag' );
 
 ?>

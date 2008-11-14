@@ -16,7 +16,7 @@ if (!current_user_can('upload_files'))
 	wp_die(__('You do not have permission to upload files.'));
 
 wp_enqueue_script('swfupload');
-wp_enqueue_script('swfupload-degrade');
+wp_enqueue_script('swfupload-swfobject');
 wp_enqueue_script('swfupload-queue');
 wp_enqueue_script('swfupload-handlers');
 
@@ -71,7 +71,6 @@ if ( isset($_GET['inline']) ) {
 		updateMediaForm();
 		post_id = 0;
 		shortform = 1;
-		$('body:last div:has(embed), body:last div:has(object)').css({'visibility':'hidden','marginTop':'-1px'});
 	});
 	</script>
 	<input type="hidden" name="post_id" id="post_id" value="0" />

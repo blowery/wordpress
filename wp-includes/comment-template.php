@@ -80,6 +80,7 @@ function comment_author_email() {
  *
  * @since 0.71
  * @uses apply_filters() Calls 'comment_email' hook for the display of the comment author's email
+ * @uses get_comment_author_email_link() For generating the link
  * @global object $comment The current Comment row object
  *
  * @param string $linktext The text to display instead of the comment author's email address
@@ -87,13 +88,38 @@ function comment_author_email() {
  * @param string $after The text or HTML to display after the email link.
  */
 function comment_author_email_link($linktext='', $before='', $after='') {
+	if ( $link = get_comment_author_email_link( $linktext, $before, $after ) )
+		echo $link;
+}
+
+/**
+ * Return the html email link to the author of the current comment.
+ *
+ * Care should be taken to protect the email address and assure that email
+ * harvesters do not capture your commentors' email address. Most assume that
+ * their email address will not appear in raw form on the blog. Doing so will
+ * enable anyone, including those that people don't want to get the email
+ * address and use it for their own means good and bad.
+ *
+ * @since 2.7
+ * @uses apply_filters() Calls 'comment_email' hook for the display of the comment author's email
+ * @global object $comment The current Comment row object
+ *
+ * @param string $linktext The text to display instead of the comment author's email address
+ * @param string $before The text or HTML to display before the email link.
+ * @param string $after The text or HTML to display after the email link.
+ */
+function get_comment_author_email_link($linktext='', $before='', $after='') {
 	global $comment;
 	$email = apply_filters('comment_email', $comment->comment_author_email);
 	if ((!empty($email)) && ($email != '@')) {
 	$display = ($linktext != '') ? $linktext : $email;
-		echo $before;
-		echo "<a href='mailto:$email'>$display</a>";
-		echo $after;
+		$return  = $before;
+		$return .= "<a href='mailto:$email'>$display</a>";
+	 	$return .= $after;
+		return $return;
+	} else {
+		return '';
 	}
 }
 
@@ -226,6 +252,7 @@ function comment_author_url_link( $linktext = '', $before = '', $after = '' ) {
  * @param string|array $class One or more classes to add to the class list
  * @param int $comment_id An optional comment ID
  * @param int $post_id An optional post ID
+ * @param bool $echo Whether comment_class should echo or return
  */
 function comment_class( $class = '', $comment_id = null, $post_id = null, $echo = true ) {
 	// Separates classes with a single space, collates classes for comment DIV
@@ -254,7 +281,7 @@ function get_comment_class( $class = '', $comment_id = null, $post_id = null ) {
 	$classes = array();
 
 	// Get the comment type (comment, trackback),
-	$classes[] = $comment->comment_type;
+	$classes[] = ( empty( $comment->comment_type ) ) ? 'comment' : $comment->comment_type;
 
 	// If the comment author has an id (registered), then print the log in name
 	if ( $comment->user_id > 0 && $user = get_userdata($comment->user_id) ) {
@@ -402,17 +429,30 @@ function comment_ID() {
 }
 
 /**
- * Retrieve the link to the current comment.
+ * Retrieve the link to a given comment.
  *
  * @since 1.5.0
  * @uses $comment
  *
  * @param object|string|int $comment Comment to retrieve.
+ * @param string|int $page The comment's page if known. Optional. Avoids extra database query.
  * @return string The permalink to the current comment
  */
-function get_comment_link($comment = null) {
+function get_comment_link( $comment = null, $page = null ) {
+	global $wp_rewrite;
+
 	$comment = get_comment($comment);
-	return get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment->comment_ID;
+
+	if ( get_option('page_comments') ) {
+		$page = ( null !== $page ) ? (int) $page : get_page_of_comment( $comment->comment_ID );
+
+		if ( $wp_rewrite->using_permalinks() )
+			return user_trailingslashit( trailingslashit( get_permalink( $comment->comment_post_ID ) ) . "comment-page-$page", 'comment' ) . '#comment-' . $comment->comment_ID;
+		else
+			return add_query_arg( 'cpage', $page, get_permalink( $comment->comment_post_ID ) ) . '#comment-' . $comment->comment_ID;
+	} else {
+		return get_permalink( $comment->comment_post_ID ) . '#comment-' . $comment->comment_ID;
+	}
 }
 
 /**
@@ -698,8 +738,13 @@ function pings_open( $post_id = NULL ) {
  */
 function wp_comment_form_unfiltered_html_nonce() {
 	global $post;
+
+	$post_id = 0;
+	if ( !empty($post) )
+		$post_id = $post->ID;
+
 	if ( current_user_can('unfiltered_html') )
-		wp_nonce_field('unfiltered-html-comment_' . $post->ID, '_wp_unfiltered_html_comment', false);
+		wp_nonce_field('unfiltered-html-comment_' . $post_id, '_wp_unfiltered_html_comment', false);
 }
 
 /**
@@ -892,7 +937,7 @@ function comments_popup_link( $zero = 'No Comments', $one = '1 Comment', $more =
  * @param int $post Optional. Post that the comment is going to be displayed on.
  * @return string|bool|null Link to show comment form, if successful. False, if comments are closed.
  */
-function comment_reply_link($args = array(), $comment = null, $post = null) {
+function get_comment_reply_link($args = array(), $comment = null, $post = null) {
 	global $user_ID;
 
 	$defaults = array('add_below' => 'comment', 'respond_id' => 'respond', 'reply_text' => __('Reply'),
@@ -916,9 +961,40 @@ function comment_reply_link($args = array(), $comment = null, $post = null) {
 	if ( get_option('comment_registration') && !$user_ID )
 		$link = '<a rel="nofollow" href="' . site_url('wp-login.php?redirect_to=' . get_permalink()) . '">' . $login_text . '</a>';
 	else 
-		$link = "<a rel='nofollow' href='" . wp_specialchars( add_query_arg( 'replytocom', $comment->comment_ID ) ) . "#respond' onclick='return addComment.moveForm(\"$add_below-$comment->comment_ID\", \"$comment->comment_ID\", \"$respond_id\")'>$reply_text</a>";
+		$link = "<a rel='nofollow' href='" . wp_specialchars( add_query_arg( 'replytocom', $comment->comment_ID ) ) . "#" . $respond_id . "' onclick='return addComment.moveForm(\"$add_below-$comment->comment_ID\", \"$comment->comment_ID\", \"$respond_id\")'>$reply_text</a>";
 
-	return $before . $link . $after;
+	return apply_filters('comment_reply_link', $before . $link . $after, $args, $comment, $post);
+}
+
+/**
+ * Displays the HTML content for reply to comment link.
+ *
+ * @since 2.7.0
+ * @see get_comment_reply_link() Echoes result
+ *
+ * @param array $args Optional. Override default options.
+ * @param int $comment Optional. Comment being replied to.
+ * @param int $post Optional. Post that the comment is going to be displayed on.
+ * @return string|bool|null Link to show comment form, if successful. False, if comments are closed.
+ */
+function comment_reply_link($args = array(), $comment = null, $post = null) {
+	echo get_comment_reply_link($args, $comment, $post);
+}
+
+/**
+ * Retrieve HTML content for cancel comment reply link.
+ *
+ * @since 2.7.0
+ * 
+ * @param string $text Optional. Text to display for cancel reply link.
+ */
+function get_cancel_comment_reply_link($text = '') {
+	if ( empty($text) )
+		$text = __('Click here to cancel reply.');
+	
+	$style = isset($_GET['replytocom']) ? '' : ' style="display:none;"';
+	$link = wp_specialchars( remove_query_arg('replytocom') ) . '#respond';
+	return apply_filters('cancel_comment_reply_link', '<a rel="nofollow" id="cancel-comment-reply-link" href="' . $link . '"' . $style . '>' . $text . '</a>', $link, $text);
 }
 
 /**
@@ -929,12 +1005,7 @@ function comment_reply_link($args = array(), $comment = null, $post = null) {
  * @param string $text Optional. Text to display for cancel reply link.
  */
 function cancel_comment_reply_link($text = '') {
-	if ( empty($text) )
-		$text = __('Click here to cancel reply.');
-	
-	$style = isset($_GET['replytocom']) ? '' : ' style="display:none;"';
-
-	echo '<a rel="nofollow" id="cancel-comment-reply-link" href="' . wp_specialchars( remove_query_arg('replytocom') ) . '#respond"' . $style . '>' . $text . '</a>';
+	echo get_cancel_comment_reply_link($text);
 }
 
 /**
@@ -1085,16 +1156,16 @@ class Walker_Comment extends Walker {
 		<br />
 <?php endif; ?>
 
-		<div class="comment-meta commentmetadata"><a href="#comment-<?php comment_ID() ?>" title=""><?php printf(__('%1$s at %2$s'), get_comment_date('F jS, Y'),  get_comment_time()) ?></a><?php edit_comment_link('edit','&nbsp;&nbsp;','') ?></div>
+		<div class="comment-meta commentmetadata"><a href="<?php echo htmlspecialchars( get_comment_link( $comment->comment_ID, $page ) ) ?>"><?php printf(__('%1$s at %2$s'), get_comment_date('F jS, Y'),  get_comment_time()) ?></a><?php edit_comment_link('edit','&nbsp;&nbsp;','') ?></div>
 
-		<?php echo apply_filters('comment_text', get_comment_text()) ?>
+		<?php comment_text() ?>
 
 		<div class="reply">
-		<?php echo comment_reply_link(array_merge( $args, array('add_below' => $add_below, 'depth' => $depth, 'max_depth' => $args['depth']))) ?>
+		<?php comment_reply_link(array_merge( $args, array('add_below' => $add_below, 'depth' => $depth, 'max_depth' => $args['max_depth']))) ?>
+		</div>
 		<?php if ( 'ul' == $args['style'] ) : ?>
 		</div>
 		<?php endif; ?>
-		</div>
 <?php
 	}
 
@@ -1137,10 +1208,37 @@ function wp_list_comments($args = array(), $comments = null ) {
 	$comment_alt = $comment_thread_alt = 0;
 	$comment_depth = 1;
 
-	$defaults = array('walker' => null, 'depth' => '', 'style' => 'ul', 'callback' => null, 'end-callback' => null, 'type' => 'all',
-		'page' => '', 'per_page' => '', 'avatar_size' => 32, 'reverse_top_level' => '', 'reverse_children' => '');
+	$defaults = array('walker' => null, 'max_depth' => '', 'style' => 'ul', 'callback' => null, 'end-callback' => null, 'type' => 'all',
+		'page' => '', 'per_page' => '', 'avatar_size' => 32, 'reverse_top_level' => null, 'reverse_children' => '');
 
 	$r = wp_parse_args( $args, $defaults );
+
+	// Figure out what comments we'll be looping through ($_comments)
+	if ( null !== $comments ) {
+		$comments = (array) $comments;
+		if ( empty($comments) )
+			return;
+		if ( 'all' != $r['type'] ) {
+			$comments_by_type = &separate_comments($comments);
+			if ( empty($comments_by_type[$r['type']]) )
+				return;
+			$_comments = $comments_by_type[$r['type']];
+		} else {
+			$_comments = $comments;
+		}
+	} else {
+		if ( empty($wp_query->comments) )
+			return;
+		if ( 'all' != $r['type'] ) {
+			if ( empty($wp_query->comments_by_type) )
+				$wp_query->comments_by_type = &separate_comments($wp_query->comments);
+			if ( empty($wp_query->comments_by_type[$r['type']]) )
+				return;
+			$_comments = $wp_query->comments_by_type[$r['type']];
+		} else {
+			$_comments = $wp_query->comments;
+		}
+	}
 
 	if ( '' === $r['per_page'] && get_option('page_comments') )
 		$r['per_page'] = get_query_var('comments_per_page');
@@ -1150,24 +1248,20 @@ function wp_list_comments($args = array(), $comments = null ) {
 		$r['page'] = 0;
 	}
 
-	if ( '' === $r['depth'] ) {
+	if ( '' === $r['max_depth'] ) {
 		if ( get_option('thread_comments') )
-			$r['depth'] = get_option('thread_comments_depth');
+			$r['max_depth'] = get_option('thread_comments_depth');
 		else
-			$r['depth'] = -1;
+			$r['max_depth'] = -1;
 	}
 
 	if ( '' === $r['page'] ) {
-		if ( empty($comments) ) {
+		if ( empty($overridden_cpage) ) {
 			$r['page'] = get_query_var('cpage');
 		} else {
-			if ( empty($overridden_cpage) ) {
-				$r['page'] = get_query_var('cpage');
-			} else {
-				$threaded = ( -1 == $r['depth'] ) ? false : true;
-				$r['page'] = ( 'newest' == get_option('default_comments_page') ) ? get_comment_pages_count($comments, $r['per_page'], $threaded) : 1;
-				set_query_var( 'cpage', $r['page'] );
-			}
+			$threaded = ( -1 == $r['max_depth'] ) ? false : true;
+			$r['page'] = ( 'newest' == get_option('default_comments_page') ) ? get_comment_pages_count($_comments, $r['per_page'], $threaded) : 1;
+			set_query_var( 'cpage', $r['page'] );
 		}
 	}
 	// Validation check
@@ -1175,42 +1269,16 @@ function wp_list_comments($args = array(), $comments = null ) {
 	if ( 0 == $r['page'] && 0 != $r['per_page'] )
 		$r['page'] = 1;
 
-	if ( '' == $r['reverse_top_level'] )
-		$r['reverse_top_level'] = ( 'asc' == get_option('comment_order') ) ? FALSE : TRUE;
+	if ( null === $r['reverse_top_level'] )
+		$r['reverse_top_level'] = ( 'desc' == get_option('comment_order') ) ? TRUE : FALSE;
 
 	extract( $r, EXTR_SKIP );
 
 	if ( empty($walker) )
-	$walker = new Walker_Comment;
+		$walker = new Walker_Comment;
 
-	if ( empty($comments) ) {
-		if ( empty($wp_query->comments) )
-			return;
-		if ( 'all' != $type ) {
-			if ( empty($wp_query->comments_by_type) )
-				$wp_query->comments_by_type = &separate_comments($wp_query->comments);
-			if ( empty($wp_query->comments_by_type[$type]) )
-				return;
-			$walker->paged_walk($wp_query->comments_by_type[$type], $depth, $page, $per_page, $r);
-			$wp_query->max_num_comment_pages = $walker->max_pages;
-			return;
-		}
-		$walker->paged_walk($wp_query->comments, $depth, $page, $per_page, $r);
-		$wp_query->max_num_comment_pages = $walker->max_pages;
-	} else {
-		if ( empty($comments) )
-			return;
-		if ( 'all' != $type ) {
-			$comments_by_type = &separate_comments($comments);
-			if ( empty($comments_by_type[$type]) )
-				return;
-			$walker->paged_walk($comments_by_type[$type], $depth, $page, $per_page, $r);
-			$wp_query->max_num_comment_pages = $walker->max_pages;
-			return;
-		}
-		$walker->paged_walk($comments, $depth, $page, $per_page, $r);
-		$wp_query->max_num_comment_pages = $walker->max_pages;
-	}
+	$walker->paged_walk($_comments, $max_depth, $page, $per_page, $r);
+	$wp_query->max_num_comment_pages = $walker->max_pages;
 }
 
 ?>

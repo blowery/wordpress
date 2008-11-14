@@ -23,10 +23,6 @@ include('admin-header.php');
 <input type='hidden' name='option_page' value='reading' />
 <input type="hidden" name="action" value="update" />
 
-<p class="submit submit-top">
-	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
-</p>
-
 <table class="form-table">
 <?php if ( get_pages() ): ?>
 <tr valign="top">
@@ -59,12 +55,12 @@ include('admin-header.php');
 <tr valign="top">
 <th scope="row"><label for="posts_per_page"><?php _e('Blog pages show at most') ?></label></th>
 <td>
-<input name="posts_per_page" type="text" id="posts_per_page" value="<?php form_option('posts_per_page'); ?>" size="3" /> <?php _e('posts') ?>
+<input name="posts_per_page" type="text" id="posts_per_page" value="<?php form_option('posts_per_page'); ?>" class="small-text" /> <?php _e('posts') ?>
 </td>
 </tr>
 <tr valign="top">
 <th scope="row"><label for="posts_per_rss"><?php _e('Syndication feeds show the most recent') ?></label></th>
-<td><input name="posts_per_rss" type="text" id="posts_per_rss" value="<?php form_option('posts_per_rss'); ?>" size="3" /> <?php _e('posts') ?></td>
+<td><input name="posts_per_rss" type="text" id="posts_per_rss" value="<?php form_option('posts_per_rss'); ?>" class="small-text" /> <?php _e('posts') ?></td>
 </tr>
 <tr valign="top">
 <th scope="row"><?php _e('For each article in a feed, show') ?> </th>
@@ -76,13 +72,13 @@ include('admin-header.php');
 
 <tr valign="top">
 <th scope="row"><label for="blog_charset"><?php _e('Encoding for pages and feeds') ?></label></th>
-<td><input name="blog_charset" type="text" id="blog_charset" value="<?php form_option('blog_charset'); ?>" size="20" class="code" /><br />
-<?php _e('The character encoding you write your blog in (UTF-8 is <a href="http://developer.apple.com/documentation/macos8/TextIntlSvcs/TextEncodingConversionManager/TEC1.5/TEC.b0.html">recommended</a>)') ?></td>
+<td><input name="blog_charset" type="text" id="blog_charset" value="<?php form_option('blog_charset'); ?>" class="regular-text code" />
+<span class="setting-description"><?php _e('The character encoding you write your blog in (UTF-8 is <a href="http://developer.apple.com/documentation/macos8/TextIntlSvcs/TextEncodingConversionManager/TEC1.5/TEC.b0.html">recommended</a>)') ?></span></td>
 </tr>
 <?php do_settings_fields('reading', 'default'); ?>
 </table>
 <p class="submit">
-	<input type="submit" name="Submit" value="<?php _e('Save Changes') ?>" />
+	<input type="submit" name="Submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
 </p>
 </form>
 </div>

@@ -1518,7 +1518,7 @@ class WP_Rewrite {
 		}
 
 		// robots.txt
-		$robots_rewrite = array('robots.txt$' => $this->index . '?robots=1');
+		$robots_rewrite = array('robots\.txt$' => $this->index . '?robots=1');
 
 		//Default Feed rules - These are require to allow for the direct access files to work with permalink structure starting with %category%
 		$default_feeds = array(	'.*wp-atom.php$'	=>	$this->index .'?feed=atom',
@@ -1626,10 +1626,16 @@ class WP_Rewrite {
 		}
 
 		$site_root = parse_url(get_option('siteurl'));
-		$site_root = trailingslashit($site_root['path']);
+		if ( isset( $site_root['path'] ) ) {
+			$site_root = trailingslashit($site_root['path']);
+		}
 
 		$home_root = parse_url(get_option('home'));
-		$home_root = trailingslashit($home_root['path']);
+		if ( isset( $home_root['path'] ) ) {
+			$home_root = trailingslashit($home_root['path']);
+		} else {
+			$home_root = '/';
+		}
 
 		$rules = "<IfModule mod_rewrite.c>\n";
 		$rules .= "RewriteEngine On\n";

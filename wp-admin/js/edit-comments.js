@@ -97,7 +97,9 @@ commentReply = {
 		$('a.save', row).click(function() { return commentReply.send(this); });
 
 		// add events
-		this.addEvents(this.rows);
+		$('#the-comment-list .column-comment > p').dblclick(function(){
+				commentReply.toggle($(this).parent());
+			});
 
 		$('#doaction, #doaction2, #post-query-submit').click(function(e){
 			if ( $('#the-comment-list #replyrow').length > 0 )
@@ -108,8 +110,8 @@ commentReply = {
 
 	addEvents : function(r) {
 		r.each(function() {
-			$(this).dblclick(function(){
-				commentReply.toggle(this);
+			$(this).find('.column-comment > p').dblclick(function(){
+				commentReply.toggle($(this).parent());
 			});
 		});
 	},
@@ -179,7 +181,7 @@ commentReply = {
 		} else {
 			$('#edithead, #savebtn', editRow).hide();
 			$('#replyhead, #replybtn', editRow).show();
-			$(t.o).after(editRow).animate( { backgroundColor: '#eefee7' }, 800);
+			$(t.o).after(editRow);
 			$('#replyrow').hide().fadeIn('fast');
 		}
 

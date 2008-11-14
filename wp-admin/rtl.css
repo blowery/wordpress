@@ -1,277 +1,347 @@
-a:link, a:visited {
-	text-decoration:none;
-}
-a:hover {
-	text-decoration:underline;
-}
-.plugins .togl {
-	border-right-width: 0;
-	border-left-width: 1px;
-	border-left-style: solid;
-}
+/* 0 - 200
+=================================== */
 form#upload th {
-	text-align:left;
+	text-align: left;
 }
 td.available-theme {
-	text-align:right;
+	text-align: right;
 }
 #current-theme img {
 	float: right;
-	margin-right:0;
+	margin-right: 0;
 	margin-left: 1em;
 }
 .quicktags, .search {
-	font-family: Tahoma;
+	font-family: Tahoma, "Times New Roman";
 }
-/* 201 - 403
+/* 200 - 500
 =================================== */
+#save-post {
+	float: left;
+}
+.preview {
+	float: right;
+}
+#post-body .misc-pub-section {
+	border-right: 0 none;
+	border-left: 1px solid #eee;
+	float: right;
+}
+#post-body .misc-pub-section-last {
+	border-left: 0;
+}
+#delete-action {
+	text-align: right;
+	float: right;
+}
+#publishing-action {
+	text-align: left;
+	float: left;
+}
 .side-info ul {
-	padding-left:0;
-	padding-right:18px;
+	padding-left: 0;
+	padding-right: 18px;
 }
-.submit input, .button, .button-secondary, .button-highlighted {
-	font-family: Tahoma;
+.submit input,
+.button,
+.button-primary,
+.button-secondary,
+.button-highlighted,
+#postcustomstuff .submit input {
+	font-family: Tahoma, "Times New Roman";
 }
-#wpcontent select  {
-	font-family: Tahoma;
+#wpcontent select {
+	font-family: Tahoma, "Times New Roman";
 }
-/* #postdiv, #titlediv, #guiddiv, #poststuff .stuffbox {
-	margin:0 0 0 8px;
-} */
-#quicktags #ed_code {
-	font-family: Tahoma;
+#quicktags {
+	background-position: right top;
 }
+/* 500 - 700
+=================================== */
 #searchform fieldset {
-	float:right;
+	float: right;
 	margin: 0 0 1em 1.5ex;
 }
 #searchform fieldset legend {
 	padding: 0 1px .2em 0;
 }
 #searchform #post-query-submit {
-	float:right;
+	float: right;
 }
-/* 404 - 804
-=================================== */
 #template div {
-	margin-right:0;
+	margin-right: 0;
 	margin-left: 190px;
 }
 * html #template div {
 	margin-left: 0;
 }
 #your-profile legend {
-	font-family:arial;
+	font-family: "Times New Roman", Tahoma;
 }
 #ajax-response.alignleft {
-	margin-left:0;
+	margin-left: 0;
 	margin-right: 2em;
 }
 .page-numbers {
-	margin-right:0;
-	margin-left:3px;
+	margin-right: 0;
+	margin-left: 1px;
 }
-.comment-column {
-	margin-left:0;
-	margin-right: 5px;
+.column-author img, .column-username img {
+	float: right;
+	margin-right: 0;
+	margin-left: 10px;
 }
 .tablenav a.button-secondary {
-	margin: 1px 0 0 8px;
+	margin: 8px 0 0 8px;
 }
-#update-nag, .plugin-update {
-	clear:both;
+.tablenav .tablenav-pages {
+	float: left;
+	margin: 0 0 0 8px;
 }
-/* .tablenav .tablenav-pages {
-	float:left;
-} */
+.tablenav .displaying-num {
+	margin-right: 0;
+	margin-left: 10px;
+}
+#postcustomstuff table input,
+#postcustomstuff table select,
+#postcustomstuff table textarea {
+	margin: 8px 8px 8px 0;
+}
+/* 700 - 1000
+=================================== */
+#pass-strength-result {
+	float: right;
+	margin: 12px 1px 5px 5px;
+}
+/* Admin Header */
 #user_info {
-	right:auto;
-	left:15px;
+	float: left;
 }
-#wphead #viewsite {
-	margin-left:0;
-	margin-right:10px;
+#logo50 {
+	float: right;
+	margin: 9px 20px 0 0;
 }
-#wphead #viewsite a {
-	font-family: Tahoma;
+ul#adminmenu li.write-new-button a {
+	font-family: Tahoma, "Times New Roman";
 }
 #wphead h1 {
-	font-family:arial;
-	margin-right:0;
-	margin-left:15%;
-	padding: 11px 12px 16px 170px;
+	font-family: "Times New Roman", Tahoma;
+	float: right;
 }
-
+#wphead h1.long-title {
+	font-family: "Times New Roman", Tahoma;
+}
 #adminmenu {
-	padding-left:0;
-	padding-right:11px;
+	font-family: Tahoma, "Times New Roman";
 }
-#adminmenu a {
-	font-family:arial;
-	font-weight:bold;
-	padding:6px 7px;
+#adminmenu .wp-submenu a {
+	padding-left: 0;
+	padding-right: 12px;
+	border-width: 0 0 0 1px;
+	border-style: none none none solid;
 }
-#adminmenu a.current, #sidemenu a.current {
-	font-weight:bold;
+#adminmenu img.wp-menu-image {
+	float: right;
 }
-#sidemenu {
-	margin: -30px 0 0 15px;
-	float: left;
-	padding-left:0;
+#adminmenu.folded img.wp-menu-image {
+	padding: 7px 6px 0 0;
+}
+#adminmenu .wp-submenu .wp-submenu-head {
+	padding: 6px 10px 6px 4px;
+}
+#adminmenu.folded .wp-submenu {
+	margin: -1px 28px 0 0;
+}
+#adminmenu.folded .wp-submenu a {
+	padding-left: 0;
 	padding-right: 10px;
-	height: 1%; /* Peek-a-boo in IE6 */
 }
-#sidemenu a {
-	float:right;
+#adminmenu.folded a.wp-has-submenu {
+	margin-left: 0;
+	margin-right: 40px;
 }
-#submenu li {
-	padding: 0 17px 8px 0;
-	font-size:13px;
+#adminmenu .wp-menu-toggle {
+	float: left;
+	padding: 1px 0 0 2px;
 }
-#adminmenu li a #awaiting-mod span, #sidemenu li a #update-plugins span {
+#adminmenu div.wp-menu-image {
+	float: right;
+}
+/* end side admin menu */
+/* 1000 - 1300
+=================================== */
+#adminmenu a #awaiting-mod,
+#adminmenu a #update-plugins,
+#sidemenu li a #update-plugins {
+	background-position: -240px top;
+}
+#adminmenu li a:hover #awaiting-mod, #adminmenu li a:hover #update-plugins, #sidemenu li a:hover #update-plugins {
+	background-position: -160px top;
+}
+#adminmenu li a #awaiting-mod span, #adminmenu li a #update-plugins span, #sidemenu li a #update-plugins span {
 	right:auto;
 	left:0;
 }
-#adminmenu li a:hover #awaiting-mod, #sidemenu li a:hover #update-plugins {
-	background-position: -160px top;
+#footer #footer-thankyou, #footer #footer-upgrade {
+	font-family: Tahoma, "Times New Roman";
 }
-/* 804 - 1004
-=================================== */
-#footer {
-	padding: 10px 60px 0 0;
+#footer #footer-upgrade {
+	right: auto;
+	left: 15px;
 }
-.form-table th {
-	text-align:right;
+/* Tables used on comment.php and option/setting pages */
+.form-table th,
+#wpbody-content .describe th {
+	text-align: right;
 }
 .form-table input.tog {
-	margin-right:0;
+	margin-right: 0;
 	margin-left: 2px;
 	float: right;
 }
 .form-table table.color-palette {
-	float:right;
-}
-#pass-strength-result {
-	float:right;
-	margin-right:0;
-	margin-left: 5px;
+	float: right;
 }
 #profile-page .form-table #rich_editing {
-	margin-right:0;
+	margin-right: 0;
 	margin-left: 5px;
 }
-#tagsdiv #newtag {
-	margin-right:0;
+/* Post Screen */
+/* 1300 - 1500
+=================================== */
+#normal-sortables .postbox .submit {
+	float: left;
+}
+#mediadiv img {
+	float: right;
+	margin-right: 0;
+	margin-left: 1em;
+}
+#post-body #tagsdiv #newtag {
+	margin-right: 0;
 	margin-left: 5px;
+}
+#post-status-info {
+	padding: 0 7px 0 15px;
+}
+#comment-status-radio input {
+	margin: 2px 0 5px 3px;
 }
 #tagchecklist {
-	margin-left:0;
+	margin-left: 0;
 	margin-right: 10px;
 }
 #tagchecklist strong {
-	margin-left:0;
+	margin-left: 0;
 	margin-right: -8px;
 }
 #tagchecklist span {
-	margin-right:0;
-	margin-left: 25px;
 	float: right;
 }
 #tagchecklist span a {
 	margin: 6px -9px 0 0;
 	float: right;
 }
-/* 1005 - 1304
-=================================== */
 .ac_results li {
-	text-align:right;
+	text-align: right;
 }
 #poststuff h2 {
-	clear:right;
+	clear: right;
 }
-#poststuff .postbox, #poststuff .stuffbox, #titlediv, #poststuff .postarea {
-	margin-left: 8px;
-	margin-right: 20px;
-}
-#edit-slug-buttons a.save {
-	margin-right:0;
-	margin-left:4px;
-}
-#poststuff #edButtonPreview, #poststuff #edButtonHTML {
-	margin: 5px 0 0 8px;
+/* 1500 - 1800
+=================================== */
+.ui-sortable .postbox .handlediv {
 	float: left;
 }
-#poststuff #media-buttons {
+.metabox-holder .postbox h3,
+#poststuff .postbox h3,
+#poststuff .stuffbox h3 {
+	background-position: right top;
+}
+#edit-slug-buttons a {
+	margin-right: 0;
+	margin-left: 4px;
+}
+.postarea h3 label {
+	float: right;
+}
+.postarea #add-media-button {
 	float: left;
-	margin-right:0;
-	margin-left: 20px;
+	right: auto;
+	left: 10px;
 }
-#poststuff #media-buttons a {
-	padding: 0 2px 2px 5px;
+.wp_themeSkin tr.mceFirst {
+	background-position: right top;
 }
-.submitbox .submitdelete {
-	margin-left:0;
-	margin-right:8px;
+#poststuff #edButtonPreview,
+#poststuff #edButtonHTML {
+	margin: 5px 0 0 5px;
+	float: left;
+}
+#poststuff #edButtonHTML {
+	margin-right: 0;
+	margin-left: 15px;
+}
+#media-buttons a {
+	padding: 0 10px 5px 0;
 }
 .submitbox .submit {
-	text-align:right;
+	text-align: right;
+}
+.submitbox .inside-submitbox #deletebutton {
+	padding: 0 17px 1px 0;
+	background-position: right bottom;
+}
+.inside-submitbox #post_status {
+	margin: 2px -2px 2px 0;
 }
 .submitbox .submit input {
-	margin-right:0;
-	margin-left:3px;
+	margin-right: 0;
+	margin-left: 4px;
 }
-#categorydiv #category-adder {
-	margin-left:0;
+/* Categories */
+#category-adder {
+	margin-left: 0;
 	margin-right: 120px;
 }
-#categorydiv ul#category-tabs {
-	float: right;
-	text-align: left;
-	margin: 0 0 0 -120px;
-}
-ul#category-tabs li.ui-tabs-selected {
-	-moz-border-radius-topleft:0;
-	-khtml-border-top-left-radius:0;
-	-webkit-border-top-left-radius:0;
-	border-top-left-radius:0;
-	-moz-border-radius-bottomleft:0;
-	-khtml-border-bottom-left-radius:0;
-	-webkit-border-bottom-left-radius:0;
-	border-bottom-left-radius:0;
-	-moz-border-radius-topright: 3px;
-	-khtml-border-top-right-radius: 3px;
+#post-body ul#category-tabs li.ui-tabs-selected {
+	-moz-border-radius: 0 3px 3px 0;
+	-webkit-border-top-left-radius: 0;
 	-webkit-border-top-right-radius: 3px;
-	border-top-right-radius: 3px;
-	-moz-border-radius-bottomright: 3px;
-	-khtml-border-bottom-right-radius: 3px;
+	-webkit-border-bottom-left-radius: 0;
 	-webkit-border-bottom-right-radius: 3px;
+	border-top-left-radius: 0;
+	border-top-right-radius: 3px;
+	border-bottom-left-radius: 0;
 	border-bottom-right-radius: 3px;
 }
-div.ui-tabs-panel {
-	margin: 0 120px 0 5px;
-}
-/* 1305 - elakh! :-)
-=================================== */
-#categorydiv ul.categorychecklist ul {
-	margin-left:0;
-	margin-right: 18px;
-}
-#linkcategorydiv #category-adder {
-	margin-left:0;
-	margin-right: 120px;
-}
-#linkcategorydiv ul#category-tabs {
+#post-body ul#category-tabs {
 	float: right;
 	text-align: left;
 	margin: 0 0 0 -120px;
 }
+#post-body #categorydiv div.ui-tabs-panel,
+#post-body #linkcategorydiv div.ui-tabs-panel {
+	margin: 0 120px 0 5px;
+}
+/* 1800 - 2000
+=================================== */
+#side-info-column #category-tabs li {
+	padding-right: 0;
+	padding-left: 8px;
+}
+#categorydiv ul.categorychecklist ul,
 #linkcategorydiv ul.categorychecklist ul {
-	margin-left:0;
+	margin-left: 0;
 	margin-right: 18px;
 }
-p#tag-search, p.search-box {
-	right:auto;
-	left:0;
+/* positioning etc. */
+p#big-add-button {
+	right: auto;
+	left: 0;
+}
+p.search-box {
+	float: left;
 }
 #posts-filter fieldset {
 	float: right;
@@ -283,49 +353,202 @@ p#tag-search, p.search-box {
 .view-switch {
 	float: left;
 }
-
+.filter {
+	float: right;
+	margin: -5px 10px 0 0;
+}
 #the-comment-list td.comment p.comment-author {
-	margin-right: 0 ;
+	margin-right: 0;
 }
 #the-comment-list p.comment-author img {
 	float: right;
-	margin-right:0;
+	margin-right: 0;
 	margin-left: 8px;
 }
-#the-comment-list td.comment p {
-	margin-left:0;
-	margin-right: 8px;
-}
-.curtime {
-	background-position: right 2px;
-	padding-left:0;
-	padding-right: 18px;
-}
 .tablenav .delete {
-	margin-right:0;
+	margin-right: 0;
 	margin-left: 20px;
 }
-#tTips {
-}
 td.action-links, th.action-links {
-	text-align:left;
+	text-align: left;
 }
-.info-box {
-	left:auto;
-	right: 50%;
-	margin-left: 0;
-	margin-right: -225px;
-}
-.info-box .gears-img {
+/* 2000 - 2300
+=================================== */
+#gears-info-box .gears-img {
 	float: left;
 }
-/* LTR
+#wp-word-count {
+	margin-right: 10px;
+}
+.info-box-title {
+	font-family: "Times New Roman", Tahoma;
+}
+.settings-toggle {
+	text-align: left;
+	margin: 5px 0 15px 7px;
+}
+.curtime #timestamp {
+	background-position: right top;
+	padding-left: 0;
+	padding-right: 18px;
+}
+#inbox-filter .actions {
+	margin-left: 0;
+	margin-right: 6px;
+	padding-left: 0;
+	padding-right: 16px;
+}
+#inbox-filter ul input.checkbox {
+	float: right;
+}
+#inbox-filter ul p {
+	float: right;
+	margin-left: 0;
+	margin-right: -40px;
+	left: auto;
+	right: 50px;
+}
+#inbox-message {
+	margin: 0 7.5em 0 0;
+}
+/* media popup 0819 */
+#sidemenu {
+	margin: -30px 315px 0 15px;
+	float: left;
+	padding-left: 0;
+	padding-right: 10px;
+}
+#sidemenu a {
+	float: right;
+}
+#previewview {
+	float: left;
+}
+#replysubmit .button {
+	margin-right: 0;
+	margin-left: 5px;
+}
+/* 2300 - 2500
 =================================== */
-#edit-slug-box, #trackback, #metakeyinput, #post_password, #link_url, #link_image, #rss_uri, #category_nicename, #slug, #dbuser, #dbpass, #dbname, #dbprefix, #dccharset, #gmpath, #archivespath, #lastentry, #dbhost, #pages-exclude, #newcontent, #email, #newcomment_author_url, #siteurl, #home, #admin_email, #date_format, #time_format, #gmt_offset, #mailserver_url, #mailserver_port, #mailserver_login, #mailserver_pass, #ping_sites, #posts_per_page, #posts_per_rss, #blog_charset, #moderation_keys, #blacklist_keys, #comment_max_links, #permalink_structure, #category_base, #tag_base, #upload_path, #upload_url_path, #thumbnail_size_w, #thumbnail_size_h, #medium_size_w, #medium_size_h, #user_login, #url, #pass1, #pass2, #aim, #yim, #jabber, #key, #src, #hostname, #username, #password, #rules {
-	direction:ltr;
+#edithead #edittitle {
+	float: right;
+	margin: 0 0 0 4px;
+}
+#edithead .inside {
+	float: right;
+	margin: 0 0 2px 4px;
+}
+#replyrow #ed_reply_toolbar input {
+	margin: 1px 1px 1px 2px;
+}
+/* show/hide settings */
+#screen-meta-links {
+	margin: 0 0 0 20px;
+}
+#screen-options-link-wrap,
+#contextual-help-link-wrap {
+	float: left;
+	font-family: Tahoma, "Times New Roman";
+	margin: -1px 0 0 10px;
+}
+#screen-options-wrap h5,
+#contextual-help-wrap h5 {
+	padding: 10px 15px 0 0;
+}
+.metabox-prefs label {
+	float: right;
+}
+.metabox-prefs label input {
+	margin: 0 2px 0 5px;
+}
+.inline-editor .save,
+.inline-editor .cancel {
+	margin-right: 0;
+	margin-left: 5px;
+}
+.inline-editor .quick-edit-div {
+	float: right;
+	margin: 0 0 3px 5px;
+}
+/* 2500 - 2700
+=================================== */
+.inline-editor .post-title .slug,
+.inline-editor .page-title .slug {
+	text-align: left;
+}
+.inline-editor .categories ul.cat-checklist {
+	padding: 0 4px 0 0;
+}
+.inline-editor .categories ul.children {
+	padding-left: 0;
+	padding-right: 15px;
+}
+.inline-editor .comments {
+	text-align: right;
+}
+#bulk-titles div a {
+	float: right;
+	margin: 3px -2px 0 3px;
+}
+#wpbody-content .filename {
+	margin-left: 0;
+	margin-right: 10px;
+}
+/* 2700 - 3000
+=================================== */
+.describe-toggle-on, .describe-toggle-off {
+	float: left;
+	margin-right: 0;
+	margin-left: 20px;
+}
+#wpbody-content #media-items .filename {
+	float: right;
+	margin-left: 0;
+	margin-right: 10px;
+}
+.media-item .pinkynail {
+	float: right;
+}
+#find-posts-response .found-radio {
+	padding: 8px 8px 0 0;
+}
+.find-box-buttons {
+	left: auto;
+	right: 12px;
+}
+.find-box-search label {
+	padding-right: 0;
+	padding-left: 6px;
+}
+/* favorite-actions */
+#favorite-actions {
+	float: left;
+}
+#favorite-first {
+	padding: 3px 12px 4px 30px;
+}
+#favorite-inside {
+	margin: 0 1px 0 0;
+}
+#favorite-inside a {
+	padding: 3px 10px 3px 5px;
+}
+#favorite-toggle {
+	right: auto;
+	left: 0;
+	background:transparent url(images/fav-arrow-rtl.png) no-repeat 10px -4px;
+}
+#utc-time, #local-time {
+	padding-left: 0;
+	padding-right: 25px;
 }
 /* TinyMCE
 =================================== */
 .clearlooks2 .mceTop .mceLeft {
 	width:100% !important;
+}
+/* ltr
+=================================== */
+#author-email, #author-url, #rss-url-1, #edit-slug-box, #post_name, #trackback_url, #metakeyinput, #post_password, #slug, #category_nicename, #link_url, #link_image, #rss_uri, #menu_order, #email, #newcomment_author_url, #pages-exclude, #template textarea, #user_login, #url, #pass1, #pass2, #aim, #yim, #jabber, #siteurl, #home, #admin_email, #gmt_offset, #default_post_edit_rows, #mailserver_url, #mailserver_login, #mailserver_pass, #mailserver_port, #ping_sites, #posts_per_page, #posts_per_rss, #blog_charset, #close_comments_days_old, #comments_per_page, #comment_max_links, #moderation_keys, #blacklist_keys, #thumbnail_size_w, #thumbnail_size_h, #medium_size_w, #medium_size_h, #large_size_w, #large_size_h, #permalink_structure, #category_base, #tag_base, #upload_path, #upload_url_path, #rules {
+	direction: ltr;
 }

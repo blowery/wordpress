@@ -377,6 +377,8 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 	$day = get_query_var('day');
 	$title = '';
 
+	$t_sep = '%WP_TITILE_SEP%'; // Temporary separator, for accurate flipping, if necessary
+
 	// If there's a category
 	if ( !empty($cat) ) {
 			// category exclusion
@@ -418,19 +420,19 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 		$my_year = substr($m, 0, 4);
 		$my_month = $wp_locale->get_month(substr($m, 4, 2));
 		$my_day = intval(substr($m, 6, 2));
-		$title = "$my_year" . ($my_month ? "$sep $my_month" : "") . ($my_day ? "$sep $my_day" : "");
+		$title = "$my_year" . ($my_month ? "$t_sep$my_month" : "") . ($my_day ? "$t_sep$my_day" : "");
 	}
 
 	if ( !empty($year) ) {
 		$title = $year;
 		if ( !empty($monthnum) )
-			$title .= " $sep " . $wp_locale->get_month($monthnum);
+			$title .= "$t_sep" . $wp_locale->get_month($monthnum);
 		if ( !empty($day) )
-			$title .= " $sep " . zeroise($day, 2);
+			$title .= "$t_sep" . zeroise($day, 2);
 	}
 
 	// If there is a post
-	if ( is_single() || is_page() ) {
+	if ( is_single() ||  ( is_page() && !is_front_page() ) ) {
 		$post = $wp_query->get_queried_object();
 		$title = strip_tags( apply_filters( 'single_post_title', $post->post_title ) );
 	}
@@ -442,21 +444,26 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 		$tax = $tax->label;
 		$term = $wp_query->get_queried_object();
 		$term = $term->name;
-		if ( 'right' == $seplocation )
-			$title = "$term $sep $tax";
-		else
-			$title = "$tax $sep $term";
+		$title = "$tax$t_sep$term";
 	}
 
+	if ( is_404() ) {
+		$title = __('Page not found');	
+	}
+	
 	$prefix = '';
 	if ( !empty($title) )
 		$prefix = " $sep ";
 
- 	// Determines position of the separator
-	if ( 'right' == $seplocation )
-		$title = $title . $prefix;
-	else
-		$title = $prefix . $title;
+ 	// Determines position of the separator and direction of the breadcrumb
+	if ( 'right' == $seplocation ) { // sep on right, so reverse the order
+		$title_array = explode( $t_sep, $title );
+		$title_array = array_reverse( $title_array );
+		$title = implode( " $sep ", $title_array ) . $prefix;
+	} else {
+		$title_array = explode( $t_sep, $title );
+		$title = $prefix . implode( " $sep ", $title_array );
+	}
 
 	$title = apply_filters('wp_title', $title, $sep, $seplocation);
 
@@ -740,6 +747,8 @@ function wp_get_archives($args = '') {
 	$where = apply_filters('getarchives_where', "WHERE post_type = 'post' AND post_status = 'publish'", $r );
 	$join = apply_filters('getarchives_join', "", $r);
 
+	$output = '';
+
 	if ( 'monthly' == $type ) {
 		$query = "SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date), MONTH(post_date) ORDER BY post_date DESC $limit";
 		$key = md5($query);
@@ -758,11 +767,7 @@ function wp_get_archives($args = '') {
 				$text = sprintf(__('%1$s %2$d'), $wp_locale->get_month($arcresult->month), $arcresult->year);
 				if ( $show_post_count )
 					$after = '&nbsp;('.$arcresult->posts.')' . $afterafter;
-				$output = get_archives_link($url, $text, $format, $before, $after);
-				if ( $echo )
-					echo $output;
-				else
-					return $output; 
+				$output .= get_archives_link($url, $text, $format, $before, $after);
 			}
 		}
 	} elseif ('yearly' == $type) {
@@ -783,11 +788,7 @@ function wp_get_archives($args = '') {
 				$text = sprintf('%d', $arcresult->year);
 				if ($show_post_count)
 					$after = '&nbsp;('.$arcresult->posts.')' . $afterafter;
-				$output = get_archives_link($url, $text, $format, $before, $after);
-				if ( $echo )
-					echo $output;
-				else
-					return $output; 	
+				$output .= get_archives_link($url, $text, $format, $before, $after);
 			}
 		}
 	} elseif ( 'daily' == $type ) {
@@ -809,11 +810,7 @@ function wp_get_archives($args = '') {
 				$text = mysql2date($archive_day_date_format, $date);
 				if ($show_post_count)
 					$after = '&nbsp;('.$arcresult->posts.')'.$afterafter;
-				$output = get_archives_link($url, $text, $format, $before, $after);
-				if ( $echo )
-					echo $output;
-				else
-					return $output;
+				$output .= get_archives_link($url, $text, $format, $before, $after);
 			}
 		}
 	} elseif ( 'weekly' == $type ) {
@@ -842,16 +839,12 @@ function wp_get_archives($args = '') {
 						$text = $arc_week_start . $archive_week_separator . $arc_week_end;
 						if ($show_post_count)
 							$after = '&nbsp;('.$arcresult->posts.')'.$afterafter;
-						$output = get_archives_link($url, $text, $format, $before, $after);
-						if ( $echo )
-							echo $output;
-						else
-							return $output;
+						$output .= get_archives_link($url, $text, $format, $before, $after);
 					}
 				}
 		}
 	} elseif ( ( 'postbypost' == $type ) || ('alpha' == $type) ) {
-		('alpha' == $type) ? $orderby = "post_title ASC " : $orderby = "post_date DESC ";
+		$orderby = ('alpha' == $type) ? "post_title ASC " : "post_date DESC ";
 		$query = "SELECT * FROM $wpdb->posts $join $where ORDER BY $orderby $limit";
 		$key = md5($query);
 		$cache = wp_cache_get( 'wp_get_archives' , 'general');
@@ -871,15 +864,15 @@ function wp_get_archives($args = '') {
 						$text = strip_tags(apply_filters('the_title', $arc_title));
 					else
 						$text = $arcresult->ID;
-					$output = get_archives_link($url, $text, $format, $before, $after);
-					if ( $echo )
-						echo $output;
-					else
-						return $output;
+					$output .= get_archives_link($url, $text, $format, $before, $after);
 				}
 			}
 		}
 	}
+	if ( $echo )
+		echo $output;
+	else
+		return $output; 
 }
 
 /**
@@ -1220,7 +1213,7 @@ function get_the_modified_date($d = '') {
  * @param string $d Either 'G', 'U', or php date format.
  */
 function the_time( $d = '' , $gmt=false) {
-	echo apply_filters('the_time', get_the_time( $d, $gmt ), $d);
+	echo apply_filters('the_time', get_the_time( $d, null, $gmt ), $d);
 }
 
 /**
@@ -1229,14 +1222,17 @@ function the_time( $d = '' , $gmt=false) {
  * @since 1.5.0
  *
  * @param string $d Either 'G', 'U', or php date format defaults to the value specified in the time_format option.
+ * @param int|object $post Optional post ID or object. Default is global $post object.
  * @return string
  */
-function get_the_time( $d = '', $gmt = false ) {
+function get_the_time( $d = '', $post = null, $gmt = false) {
+	$post = get_post($post);
+
 	if ( '' == $d )
-		$the_time = get_post_time(get_option('time_format'), $gmt);
+		$the_time = get_post_time(get_option('time_format'), $gmt, $post);
 	else
-		$the_time = get_post_time($d, $gmt);
-	return apply_filters('get_the_time', $the_time, $d);
+		$the_time = get_post_time($d, $gmt, $post);
+	return apply_filters('get_the_time', $the_time, $d, $post);
 }
 
 /**
@@ -1246,10 +1242,12 @@ function get_the_time( $d = '', $gmt = false ) {
  *
  * @param string $d Either 'G', 'U', or php date format.
  * @param bool $gmt Whether of not to return the gmt time.
+ * @param int|object $post Optional post ID or object. Default is global $post object.
  * @return string
  */
-function get_post_time( $d = 'U', $gmt = false ) { // returns timestamp
-	global $post;
+function get_post_time( $d = 'U', $gmt = false, $post = null ) { // returns timestamp
+	$post = get_post($post);
+
 	if ( $gmt )
 		$time = $post->post_date_gmt;
 	else
@@ -1485,9 +1483,15 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 	if (($rows < 3) || ($rows > 100))
 		$rows = 12;
 
-	$rows = "rows='$rows'";	?>
+	if ( !current_user_can( 'upload_files' ) )
+		$media_buttons = false;
+
+	$richedit =  user_can_richedit();
+	$rows = "rows='$rows'";
+	
+	if ( $richedit || $media_buttons ) { ?>
 	<div id="editor-toolbar">
-	<?php if ( user_can_richedit() ) {
+	<?php if ( $richedit ) {
 		$wp_default_editor = wp_default_editor(); ?>
 		<div class="zerosize"><input accesskey="e" type="button" onclick="switchEditors.go('<?php echo $id; ?>')" /></div>
 		<?php if ( 'html' == $wp_default_editor ) {
@@ -1498,15 +1502,16 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 			add_filter('the_editor_content', 'wp_richedit_pre'); ?>
 			<a id="edButtonHTML" onclick="switchEditors.go('<?php echo $id; ?>', 'html');"><?php _e('HTML'); ?></a>
 			<a id="edButtonPreview" class="active" onclick="switchEditors.go('<?php echo $id; ?>', 'tinymce');"><?php _e('Visual'); ?></a>
-		<?php } 
-	}
+		<?php }
+		}
 
-/*	if ( $media_buttons ) { ?>
-		<div id="media-buttons" class="hide-if-no-js">
-		<?php do_action( 'media_buttons' ); ?>
-		</div>
-	<?php } */ ?>
+		if ( $media_buttons ) { ?>
+			<div id="media-buttons" class="hide-if-no-js">
+			<?php do_action( 'media_buttons' ); ?>
+			</div>
+		<?php } ?>
 	</div>
+	<?php } ?>
 
 	<div id="quicktags">
 	<?php wp_print_scripts( 'quicktags' ); ?>
@@ -1526,19 +1531,17 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 	// If tinyMCE is defined.
 	if ( typeof tinyMCE != 'undefined' ) {
 		// This code is meant to allow tabbing from Title to Post (TinyMCE).
-		document.getElementById('<?php echo $prev_id; ?>').onkeydown = function (e) {
-			e = e || window.event;
-			if (e.keyCode == 9 && !e.shiftKey && !e.controlKey && !e.altKey) {
-				if ( tinyMCE.activeEditor ) {
-					if ( (jQuery("#post_ID").val() < 1) && (jQuery("#title").val().length > 0) ) { autosave(); }
-					e = null;
-					if ( tinyMCE.activeEditor.isHidden() ) return true;
+		jQuery('#<?php echo $prev_id; ?>').keydown(function (e) {
+			if (e.which == 9 && !e.shiftKey && !e.controlKey && !e.altKey) {
+				if ( (jQuery("#post_ID").val() < 1) && (jQuery("#title").val().length > 0) ) { autosave(); }
+				if ( tinyMCE.activeEditor && ! tinyMCE.activeEditor.isHidden() ) {
 					tinyMCE.activeEditor.focus();
+					e.preventDefault();
 					return false;
 				}
-				return true;
+				return;
 			}
-		}
+		});
 	}
 	<?php } ?>
 	// ]]>

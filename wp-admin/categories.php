@@ -117,8 +117,7 @@ if ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
 	 exit;
 }
 
-wp_enqueue_script( 'admin-categories' );
-wp_enqueue_script('admin-forms');
+wp_enqueue_script('admin-categories');
 if ( current_user_can('manage_categories') )
 	wp_enqueue_script('inline-edit-tax');
 
@@ -131,15 +130,8 @@ $messages[4] = __('Category not added.');
 $messages[5] = __('Category not updated.');
 ?>
 
-<div id="screen-options-wrap" class="hidden">
-<h5><?php _e('Show on screen') ?></h5>
-<form id="adv-settings" action="" method="get">
-<div class="metabox-prefs">
-<?php manage_columns_prefs('category') ?>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-<br class="clear" />
-</div></form>
-</div>
+<div class="wrap nosubsub">
+<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <?php
 if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
@@ -147,19 +139,19 @@ if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
 <?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('message'), $_SERVER['REQUEST_URI']);
 endif; ?>
 
-<div class="wrap">
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
-
-<ul class="subsubsub"><li class="current"><a class="current"><br /></a></li></ul>
-<form class="search-form" action="" method="get">
+<form class="search-form topmargin" action="" method="get">
 <p class="search-box">
-	<label class="hidden" for="post-search-input"><?php _e('Search Categories'); ?>:</label>
-	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<label class="hidden" for="category-search-input"><?php _e('Search Categories'); ?>:</label>
+	<input type="text" class="search-input" id="category-search-input" name="s" value="<?php _admin_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
 </p>
 </form>
 <br class="clear" />
 
+<div id="col-container">
+
+<div id="col-right">
+<div class="col-wrap">
 <form id="posts-filter" action="" method="get">
 <div class="tablenav">
 
@@ -173,6 +165,8 @@ if( ! isset( $catsperpage ) || $catsperpage < 0 )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil(wp_count_terms('category') / $catsperpage),
 	'current' => $pagenum
 ));
@@ -181,7 +175,7 @@ if ( $page_links )
 	echo "<div class='tablenav-pages'>$page_links</div>";
 ?>
 
-<div class="alignleft">
+<div class="alignleft actions">
 <select name="action">
 <option value="" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
@@ -221,7 +215,7 @@ if ( $page_links )
 	echo "<div class='tablenav-pages'>$page_links</div>";
 ?>
 
-<div class="alignleft">
+<div class="alignleft actions">
 <select name="action2">
 <option value="" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
@@ -233,23 +227,83 @@ if ( $page_links )
 <br class="clear" />
 </div>
 
-<br class="clear" />
 </form>
 
-</div>
-
-<?php if ( current_user_can('manage_categories') ) : ?>
-<div class="wrap">
+<div class="form-wrap">
 <p><?php printf(__('<strong>Note:</strong><br />Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category <strong>%s</strong>.'), apply_filters('the_category', get_catname(get_option('default_category')))) ?></p>
 <p><?php printf(__('Categories can be selectively converted to tags using the <a href="%s">category to tag converter</a>.'), 'admin.php?import=wp-cat2tag') ?></p>
 </div>
 
-<?php include('edit-category-form.php'); ?>
+</div>
+</div><!-- /col-right -->
 
-<?php inline_edit_term_row('category'); ?>
-<?php endif; ?>
+<div id="col-left">
+<div class="col-wrap">
+
+<?php if ( current_user_can('manage_categories') ) { ?>
+<?php $category = (object) array(); $category->parent = 0; do_action('add_category_form_pre', $category); ?>
+
+<div class="form-wrap">
+<h3><?php _e('Add Category'); ?></h3>
+<div id="ajax-response"></div>
+<form name="addcat" id="addcat" method="post" action="categories.php" class="add:the-list: validate">
+<input type="hidden" name="action" value="addcat" />
+<?php wp_original_referer_field(true, 'previous'); wp_nonce_field('add-category'); ?>
+
+<div class="form-field form-required">
+	<label for="cat_name"><?php _e('Category Name') ?></label>
+	<input name="cat_name" id="cat_name" type="text" value="" size="40" aria-required="true" />
+    <p><?php _e('The name is used to identify the category almost everywhere, for example under the post or in the category widget.'); ?></p>
+</div>
+
+<div class="form-field">
+	<label for="category_nicename"><?php _e('Category Slug') ?></label>
+	<input name="category_nicename" id="category_nicename" type="text" value="" size="40" />
+    <p><?php _e('The &#8220;slug&#8221; is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens.'); ?></p>
+</div>
+
+<div class="form-field">
+	<label for="category_parent"><?php _e('Category Parent') ?></label>
+	<?php wp_dropdown_categories(array('hide_empty' => 0, 'name' => 'category_parent', 'orderby' => 'name', 'selected' => $category->parent, 'hierarchical' => true, 'show_option_none' => __('None'))); ?>
+    <p><?php _e('Categories, unlike tags, can have a hierarchy. You might have a Jazz category, and under that have children categories for Bebop and Big Band. Totally optional.'); ?></p>
+</div>
+
+<div class="form-field">
+	<label for="category_description"><?php _e('Description') ?></label>
+	<textarea name="category_description" id="category_description" rows="5" cols="40"></textarea>
+    <p><?php _e('The description is not prominent by default, however some themes may show it.'); ?></p>
+</div>
+
+<p class="submit"><input type="submit" class="button" name="submit" value="<?php _e('Add Category'); ?>" /></p>
+<?php do_action('edit_category_form', $category); ?>
+</form></div>
+
+<?php } ?>
+
+</div>
+</div><!-- /col-left -->
+
+</div><!-- /col-container -->
+</div><!-- /wrap -->
+
+<script type="text/javascript">
+/* <![CDATA[ */
+(function($){
+	$(document).ready(function(){
+		$('#doaction, #doaction2').click(function(){
+			if ( $('select[name^="action"]').val() == 'delete' ) {
+				var m = '<?php echo js_escape(__("You are about to delete the selected categories.\n  'Cancel' to stop, 'OK' to delete.")); ?>';
+				return showNotice.warn(m);
+			}
+		});
+	});
+})(jQuery);
+/* ]]> */
+</script>
 
 <?php
+inline_edit_term_row('category');
+
 break;
 }
 

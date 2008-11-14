@@ -1336,6 +1336,10 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 		$post_category = array(get_option('default_category'));
 	}
 
+	//Set the default tag list
+	if ( !isset($tags_input) )
+		$tags_input = array();
+
 	if ( empty($post_author) )
 		$post_author = $user_ID;
 
@@ -1593,8 +1597,8 @@ function wp_publish_post($post_id) {
 
 	// Update counts for the post's terms.
 	foreach ( (array) get_object_taxonomies('post') as $taxonomy ) {
-		$terms = wp_get_object_terms($post_id, $taxonomy, 'fields=tt_ids');
-		wp_update_term_count($terms, $taxonomy);
+		$tt_ids = wp_get_object_terms($post_id, $taxonomy, 'fields=tt_ids');
+		wp_update_term_count($tt_ids, $taxonomy);
 	}
 
 	do_action('edit_post', $post_id, $post);
@@ -2245,7 +2249,7 @@ function wp_insert_attachment($object, $file = false, $parent = 0) {
 	$defaults = array('post_status' => 'draft', 'post_type' => 'post', 'post_author' => $user_ID,
 		'ping_status' => get_option('default_ping_status'), 'post_parent' => 0,
 		'menu_order' => 0, 'to_ping' =>  '', 'pinged' => '', 'post_password' => '',
-		'guid' => '', 'post_content_filtered' => '', 'post_excerpt' => '');
+		'guid' => '', 'post_content_filtered' => '', 'post_excerpt' => '', 'import_id' => 0);
 
 	$object = wp_parse_args($object, $defaults);
 	if ( !empty($parent) )
@@ -2341,6 +2345,14 @@ function wp_insert_attachment($object, $file = false, $parent = 0) {
 	if ( $update ) {
 		$wpdb->update( $wpdb->posts, $data, array( 'ID' => $post_ID ) );
 	} else {
+		// If there is a suggested ID, use it if not already present
+		if ( !empty($import_id) ) { 
+			$import_id = (int) $import_id; 
+			if ( ! $wpdb->get_var( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE ID = %d", $import_id) ) ) { 
+				$data['ID'] = $import_id; 
+			} 
+		} 
+
 		$wpdb->insert( $wpdb->posts, $data );
 		$post_ID = (int) $wpdb->insert_id;
 	}
@@ -3542,4 +3554,35 @@ function wp_get_post_revisions( $post_id = 0, $args = null ) {
 	if ( !$revisions = get_children( $args ) )
 		return array();
 	return $revisions;
+}
+
+function _set_preview($post) {
+
+	if ( ! is_object($post) )
+		return $post;
+
+	$preview = wp_get_post_autosave($post->ID);
+
+	if ( ! is_object($preview) )
+		return $post;
+
+	$preview = sanitize_post($preview);
+
+	$post->post_content = $preview->post_content;
+	$post->post_title = $preview->post_title;
+	$post->post_excerpt = $preview->post_excerpt;
+
+	return $post;
+}
+
+function _show_post_preview() {
+
+	if ( isset($_GET['preview_id']) && isset($_GET['preview_nonce']) ) {
+		$id = (int) $_GET['preview_id'];
+
+		if ( false == wp_verify_nonce( $_GET['preview_nonce'], 'post_preview_' . $id ) )
+			wp_die( __('You do not have permission to preview drafts.') );
+
+		add_filter('the_preview', '_set_preview');
+	}
 }

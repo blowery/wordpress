@@ -10,38 +10,32 @@ form .input-text-wrap {
 	border-style: solid;
 	border-width: 1px;
 	padding: 2px 3px;
-	border-color: #CCCCCC;
+	border-color: #ccc;
 }
 
 form .input-text-wrap input {
-	border: 0pt none;
-	outline-color: -moz-use-text-color;
-	outline-style: none;
-	outline-width: medium;
-	padding: 0pt;
+	border: 0 none;
+	outline: none;
+	padding: 0;
 	width: 99%;
-	border-style: solid;
-	color: #333333;
+	color: #333;
 }
 
 form .textarea-wrap {
 	border-style: solid;
 	border-width: 1px;
 	padding: 2px;
-	border-color: #CCCCCC;
+	border-color: #ccc;
 }
 
 form .textarea-wrap textarea {
-	border: 0pt none;
+	border: 0 none;
 	padding: 0;
+	outline: none;
 	width: 99%;
-}
-
-form p.field-tip {
-	font-size: .9em;
-	font-style: italic;
-	margin: 0;
-	padding: 0;
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 #dashboard-widgets .postbox form .submit {
@@ -59,17 +53,29 @@ form p.field-tip {
 	min-width: 0;
 }
 
+#dashboard-widgets-wrap .has-sidebar {
+	margin-right: -51%;
+}
+
+#dashboard-widgets-wrap .inner-sidebar {
+	width: 49%;
+}
+
+#dashboard-widgets-wrap .has-sidebar .has-sidebar-content {
+	margin-right: 51%;
+}
+
 div.postbox div.inside {
 	margin: 0 10px 10px;
 	position: relative;
 }
 
-.view-all {
-	position: absolute;
-	top: 0;
-	right: 0;
-	padding: 0;
-	margin: 0;
+#dashboard-widgets a {
+	text-decoration: none;
+}
+
+#dashboard-widgets h3 a {
+	text-decoration: underline;
 }
 
 #dashboard-widgets h4 {
@@ -78,19 +84,150 @@ div.postbox div.inside {
 	padding: 0;
 }
 
+/* Right Now */
+
+#dashboard_right_now p.sub, #dashboard_right_now .table, #dashboard_right_now .versions {
+	margin: -10px;
+	font-family: Georgia, serif;
+}
+
+#dashboard_right_now .inside {
+	font-size: 12px;
+}
+
+#dashboard_right_now p.sub {
+	font-style: italic;
+	padding: 5px 10px 15px;
+	color: #777;
+}
+
+#dashboard_right_now .table {
+	background: #f9f9f9;
+	border-top: #ececec 1px solid;
+	border-bottom: #ececec 1px solid;
+	margin: 0 -9px 10px;
+	padding: 0 10px;
+}
+
+#dashboard_right_now table {
+	width: 100%;
+}
+
+#dashboard_right_now table  td {
+	border-top: #ececec 1px solid;
+	padding: 3px 0;
+	white-space: nowrap;
+}
+
+#dashboard_right_now table tr.first td {
+	border-top: none;
+}
+
+#dashboard_right_now .b, #dashboard_right_now .b a {
+	color: #2583ad;
+}
+
+#dashboard_right_now td.b {
+	padding-right: 6px;
+	text-align: right;
+	font-family: Georgia, "Times New Roman", Times, serif;
+	font-size: 14px;
+}
+
+#dashboard_right_now td.b a {
+	font-size: 18px;
+}
+
+#dashboard_right_now .t {
+	font-size: 12px;
+	padding-right: 12px;
+	padding-top: 6px;
+	color: #777;
+}
+
+#dashboard_right_now td.first,
+#dashboard_right_now td.last {
+	width: 1px;
+}
+
+#dashboard_right_now .spam {
+	color: red;
+}
+
+#dashboard_right_now .waiting {
+	color: orange;
+}
+
+#dashboard_right_now .approved {
+	color: green;
+}
+
+#dashboard_right_now .versions {
+	padding: 6px 10px 12px;
+}
+
+#dashboard_right_now .versions, #dashboard_right_now .versions p {
+	font-style: italic;
+	font-size: 13px;
+}
+
+#dashboard_right_now .versions a, #dashboard_right_now .versions .b {
+	font-style: normal;
+	font-family: "Lucida Grande", "Lucida Sans Unicode", Tahoma, Verdana, sans-serif;;
+	font-size: 12px;
+}
+
+#dashboard_right_now a.button {
+	font-weight: normal;
+	float: right;
+	clear: right;
+	position: relative;
+	top: -5px;
+	padding: 2px 11px;	
+}
+
 /* Recent Comments */
+
+#dashboard_recent_comments h3 {
+	margin-bottom: 0;
+}
 
 #the-comment-list {
 	position: relative;
 }
 
 #the-comment-list .comment-item {
-	padding: 5px 5px 5px 47px;
+	padding: 1em 10px 1em 70px;
+	border-top: 1px solid;
+}
+
+#the-comment-list .comment-item, #the-comment-list #replyrow {
+	margin: 0 -10px;
+}
+
+#the-comment-list .comment-item:first-child {
+	border-top: none;
 }
 
 #the-comment-list .comment-item .avatar {
 	position: absolute;
-	left: 5px;
+	left: 0;
+}
+
+#the-comment-list .comment-item h4 {
+	line-height: 1.4;
+	margin-top: -.2em;
+	font-weight: normal;
+	color: #999;
+}
+
+#the-comment-list .comment-item h4 cite, #the-comment-list .comment-item h4 strong {
+	font-style: normal;
+	color: #333;
+}
+
+#the-comment-list .comment-item p.comment-author {
+	margin: 0.2em 0;
 }
 
 #the-comment-list .comment-item blockquote, #the-comment-list .comment-item blockquote p {
@@ -106,20 +243,61 @@ div.postbox div.inside {
 #the-comment-list .comment-item p.comment-actions {
 	margin: 0;
 	padding: 0;
+	font-size: 11px;
+}
+
+#the-comment-list .approve a {
+	color: green;
+}
+
+#the-comment-list .unapprove a {
+	color: orange;
+}
+
+#the-comment-list .delete a {
+	color: red;
 }
 
 /* QuickPress */
 
-#quick-press #add-media-button {
-	margin: .5em 0;
-}
-
-#quick-press #content-label {
-	margin-top: 1em;
-}
-
-#quick-press .textarea-wrap {
+#dashboard_quick_press h4 {
+	float: left;
+	width: 5em;
 	clear: both;
+	font-weight: normal;
+	font-style: italic;
+	font-family: Georgia, serif;
+	text-align: right;
+}
+
+#dashboard_quick_press h4 label {
+	margin-right: 10px;
+}
+
+#dashboard_quick_press .input-text-wrap, #dashboard_quick_press .textarea-wrap {
+	margin: 0 0 1em 5em;
+}
+
+#dashboard_quick_press #media-buttons {
+	margin: 0 0 .5em 5em;
+	padding: 0 0 0 2px;
+}
+
+#dashboard-widgets #dashboard_quick_press form p.submit {
+	padding: .8em .8em .8em 5.3em;
+	margin: 0 -10px -10px;
+}
+
+#dashboard-widgets #dashboard_quick_press form p.submit input {
+	float: left;
+}
+
+#dashboard-widgets #dashboard_quick_press form p.submit #save-post {
+	margin: 0 1em 0 10px;
+}
+
+#dashboard-widgets #dashboard_quick_press form p.submit #publish {
+	float: right;
 }
 
 /* Recent Drafts */
@@ -127,6 +305,24 @@ div.postbox div.inside {
 	margin: 0;
 	padding: 0;
 	list-style: none;
+}
+
+#dashboard_recent_drafts ul li {
+	margin-bottom: 0.6em;
+}
+
+#dashboard_recent_drafts h4 {
+	font-weight: normal;
+}
+
+#dashboard_recent_drafts h4 abbr {
+	font-family: Georgia, serif;
+	color: #999;
+}
+
+#dashboard_recent_drafts p {
+	margin: 0;
+	padding: 0;
 }
 
 /* Feeds */
@@ -137,12 +333,17 @@ div.postbox div.inside {
 	list-style: none;
 }
 
-.rss-widget a.rsswidget {
-	font-size: 14px;
+a.rsswidget {
+	font-size: 13px;
+	line-height: 1.7em;
+}
+
+.rss-widget ul li {
+	line-height: 1.4em;
 }
 
 .rss-widget span.rss-date {
-	font-size: 14px;
+	font-family: Georgia, serif;
 }
 
 .rss-widget cite {
@@ -163,6 +364,11 @@ div.postbox div.inside {
 	margin: 0;
 	display: inline;
 	line-height: 1.4em;
+}
+
+#dashboard_plugins h5 a {
+	font-weight: normal;
+	line-height: 1.7em;
 }
 
 #dashboard_plugins p {

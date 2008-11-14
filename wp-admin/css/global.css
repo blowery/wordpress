@@ -1,8 +1,66 @@
+/* http://meyerweb.com/eric/tools/css/reset/ */
+/* v1.0 | 20080212 */
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+/*	font-size: 100%;
+	vertical-align: baseline; */
+	background: transparent;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+
+/* remember to define focus styles! */
+/*
+:focus {
+	outline: 0;
+}
+*/
+/* remember to highlight inserts somehow! */
+ins {
+	text-decoration: none;
+}
+del {
+	text-decoration: line-through;
+}
+
+/* tables still need 'cellspacing="0"' in the markup */
+/*
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+*/
+/* end reset css */
+
+
 /* 2 column liquid layout */
 #wpwrap {
 	height: auto;
 	min-height: 100%;
-	overflow: hidden;
 	width: 100%;
 }
 
@@ -13,7 +71,6 @@
 
 #wpbody-content {
 	overflow: hidden;
-	padding-top: 10px;
 }
 
 #adminmenu {
@@ -49,30 +106,80 @@
 	margin-right: 305px;
 }
 
+/* 2 columns main area */
+
+#col-container {
+	overflow: hidden;
+	padding: 0;
+	margin: 0;
+}
+
+#col-left {
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	width: 39%;
+}
+
+#col-right {
+	float: right;
+	clear: right;
+	overflow: hidden;
+	padding: 0;
+	margin: 0;
+	width: 59%;
+}
+
+/* include margin and padding in the width calculation of input and textarea */
+input[type="text"],
+textarea {
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	-ms-box-sizing: border-box; /* ie8 only */
+	box-sizing: border-box;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+	vertical-align: text-top;
+}
 
 /* styles for use by people extending the WordPress interface */
 
-body	{
-	margin: 0;
-	padding: 0;
-}
-
-body, td {
+body,
+td {
 	font: 13px "Lucida Grande", "Lucida Sans Unicode", Tahoma, Verdana, sans-serif;
 }
 
-form, label input { margin: 0; padding: 0; }
+p {
+	margin: 1em 0;
+}
 
-img { border: 0; }
+blockquote {
+	margin: 1em;
+}
 
-label { cursor: pointer; }
+label {
+	cursor: pointer;
+}
 
-li, dd { margin-bottom: 6px; }
+li,
+dd {
+	margin-bottom: 6px;
+}
 
-p, li, dl, dd, dt { line-height: 140%; }
+p,
+li,
+dl,
+dd,
+dt {
+	line-height: 140%;
+}
 
-textarea, input, select {
-	font: 13px Verdana, Arial, Helvetica, sans-serif;
+textarea,
+input,
+select {
+	font: 13px/19px Verdana, Arial, Helvetica, sans-serif;
 	margin: 1px;
 	padding: 3px;
 }
@@ -140,19 +247,22 @@ h6 {
 
 .subsubsub {
 	list-style: none;
-	margin: 0;
+	margin: 0 0 5px;
 	padding: 0;
-	position: relative;
-	top: -5px;
 	white-space: nowrap;
 	font-size: 12px;
 	float: left;
 }
 
 .subsubsub a {
-	line-height: 200%;
-	padding: 3px;
+	line-height: 2;
+	padding: .2em;
 	text-decoration: none;
+}
+
+.subsubsub a .count, .subsubsub a.current .count {
+	color: #999;
+	font-weight: normal;
 }
 
 .subsubsub a.current {
@@ -167,17 +277,18 @@ h6 {
 	padding: 0;
 }
 
-.subsubsub li.spam {
-	font-size: .9em;
-}
-
 .widefat {
 	border-width: 1px;
 	border-style: solid;
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
 	width: 100%;
 	clear: both;
 	margin: 0;
+	-moz-border-radius: 4px;
+	-khtml-border-radius: 4px;
+	-webkit-border-radius: 4px;
+	border-radius: 4px;
 }
 
 .widefat a {
@@ -188,7 +299,8 @@ h6 {
 	white-space: nowrap;
 }
 
-.widefat td, .widefat th {
+.widefat td,
+.widefat th {
 	border-bottom-width: 1px;
 	border-bottom-style: solid;
 	border-bottom-color: #ccc;
@@ -202,7 +314,7 @@ h6 {
 }
 
 .widefat th {
-	padding: 9px 15px 6px 10px;
+	padding: 7px 15px 8px 10px;
 	text-align: left;
 	line-height: 1.3em;
 }
@@ -210,6 +322,7 @@ h6 {
 .widefat th input {
 	margin: 0 0 0 8px;
 	padding: 0;
+	vertical-align: text-top;
 }
 
 .widefat .check-column {
@@ -220,56 +333,47 @@ h6 {
 }
 
 .widefat tbody th.check-column {
-	padding: 8px 0 22px;
+	padding: 10px 0 22px;
 }
-/*
-th.check-column + th, th.check-column + td {
-	padding-left: 5px;
-}
-*/
+
 .widefat .num,
 .widefat .column-comments {
 	text-align: center;
 }
 
-.wrap, .updated, .error {
+.widefat th#comments {
+	vertical-align: middle;
+}
+
+.wrap,
+.updated,
+.error {
 	margin: 0 15px;
 	padding: 0;
 }
 
-.updated, .error {
+.updated,
+.error {
 	border-width: 1px;
 	border-style: solid;
 	padding: 0 0.6em;
 	margin: 3px 15px 5px;
 }
 
-.updated p, .error p {
+.updated p,
+.error p {
 	margin: 0.6em 0;
 }
 
-.wrap .updated, .wrap .error {
-	margin: auto 0 0;
-}
-
-.updated a, .error a {
-	text-decoration: underline;
-}
-
-.updated a {
-	text-decoration: none;
-	padding-bottom: 2px;
+.wrap .updated,
+.wrap .error {
+	margin: 0 0 12px;
 }
 
 .wrap h2 {
-	border-bottom-width: 1px;
-	border-bottom-style: solid;
-	clear: both;
-	font: 24px Georgia, "Times New Roman", Times, serif;
-	margin: 5px 0 10px -4px;
-	padding: 0;
-	padding-bottom: 7px;
-	padding-right: 280px;
+	font: italic normal normal 24px/29px Georgia, "Times New Roman", Times, serif;
+	margin: 0;
+	padding: 10px 15px 5px 0;
 }
 
 .wrap h2.long-header {

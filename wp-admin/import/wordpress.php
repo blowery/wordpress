@@ -49,7 +49,7 @@ class WP_Import {
 
 	function greet() {
 		echo '<div class="narrow">';
-		echo '<p>'.__('Howdy! Upload your WordPress eXtended RSS (WXR) file and we&#8217;ll import the posts, comments, custom fields, and categories into this blog.').'</p>';
+		echo '<p>'.__('Howdy! Upload your WordPress eXtended RSS (WXR) file and we&#8217;ll import the posts, pages, comments, custom fields, categories, and tags into this blog.').'</p>';
 		echo '<p>'.__('Choose a WordPress WXR file to upload, then click Upload file and import.').'</p>';
 		wp_import_upload_form("admin.php?import=wordpress&amp;step=1");
 		echo '</div>';
@@ -206,9 +206,9 @@ class WP_Import {
 
 
 		$authors = $this->get_wp_authors();
-		echo '<ol id="authors">';
 		echo '<form action="?import=wordpress&amp;step=2&amp;id=' . $this->id . '" method="post">';
 		wp_nonce_field('import-wordpress');
+		echo '<ol id="authors">';
 		$j = -1;
 		foreach ($authors as $author) {
 			++ $j;
@@ -229,7 +229,9 @@ class WP_Import {
 <?php
 		}
 
-		echo '<input type="submit" value="'.attribute_escape( __('Submit') ).'">'.'<br />';
+		echo '<p class="submit">';
+		echo '<input type="submit" class="button" value="'.attribute_escape( __('Submit') ).'" />'.'<br />';
+		echo '</p>';
 		echo '</form>';
 
 	}
@@ -237,7 +239,7 @@ class WP_Import {
 	function users_form($n, $author) {
 
 		if ( $this->allow_create_users() ) {
-			printf('<label>'.__('Create user %1$s or map to existing'), ' <input type="text" value="'.$author.'" name="'.'user_create['.intval($n).']'.'" maxlength="30"></label> <br />');
+			printf('<label>'.__('Create user %1$s or map to existing'), ' <input type="text" value="'.$author.'" name="'.'user_create['.intval($n).']'.'" maxlength="30" /></label> <br />');
 		}
 		else {
 			echo __('Map to existing').'<br />';
@@ -604,10 +606,16 @@ class WP_Import {
 		// fetch the remote url and write it to the placeholder file
 		$headers = wp_get_http($url, $upload['file']);
 
+		//Request failed
+		if ( ! $headers ) {
+			@unlink($upload['file']);
+			return new WP_Error( 'import_file_error', __('Remote server did not respond') );
+		}
+
 		// make sure the fetch was successful
 		if ( $headers['response'] != '200' ) {
 			@unlink($upload['file']);
-			return new WP_Error( 'import_file_error', sprintf(__('Remote file returned error response %d'), intval($headers['response'])) );
+			return new WP_Error( 'import_file_error', sprintf(__('Remote file returned error response %1$d %2$s'), $headers['response'], get_status_header_desc($headers['response']) ) );
 		}
 		elseif ( isset($headers['content-length']) && filesize($upload['file']) != $headers['content-length'] ) {
 			@unlink($upload['file']);
@@ -782,6 +790,6 @@ class WP_Import {
  */
 $wp_import = new WP_Import();
 
-register_importer('wordpress', 'WordPress', __('Import <strong>posts, comments, custom fields, pages, and categories</strong> from a WordPress export file.'), array ($wp_import, 'dispatch'));
+register_importer('wordpress', 'WordPress', __('Import <strong>posts, pages, comments, custom fields, categories, and tags</strong> from a WordPress export file.'), array ($wp_import, 'dispatch'));
 
 ?>

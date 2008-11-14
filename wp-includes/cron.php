@@ -24,7 +24,7 @@ function wp_schedule_single_event( $timestamp, $hook, $args = array()) {
 	$next = wp_next_scheduled($hook, $args);
 	if ( $next && $next <= $timestamp + 600 )
 		return;
-		
+
 	$crons = _get_cron_array();
 	$key = md5(serialize($args));
 	$crons[$timestamp][$hook][$key] = array( 'schedule' => false, 'args' => $args );
@@ -187,13 +187,13 @@ function spawn_cron( $local_time ) {
 
 	// clean up potential invalid value resulted from various system chaos
 	if ( $flag != 0 ) {
-	 	if ( $flag > $local_time + 10*60 || $flag < $local_time - 10*60 ) {
-	 		update_option('doing_cron', 0);
-	 		$flag = 0;
-	 	}
+		if ( $flag > $local_time + 10*60 || $flag < $local_time - 10*60 ) {
+			update_option('doing_cron', 0);
+			$flag = 0;
+		}
 	}
 
-	 //don't run if another process is currently running it
+	//don't run if another process is currently running it
 	if ( $flag > $local_time )
 		return;
 

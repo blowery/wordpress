@@ -102,15 +102,13 @@ if ( isset($_GET['find_detached'] ) ) {
 
 $title = __('Media Library');
 $parent_file = 'edit.php';
-wp_enqueue_script( 'admin-forms' );
-wp_enqueue_script('media');
 
 if ( ! isset( $_GET['paged'] ) || $_GET['paged'] < 1 )
 	$_GET['paged'] = 1;
 
 if ( isset($_GET['detached']) ) {
 
-	if ( isset($lost) ) {
+	if ( !empty($lost) ) {
 		$start = ( $_GET['paged'] - 1 ) * 50;
 		$page_links_total = ceil(count($lost) / 50);
 		$lost = implode(',', $lost);
@@ -145,16 +143,6 @@ if ( is_singular() ) {
 
 require_once('admin-header.php'); ?>
 
-<div id="screen-options-wrap" class="hidden">
-<h5><?php _e('Show on screen') ?></h5>
-<form id="adv-settings" action="" method="get">
-<div class="metabox-prefs">
-<?php manage_columns_prefs('media') ?>
-<?php wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false ); ?>
-<br class="clear" />
-</div></form>
-</div>
-
 <?php
 if ( isset($_GET['posted']) && (int) $_GET['posted'] ) {
 	$_GET['message'] = '1';
@@ -171,12 +159,9 @@ $messages[1] = __('Media attachment updated.');
 $messages[2] = __('Media deleted.');
 $messages[3] = __('Error saving media attachment.');
 
-if ( isset($_GET['message']) && (int) $_GET['message'] )
+if ( isset($_GET['message']) && (int) $_GET['message'] ) {
 	$message = $messages[$_GET['message']];
-
-if ( isset($message) ) { ?>
-<div id="message" class="updated fade"><p><?php echo $message; ?></p></div>
-<?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('message'), $_SERVER['REQUEST_URI']);
+	$_SERVER['REQUEST_URI'] = remove_query_arg(array('message'), $_SERVER['REQUEST_URI']);
 }
 ?>
 
@@ -185,39 +170,87 @@ if ( isset($message) ) { ?>
 <div class="wrap">
 <h2><?php echo wp_specialchars( $title ); ?></h2> 
 
+<?php
+if ( isset($message) ) { ?>
+<div id="message" class="updated fade"><p><?php echo $message; ?></p></div>
+<?php 
+}
+?>
+
 <ul class="subsubsub">
 <?php
 $type_links = array();
 $_num_posts = (array) wp_count_attachments();
+$_total_posts = array_sum( $_num_posts );
 $matches = wp_match_mime_types(array_keys($post_mime_types), array_keys($_num_posts));
 foreach ( $matches as $type => $reals )
 	foreach ( $reals as $real )
-		$num_posts[$type] += $_num_posts[$real];
+		$num_posts[$type] = ( isset( $num_posts[$type] ) ) ? $num_posts[$type] + $_num_posts[$real] : $_num_posts[$real];
 
 $class = empty($_GET['post_mime_type']) && ! isset($_GET['detached']) ? ' class="current"' : '';
-$type_links[] = "<li><a href=\"upload.php\"$class>".__('All Types')."</a>";
+$type_links[] = "<li><a href='upload.php'$class>" . sprintf( __ngettext( 'All <span class="count">(%s)</span>', 'All <span class="count">(%s)</span>', $_total_posts ), number_format_i18n( $_total_posts ) ) . '</a>';
 foreach ( $post_mime_types as $mime_type => $label ) {
 	$class = '';
 
 	if ( !wp_match_mime_types($mime_type, $avail_post_mime_types) )
 		continue;
 
-	if ( wp_match_mime_types($mime_type, $_GET['post_mime_type']) )
+	if ( !empty($_GET['post_mime_type']) && wp_match_mime_types($mime_type, $_GET['post_mime_type']) )
 		$class = ' class="current"';
 
-	$type_links[] = "<li><a href=\"upload.php?post_mime_type=$mime_type\"$class>" .
-	sprintf(__ngettext($label[2][0], $label[2][1], $num_posts[$mime_type]), number_format_i18n( $num_posts[$mime_type] )) . '</a>';
+	$type_links[] = "<li><a href='upload.php?post_mime_type=$mime_type'$class>" . sprintf( __ngettext( $label[2][0], $label[2][1], $num_posts[$mime_type] ), number_format_i18n( $num_posts[$mime_type] )) . '</a>';
 }
 $class = isset($_GET['detached']) ? ' class="current"' : '';
 $type_links[] = '<li><a href="upload.php?detached=1"' . $class . '>' . __('Unattached') . '</a>';
 
-echo implode(' | </li>', $type_links) . '</li>';
+echo implode( " |</li>\n", $type_links) . '</li>';
 unset($type_links);
 ?>
 </ul>
 
-<div class="filter">
-<form id="list-filter" action="" method="get">
+<form class="search-form" action="" method="get">
+<p class="search-box">
+	<label class="hidden" for="media-search-input"><?php _e( 'Search Media' ); ?>:</label>
+	<input type="text" class="search-input" id="media-search-input" name="s" value="<?php the_search_query(); ?>" />
+	<input type="submit" value="<?php _e( 'Search Media' ); ?>" class="button" />
+</p>
+</form>
+
+<form id="posts-filter" action="" method="get">
+<div class="tablenav">
+<?php
+if ( ! isset($page_links_total) )
+	$page_links_total =  $wp_query->max_num_pages;
+
+$page_links = paginate_links( array(
+	'base' => add_query_arg( 'paged', '%#%' ),
+	'format' => '',
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
+	'total' => $page_links_total,
+	'current' => $_GET['paged']
+));
+
+if ( $page_links ) : ?>
+<div class="tablenav-pages"><?php $page_links_text = sprintf( '<span class="displaying-num">' . __( 'Displaying %s&#8211;%s of %s' ) . '</span>%s',
+	number_format_i18n( ( $_GET['paged'] - 1 ) * $wp_query->query_vars['posts_per_page'] + 1 ),
+	number_format_i18n( min( $_GET['paged'] * $wp_query->query_vars['posts_per_page'], $wp_query->found_posts ) ),
+	number_format_i18n( $wp_query->found_posts ),
+	$page_links
+); echo $page_links_text; ?></div>
+<?php endif; ?>
+
+<div class="alignleft actions">
+<select name="action" class="select-action">
+<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="delete"><?php _e('Delete'); ?></option>
+<?php if ( isset($orphans) ) { ?>
+<option value="attach"><?php _e('Attach to a post'); ?></option>
+<?php } ?>
+</select>
+<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
+<?php wp_nonce_field('bulk-media'); ?>
+
 <?php
 if ( ! is_singular() && ! isset($_GET['detached']) ) {
 	$arc_query = "SELECT DISTINCT YEAR(post_date) AS yyear, MONTH(post_date) AS mmonth FROM $wpdb->posts WHERE post_type = 'attachment' ORDER BY post_date DESC";
@@ -251,43 +284,6 @@ foreach ($arc_result as $arc_row) {
 <input type="submit" id="post-query-submit" value="<?php _e('Filter'); ?>" class="button-secondary" />
 
 <?php } // ! is_singular ?>
-</form></div>
-
-<form class="search-form" action="" method="get">
-<p class="search-box">
-	<label class="hidden" for="post-search-input"><?php _e( 'Search Media' ); ?>:</label>
-	<input type="text" class="search-input" id="post-search-input" name="s" value="<?php the_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Media' ); ?>" class="button" />
-</p>
-</form>
-
-<form id="posts-filter" action="" method="get">
-<div class="tablenav">
-<?php
-if ( ! isset($page_links_total) )
-	$page_links_total =  $wp_query->max_num_pages;
-
-$page_links = paginate_links( array(
-	'base' => add_query_arg( 'paged', '%#%' ),
-	'format' => '',
-	'total' => $page_links_total,
-	'current' => $_GET['paged']
-));
-
-if ( $page_links )
-	echo "<div class='tablenav-pages'>$page_links</div>";
-?>
-
-<div class="alignleft">
-<select name="action" class="select-action">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
-<option value="delete"><?php _e('Delete'); ?></option>
-<?php if ( isset($orphans) ) { ?>
-<option value="attach"><?php _e('Attach to a post'); ?></option>
-<?php } ?>
-</select>
-<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
-<?php wp_nonce_field('bulk-media'); ?>
 
 <?php if ( isset($_GET['detached']) ) { ?>
 	<input type="submit" id="find_detached" name="find_detached" value="<?php _e('Scan for lost attachments'); ?>" class="button-secondary" />
@@ -391,10 +387,10 @@ if ( $page_links )
 
 <?php
 if ( $page_links )
-	echo "<div class='tablenav-pages'>$page_links</div>";
+	echo "<div class='tablenav-pages'>$page_links_text</div>";
 ?>
 
-<div class="alignleft">
+<div class="alignleft actions">
 <select name="action2" class="select-action">
 <option value="-1" selected="selected"><?php _e('Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
@@ -450,21 +446,24 @@ endif; // posts;
 </div>
 
 <script type="text/javascript">
-	jQuery(function($) {
-		$('#doaction').click(function(e) {
-			if ( 'attach' == $('#posts-filter select[name="action"]').val() ) {
-				e.preventDefault();
-				findPosts.open();
-			}
-		});
-		$('#doaction2').click(function(e) {
-			if ( 'attach' == $('#posts-filter select[name="action2"]').val() ) {
+/* <![CDATA[ */
+(function($){
+	$(document).ready(function(){
+		$('#doaction, #doaction2').click(function(e){
+			if ( $('select[name^="action"]').val() == 'delete' ) {
+				var m = '<?php echo js_escape(__("You are about to delete the selected attachments.\n  'Cancel' to stop, 'OK' to delete.")); ?>';
+				return showNotice.warn(m);
+			} else if ( $('select[name^="action"]').val() == 'attach' ) {
 				e.preventDefault();
 				findPosts.open();
 			}
 		});
 	});
+})(jQuery);
+columns.init('media');
+/* ]]> */
 </script>
+
 <?php
 
 include('admin-footer.php');
