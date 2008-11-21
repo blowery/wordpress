@@ -71,19 +71,6 @@ function page_submit_meta_box($post) {
 </div>
 
 <div id="minor-publishing-actions">
-<div id="preview-action">
-<noscript>
-<?php if ( 'publish' == $post->post_status ) { ?>
-<a class="preview button" href="<?php echo clean_url(get_permalink($post->ID)); ?>" target="_blank" tabindex="4"><?php _e('View Post'); ?></a>
-<?php } else { ?>
-<a class="preview button" href="<?php echo clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>" target="_blank" tabindex="4"><?php _e('Preview'); ?></a>
-<?php } ?>
-</noscript>
-
-<a class="preview button hide-if-no-js" href="#" id="post-preview" tabindex="4"><?php _e('Preview'); ?></a>
-<input type="hidden" name="wp-preview" id="wp-preview" value="" />
-</div>
-
 <div id="save-action">
 <?php if ( 'publish' != $post->post_status && 'future' != $post->post_status && 'pending' != $post->post_status )  { ?>
 <input <?php if ( 'private' == $post->post_status ) { ?>style="display:none"<?php } ?> type="submit" name="save" id="save-post" value="<?php echo attribute_escape( __('Save Draft') ); ?>" tabindex="4" class="button button-highlighted" />
@@ -91,16 +78,18 @@ function page_submit_meta_box($post) {
 <input type="submit" name="save" id="save-post" value="<?php echo attribute_escape( __('Save as Pending') ); ?>" tabindex="4" class="button button-highlighted" />
 <?php } ?>
 </div>
+
+<div id="preview-action">
+<?php $preview_link = 'publish' == $post->post_status ? clean_url(get_permalink($post->ID)) : clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>
+
+<a class="preview button" href="<?php echo $preview_link; ?>" target="wp-preview" id="post-preview" tabindex="4"><?php _e('Preview'); ?></a>
+<input type="hidden" name="wp-preview" id="wp-preview" value="" />
+</div>
+
 <div class="clear"></div>
 </div><?php // /minor-publishing-actions ?>
 
 <div id="misc-publishing-actions">
-
-<?php if ( false ) { // Stub for 2.8 ?>
-<div class="misc-pub-section misc-pub-section-1-last" id="visibility">
-<?php _e('Visibility:'); ?> <b><?php _e('Public'); // TODO: dropdown ?></b>
-</div>
-<?php } ?>
 
 <div class="misc-pub-section<?php if ( !$can_publish ) { echo ' misc-pub-section-last'; } ?>"><label for="post_status"><?php _e('Status:') ?></label>
 <b><span id="post-status-display">
@@ -207,7 +196,7 @@ if ( 0 != $post->ID ) {
 <div class="misc-pub-section curtime misc-pub-section-last">
 	<span id="timestamp">
 	<?php printf($stamp, $date); ?></span>
-	&nbsp;<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
+	<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
 	<div id="timestampdiv" class="hide-if-js"><?php touch_time(($action == 'edit'),1,4); ?></div>
 </div><?php // /misc-pub-section ?>
 <?php endif; ?>
@@ -228,7 +217,7 @@ if ( ( 'edit' == $action ) && current_user_can('delete_page', $post->ID) ) { ?>
 <div id="publishing-action">
 <?php
 if ( !in_array( $post->post_status, array('publish', 'future', 'private') ) || 0 == $post->ID ) { ?>
-<?php if ( current_user_can('publish_posts') ) : ?>
+<?php if ( $can_publish ) : ?>
 	<?php if ( !empty($post->post_date_gmt) && time() < strtotime( $post->post_date_gmt . ' +0000' ) ) : ?>
 		<input name="original_publish" type="hidden" id="original_publish" value="<?php _e('Schedule') ?>" />
 		<input name="publish" type="submit" class="button-primary" id="publish" tabindex="5" accesskey="p" value="<?php _e('Schedule') ?>" />
@@ -356,7 +345,7 @@ function page_slug_meta_box($post){
 }
 add_meta_box('pageslugdiv', __('Page Slug'), 'page_slug_meta_box', 'page', 'normal', 'core');
 
-$authors = get_editable_user_ids( $current_user->id ); // TODO: ROLE SYSTEM
+$authors = get_editable_user_ids( $current_user->id, true, 'page' ); // TODO: ROLE SYSTEM
 if ( $post->post_author && !in_array($post->post_author, $authors) )
 	$authors[] = $post->post_author;
 if ( $authors && count( $authors ) > 1 ) {
@@ -369,7 +358,7 @@ if ( $authors && count( $authors ) > 1 ) {
 	 */
 	function page_author_meta_box($post){
 		global $current_user, $user_ID;
-		$authors = get_editable_user_ids( $current_user->id ); // TODO: ROLE SYSTEM
+		$authors = get_editable_user_ids( $current_user->id, true, 'page' ); // TODO: ROLE SYSTEM
 		if ( $post->post_author && !in_array($post->post_author, $authors) )
 			$authors[] = $post->post_author;
 ?>

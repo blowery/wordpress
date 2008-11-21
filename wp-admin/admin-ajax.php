@@ -819,7 +819,7 @@ case 'closed-postboxes' :
 	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
 	$hidden = explode( ',', $_POST['hidden'] );
 	$page = isset( $_POST['page'] )? $_POST['page'] : '';
-	if ( !preg_match( '/^[a-z-]+$/', $page ) ) {
+	if ( !preg_match( '/^[a-z-_]+$/', $page ) ) {
 		die(-1);
 	}
 	$current_user = wp_get_current_user();
@@ -833,7 +833,7 @@ case 'hidden-columns' :
 	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
 	$hidden = explode( ',', $_POST['hidden'] );
 	$page = isset( $_POST['page'] )? $_POST['page'] : '';
-	if ( !preg_match( '/^[a-z-]+$/', $page ) ) {
+	if ( !preg_match( '/^[a-z-_]+$/', $page ) ) {
 		die(-1);
 	}
 	$current_user = wp_get_current_user();
@@ -880,10 +880,12 @@ case 'inline-save':
 
 	// rename
 	$data['user_ID'] = $GLOBALS['user_ID'];
-	$data['parent_id'] = $data['post_parent'];
+
+	if ( isset($data['post_parent']) )
+		$data['parent_id'] = $data['post_parent'];
 
 	// status
-	if ( 'private' == $data['keep_private'] )
+	if ( isset($data['keep_private']) && 'private' == $data['keep_private'] )
 		$data['post_status'] = 'private';
 	else
 		$data['post_status'] = $data['_status'];

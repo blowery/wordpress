@@ -18,6 +18,11 @@ function __() {}
 /**
  * @ignore
  */
+function _c() {}
+
+/**
+ * @ignore
+ */
 function add_filter() {}
 
 /**
@@ -130,6 +135,8 @@ header( 'Content-Type: application/x-javascript; charset=UTF-8' );
 { "url" : "images/menu-arrows.gif" },
 { "url" : "images/menu-bits.gif" },
 { "url" : "images/menu-bits-rtl.gif" },
+{ "url" : "images/menu-dark.gif" },
+{ "url" : "images/menu-dark-rtl.gif" },
 { "url" : "images/del.png" },
 { "url" : "images/list.gif" },
 { "url" : "images/exc.gif" },

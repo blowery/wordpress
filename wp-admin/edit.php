@@ -9,6 +9,14 @@
 /** WordPress Administration Bootstrap */
 require_once('admin.php');
 
+// Back-compat for viewing comments of an entry
+if ( $_redirect = intval( max( @$_GET['p'], @$_GET['attachment_id'], @$_GET['page_id'] ) ) ) {
+	wp_redirect( admin_url('edit-comments.php?p=' . $_redirect ) );
+	exit;
+} else {
+	unset( $_redirect );
+}
+
 // Handle bulk actions
 if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2'] ) ) {
 	$doaction = ( -1 != $_GET['action'] ) ? $_GET['action'] : $_GET['action2'];
@@ -52,7 +60,6 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 	$sendback = wp_get_referer();
 	if ( strpos($sendback, 'post.php') !== false ) $sendback = admin_url('post-new.php');
 	elseif ( strpos($sendback, 'attachments.php') !== false ) $sendback = admin_url('attachments.php');
-	$sendback = preg_replace('|[^a-z0-9-~+_.?#=&;,/:]|i', '', $sendback);
 	if ( isset($done) ) {
 		$done['updated'] = count( $done['updated'] );
 		$done['skipped'] = count( $done['skipped'] );
@@ -72,11 +79,6 @@ $parent_file = 'edit.php';
 wp_enqueue_script('inline-edit-post');
 
 list($post_stati, $avail_post_stati) = wp_edit_posts_query();
-
-if ( 1 == count($posts) && is_singular() ) {
-	wp_enqueue_script( 'admin-comments' );
-	enqueue_comment_hotkeys_js();
-}
 
 require_once('admin-header.php');
 
@@ -162,8 +164,8 @@ endif;
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => $wp_query->max_num_pages,
 	'current' => $_GET['paged']
 ));
@@ -270,52 +272,6 @@ if ( $page_links )
 
 <br class="clear" />
 
-<?php
-
-if ( 1 == count($posts) && is_singular() ) :
-
-	$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved != 'spam' ORDER BY comment_date", $id) );
-	if ( $comments ) :
-		// Make sure comments, post, and post_author are cached
-		update_comment_cache($comments);
-		$post = get_post($id);
-		$authordata = get_userdata($post->post_author);
-	?>
-
-<br class="clear" />
-
-<table class="widefat" style="margin-top: .5em">
-<thead>
-  <tr>
-    <th scope="col"><?php _e('Comment') ?></th>
-    <th scope="col"><?php _e('Author') ?></th>
-    <th scope="col"><?php _e('Submitted') ?></th>
-  </tr>
-</thead>
-
-<tfoot>
-  <tr>
-    <th scope="col"><?php _e('Comment') ?></th>
-    <th scope="col"><?php _e('Author') ?></th>
-    <th scope="col"><?php _e('Submitted') ?></th>
-  </tr>
-</tfoot>
-
-<tbody id="the-comment-list" class="list:comment">
-<?php
-	foreach ($comments as $comment)
-		_wp_comment_row( $comment->comment_ID, 'single', false, false );
-?>
-</tbody>
-</table>
-
-<?php
-wp_comment_reply();
-endif; // comments
-endif; // posts;
-
-?>
-
 </div>
 
 <script type="text/javascript">
@@ -330,7 +286,7 @@ endif; // posts;
 		});
 	});
 })(jQuery);
-columns.init('post');
+columns.init('edit');
 /* ]]> */
 </script>
 

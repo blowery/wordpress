@@ -17,14 +17,20 @@ td.available-theme {
 /* 200 - 500
 =================================== */
 #save-post {
-	float: left;
-}
-.preview {
 	float: right;
 }
+.preview {
+	float: left;
+}
+#sticky-span {
+	margin-left: 0;
+	margin-right: 18px;
+}
 #post-body .misc-pub-section {
-	border-right: 0 none;
-	border-left: 1px solid #eee;
+	border-right-width: 0;
+	border-left-width: 1;
+	border-right-style: none;
+	border-left-style: solid;
 	float: right;
 }
 #post-body .misc-pub-section-last {
@@ -101,6 +107,7 @@ td.available-theme {
 .tablenav .displaying-num {
 	margin-right: 0;
 	margin-left: 10px;
+	font-family: Tahoma, "Times New Roman";
 }
 #postcustomstuff table input,
 #postcustomstuff table select,
@@ -121,9 +128,6 @@ td.available-theme {
 	float: right;
 	margin: 9px 20px 0 0;
 }
-ul#adminmenu li.write-new-button a {
-	font-family: Tahoma, "Times New Roman";
-}
 #wphead h1 {
 	font-family: "Times New Roman", Tahoma;
 	float: right;
@@ -131,14 +135,16 @@ ul#adminmenu li.write-new-button a {
 #wphead h1.long-title {
 	font-family: "Times New Roman", Tahoma;
 }
-#adminmenu {
-	font-family: Tahoma, "Times New Roman";
-}
 #adminmenu .wp-submenu a {
 	padding-left: 0;
 	padding-right: 12px;
 	border-width: 0 0 0 1px;
 	border-style: none none none solid;
+	font-family: Tahoma, "Times New Roman";
+}
+#adminmenu a.menu-top,
+#adminmenu .wp-submenu-head {
+	font-family: Tahoma, "Times New Roman";
 }
 #adminmenu img.wp-menu-image {
 	float: right;
@@ -163,6 +169,7 @@ ul#adminmenu li.write-new-button a {
 #adminmenu .wp-menu-toggle {
 	float: left;
 	padding: 1px 0 0 2px;
+	clear: left;
 }
 #adminmenu div.wp-menu-image {
 	float: right;
@@ -171,11 +178,13 @@ ul#adminmenu li.write-new-button a {
 /* 1000 - 1300
 =================================== */
 #adminmenu a #awaiting-mod,
-#adminmenu a #update-plugins,
-#sidemenu li a #update-plugins {
+#adminmenu a span.update-plugins,
+#sidemenu li a span.update-plugins {
 	background-position: -240px top;
 }
-#adminmenu li a:hover #awaiting-mod, #adminmenu li a:hover #update-plugins, #sidemenu li a:hover #update-plugins {
+#adminmenu li a:hover #awaiting-mod,
+#adminmenu li a:hover span.update-plugins,
+#sidemenu li a:hover span.update-plugins {
 	background-position: -160px top;
 }
 #adminmenu li a #awaiting-mod span, #adminmenu li a #update-plugins span, #sidemenu li a #update-plugins span {
@@ -250,17 +259,13 @@ ul#adminmenu li.write-new-button a {
 }
 /* 1500 - 1800
 =================================== */
-.ui-sortable .postbox .handlediv {
+.meta-box-sortables .postbox .handlediv {
 	float: left;
 }
 .metabox-holder .postbox h3,
 #poststuff .postbox h3,
 #poststuff .stuffbox h3 {
 	background-position: right top;
-}
-#edit-slug-buttons a {
-	margin-right: 0;
-	margin-left: 4px;
 }
 .postarea h3 label {
 	float: right;
@@ -270,7 +275,7 @@ ul#adminmenu li.write-new-button a {
 	right: auto;
 	left: 10px;
 }
-.wp_themeSkin tr.mceFirst {
+.wp_themeSkin tr.mceFirst td.mceToolbar {
 	background-position: right top;
 }
 #poststuff #edButtonPreview,
@@ -430,13 +435,9 @@ td.action-links, th.action-links {
 }
 /* 2300 - 2500
 =================================== */
-#edithead #edittitle {
-	float: right;
-	margin: 0 0 0 4px;
-}
 #edithead .inside {
 	float: right;
-	margin: 0 0 2px 4px;
+	margin: 3px 5px 2px 0;
 }
 #replyrow #ed_reply_toolbar input {
 	margin: 1px 1px 1px 2px;
@@ -466,26 +467,9 @@ td.action-links, th.action-links {
 	margin-right: 0;
 	margin-left: 5px;
 }
-.inline-editor .quick-edit-div {
-	float: right;
-	margin: 0 0 3px 5px;
-}
+
 /* 2500 - 2700
 =================================== */
-.inline-editor .post-title .slug,
-.inline-editor .page-title .slug {
-	text-align: left;
-}
-.inline-editor .categories ul.cat-checklist {
-	padding: 0 4px 0 0;
-}
-.inline-editor .categories ul.children {
-	padding-left: 0;
-	padding-right: 15px;
-}
-.inline-editor .comments {
-	text-align: right;
-}
 #bulk-titles div a {
 	float: right;
 	margin: 3px -2px 0 3px;
@@ -494,8 +478,49 @@ td.action-links, th.action-links {
 	margin-left: 0;
 	margin-right: 10px;
 }
+#wpbody-content .inline-edit-row fieldset {
+	float: right;
+}
+#wpbody-content .quick-edit-row-page fieldset.inline-edit-col-right .inline-edit-col {
+	border-left: 0 none;
+	border-right: 1px solid;
+}
+#wpbody-content .bulk-edit-row .inline-edit-col-bottom {
+	float: left;
+}
+.inline-edit-row fieldset label span.title {
+	float: right;
+}
+.inline-edit-row fieldset label span.input-text-wrap {
+	margin-left: 0;
+	margin-right: 5em;
+}
+.quick-edit-row-post fieldset.inline-edit-col-right label span.title {
+	padding-right: 0;
+	padding-left: 0.5em;
+}
+#wpbody-content .quick-edit-row fieldset .inline-edit-group label.alignleft:first-child {
+	margin-right: 0;
+	margin-left: 0.5em;
+}
 /* 2700 - 3000
 =================================== */
+.inline-edit-row fieldset span.title,
+.inline-edit-row fieldset span.checkbox-title {
+	font-family: Tahoma, "Times New Roman";
+}
+.inline-edit-row fieldset .inline-edit-date {
+	float: right;
+}
+.inline-edit-row fieldset ul.cat-checklist label,
+.inline-edit-row .catshow,
+.inline-edit-row .cathide,
+.inline-edit-row #bulk-titles div {
+	font-family: Tahoma, "Times New Roman";
+}
+.quick-edit-row-post fieldset label.inline-edit-status {
+	float: right;
+}
 .describe-toggle-on, .describe-toggle-off {
 	float: left;
 	margin-right: 0;

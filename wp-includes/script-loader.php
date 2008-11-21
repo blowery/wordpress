@@ -41,7 +41,7 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->base_url = $guessurl;
 	$scripts->default_version = get_bloginfo( 'version' );
 
-	$scripts->add( 'common', '/wp-admin/js/common.js', array('jquery', 'hoverIntent'), '20081111' );
+	$scripts->add( 'common', '/wp-admin/js/common.js', array('jquery', 'hoverIntent'), '20081120b' );
 	$scripts->add( 'sack', '/wp-includes/js/tw-sack.js', false, '1.6.1' );
 
 	$scripts->add( 'quicktags', '/wp-includes/js/quicktags.js', false, '20081103' );
@@ -61,7 +61,7 @@ function wp_default_scripts( &$scripts ) {
 
 	// Modify this version when tinyMCE plugins are changed.
 	function mce_version() {
-		return '20081113';
+		return '20081116';
 	}
 	add_filter( 'tiny_mce_version', 'mce_version' );
 
@@ -127,7 +127,7 @@ function wp_default_scripts( &$scripts ) {
 			'upload_stopped' => __('Upload stopped.'),
 			'dismiss' => __('Dismiss'),
 			'crunching' => __('Crunching&hellip;'),
-			'deleted' => __('Deleted'),
+			'deleted' => __('Deleted')
 	) );
 
 	$scripts->add( 'jquery-ui-core', '/wp-includes/js/jquery/ui.core.js', array('jquery'), '1.5.2' );
@@ -145,34 +145,33 @@ function wp_default_scripts( &$scripts ) {
 			'add' => attribute_escape(__('Add')),
 			'how' => __('Separate multiple categories with commas.')
 		) );
-		$scripts->add( 'admin-categories', '/wp-admin/js/categories.js', array('wp-lists'), '20080925' );
-		$scripts->add( 'admin-tags', '/wp-admin/js/tags.js', array('wp-lists'), '20080925' );
+		$scripts->add( 'admin-categories', '/wp-admin/js/categories.js', array('wp-lists'), '20081117' );
+		$scripts->add( 'admin-tags', '/wp-admin/js/tags.js', array('wp-lists'), '20081117' );
 		$scripts->add( 'admin-custom-fields', '/wp-admin/js/custom-fields.js', array('wp-lists'), '20070823' );
 		$scripts->add( 'password-strength-meter', '/wp-admin/js/password-strength-meter.js', array('jquery'), '20081021' );
 		$scripts->localize( 'password-strength-meter', 'pwsL10n', array(
 			'empty' => __('Strength indicator'),
 			'short' => __('Very weak'),
 			'bad' => __('Weak'),
-			'good' => __('Medium'),
+			'good' => _c('Medium|password strength'),
 			'strong' => __('Strong')
 		) );
-		$scripts->add( 'admin-comments', '/wp-admin/js/edit-comments.js', array('wp-lists', 'jquery-ui-resizable', 'quicktags'), '20081031' );
+		$scripts->add( 'admin-comments', '/wp-admin/js/edit-comments.js', array('wp-lists', 'jquery-ui-resizable', 'quicktags'), '20081117' );
 		$scripts->localize( 'admin-comments', 'adminCommentsL10n', array(
-			'pending' => __('%i% pending'), // must look like: "# blah blah"
 			'hotkeys_highlight_first' => isset($_GET['hotkeys_highlight_first']),
-			'hotkeys_highlight_last' => isset($_GET['hotkeys_highlight_last']),
+			'hotkeys_highlight_last' => isset($_GET['hotkeys_highlight_last'])
 		) );
-		$scripts->add( 'admin-users', '/wp-admin/js/users.js', array('wp-lists'), '20080925' );
+		$scripts->add( 'admin-users', '/wp-admin/js/users.js', array('wp-lists'), '20081117' );
 		$scripts->add( 'xfn', '/wp-admin/js/xfn.js', false, '3517' );
 		$scripts->add( 'postbox', '/wp-admin/js/postbox.js', array('jquery-ui-sortable'), '20081109' );
 		$scripts->localize( 'postbox', 'postboxL10n', array(
-			'requestFile' => admin_url('admin-ajax.php'),
+			'requestFile' => admin_url('admin-ajax.php')
 		) );
 		$scripts->add( 'slug', '/wp-admin/js/slug.js', array('jquery'), '20080208' );
 		$scripts->localize( 'slug', 'slugL10n', array(
 			'requestFile' => admin_url('admin-ajax.php'),
 			'save' => __('Save'),
-			'cancel' => __('Cancel'),
+			'cancel' => __('Cancel')
 		) );
 		$scripts->add( 'post', '/wp-admin/js/post.js', array('suggest', 'jquery-ui-tabs', 'wp-lists', 'postbox', 'slug'), '20081112b' );
 		$scripts->localize( 'post', 'postL10n', array(
@@ -229,7 +228,7 @@ function wp_default_scripts( &$scripts ) {
 		$scripts->add( 'admin-gallery', '/wp-admin/js/gallery.js', array( 'jquery-ui-sortable' ), '20080709' );
 		$scripts->add( 'media-upload', '/wp-admin/js/media-upload.js', array( 'thickbox' ), '20081031' );
 		
-		$scripts->add( 'admin-widgets', '/wp-admin/js/widgets.js', array( 'interface' ), '20081010' );
+		$scripts->add( 'admin-widgets', '/wp-admin/js/widgets.js', array( 'interface' ), '20081120' );
 		$scripts->localize( 'admin-widgets', 'widgetsL10n', array(
 			'add' => __('Add'),
 			'edit' => __('Edit'),
@@ -251,12 +250,12 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'theme-preview', '/wp-admin/js/theme-preview.js', array( 'thickbox', 'jquery' ), '20080625' );
 
-		$scripts->add( 'inline-edit-post', '/wp-admin/js/inline-edit-post.js', array( 'jquery', 'jquery-form', 'suggest' ), '20081110' );
+		$scripts->add( 'inline-edit-post', '/wp-admin/js/inline-edit-post.js', array( 'jquery', 'jquery-form', 'suggest' ), '20081117' );
 		$scripts->localize( 'inline-edit-post', 'inlineEditL10n', array(
 			'error' => __('Error while saving the changes.')
 		) );
 
-		$scripts->add( 'inline-edit-tax', '/wp-admin/js/inline-edit-tax.js', array( 'jquery', 'jquery-form' ), '20081110' );
+		$scripts->add( 'inline-edit-tax', '/wp-admin/js/inline-edit-tax.js', array( 'jquery', 'jquery-form' ), '20081117' );
 		$scripts->localize( 'inline-edit-tax', 'inlineEditL10n', array(
 			'error' => __('Error while saving the changes.')
 		) );
@@ -299,30 +298,28 @@ function wp_default_styles( &$styles ) {
 	$styles->default_version = get_bloginfo( 'version' );
 	$styles->text_direction = 'rtl' == get_bloginfo( 'text_direction' ) ? 'rtl' : 'ltr';
 
-	$rtl_styles = array( 'global', 'colors', 'dashboard', 'ie', 'install', 'login', 'media', 'theme-editor', 'upload', 'widgets', 'press-this', 'press-this-ie', 'plugin-install', 'farbtastic' );
+	$rtl_styles = array( 'global', 'colors', 'dashboard', 'ie', 'install', 'login', 'media', 'theme-editor', 'upload', 'widgets', 'press-this', 'plugin-install', 'farbtastic' );
 
-	$styles->add( 'wp-admin', '/wp-admin/wp-admin.css', array(), '20081113' );
+	$styles->add( 'wp-admin', '/wp-admin/wp-admin.css', array(), '20081119d' );
 	$styles->add_data( 'wp-admin', 'rtl', '/wp-admin/rtl.css' );
 
-	$styles->add( 'ie', '/wp-admin/css/ie.css' );
+	$styles->add( 'ie', '/wp-admin/css/ie.css', array(), '20081117' );
 	$styles->add_data( 'ie', 'conditional', 'gte IE 6' );
 
-	$styles->add( 'colors', true ); // Register "meta" stylesheet for admin colors
-	$styles->add( 'colors-fresh', '/wp-admin/css/colors-fresh.css', array(), '20081113'); // for login.php.  Is there a better way?
+	$styles->add( 'colors', true, array(), '20081118' ); // Register "meta" stylesheet for admin colors
+	$styles->add( 'colors-fresh', '/wp-admin/css/colors-fresh.css', array(), '20081119c'); // for login.php.  Is there a better way?
 	$styles->add_data( 'colors-fresh', 'rtl', true );
 
-	$styles->add( 'global', '/wp-admin/css/global.css', array(), '20081106' );
+	$styles->add( 'global', '/wp-admin/css/global.css', array(), '20081119c' );
 	$styles->add( 'media', '/wp-admin/css/media.css', array(), '20080709' );
 	$styles->add( 'widgets', '/wp-admin/css/widgets.css' );
-	$styles->add( 'dashboard', '/wp-admin/css/dashboard.css', array(), '20081113' );
+	$styles->add( 'dashboard', '/wp-admin/css/dashboard.css', array(), '20081119b' );
 	$styles->add( 'install', '/wp-admin/css/install.css', array(), '20080708' );
 	$styles->add( 'theme-editor', '/wp-admin/css/theme-editor.css' );
-	$styles->add( 'press-this', '/wp-admin/css/press-this.css', array(), '20081113' );
-	$styles->add( 'press-this-ie', '/wp-admin/css/press-this-ie.css', array(), '20080915' );
-	$styles->add_data( 'press-this-ie', 'conditional', 'gte IE 6' );
+	$styles->add( 'press-this', '/wp-admin/css/press-this.css', array(), '20081115' );
 	$styles->add( 'thickbox', '/wp-includes/js/thickbox/thickbox.css', array(), '20080613' );
-	$styles->add( 'login', '/wp-admin/css/login.css' );
-	$styles->add( 'plugin-install', '/wp-admin/css/plugin-install.css' );
+	$styles->add( 'login', '/wp-admin/css/login.css', array(), '20081119' );
+	$styles->add( 'plugin-install', '/wp-admin/css/plugin-install.css', array(), '20081114' );
 	$styles->add( 'farbtastic', '/wp-admin/css/farbtastic.css', array(), '1.2' );
 
 	foreach ( $rtl_styles as $rtl_style )

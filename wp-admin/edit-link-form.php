@@ -87,7 +87,7 @@ function link_submit_meta_box($link) {
 <div id="delete-action">
 <?php
 if ( !empty($_GET['action']) && 'edit' == $_GET['action'] && current_user_can('manage_links') ) { ?>
-	<a class="submitdelete deletion" href="<?php echo wp_nonce_url("link.php?action=delete&amp;link_id=$link->link_id", 'delete-bookmark_' . $link->link_id); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this link '%s'\n  'Cancel' to stop, 'OK' to delete."), $link->link_name )); ?>') ) {return true;}return false;"><?php _e('Delete'); ?></a>
+	<a class="submitdelete deletion" href="<?php echo wp_nonce_url("link.php?action=delete&amp;link_id=$link->link_id", 'delete-bookmark_' . $link->link_id); ?>" onclick="if ( confirm('<?php echo js_escape(sprintf(__("You are about to delete this link '%s'\n  'Cancel' to stop, 'OK' to delete."), $link->link_name )); ?>') ) {return true;}return false;"><?php _e('Delete'); ?></a>
 <?php } ?>
 </div>
 
@@ -343,12 +343,7 @@ require_once ('admin-header.php');
 <div class="wrap">
 <h2><?php echo wp_specialchars( $title ); ?></h2> 
 
-<?php
-$link_added = ( isset($_GET['added']) && '' != $_POST['link_name'] ) ?
-	'<div id="message" class="updated fade"><p>' . __('Link added.') . '</p></div>' : '';
-?>
-
-<?php if ( isset( $_GET['added'] ) && '' != $_POST['link_name']) : ?>
+<?php if ( isset( $_GET['added'] ) ) : ?>
 <div id="message" class="updated fade"><p><?php _e('Link added.'); ?></p></div>
 <?php endif; ?>
 
@@ -378,24 +373,24 @@ $side_meta_boxes = do_meta_boxes( 'link', 'side', $link );
 <div id="namediv" class="stuffbox">
 <h3><label for="link_name"><?php _e('Name') ?></label></h3>
 <div class="inside">
-	<input type="text" name="link_name" size="30" tabindex="1" value="<?php echo $link->link_name; ?>" id="link_name" /><br />
-    <?php _e('Example: Nifty blogging software'); ?>
+	<input type="text" name="link_name" size="30" tabindex="1" value="<?php echo $link->link_name; ?>" id="link_name" />
+    <p><?php _e('Example: Nifty blogging software'); ?></p>
 </div>
 </div>
 
 <div id="addressdiv" class="stuffbox">
 <h3><label for="link_url"><?php _e('Web Address') ?></label></h3>
 <div class="inside">
-	<input type="text" name="link_url" size="30" tabindex="1" value="<?php echo $link->link_url; ?>" id="link_url" /><br />
-    <?php _e('Example: <code>http://wordpress.org/</code> &#8212; don&#8217;t forget the <code>http://</code>'); ?>
+	<input type="text" name="link_url" size="30" tabindex="1" value="<?php echo $link->link_url; ?>" id="link_url" />
+    <p><?php _e('Example: <code>http://wordpress.org/</code> &#8212; don&#8217;t forget the <code>http://</code>'); ?></p>
 </div>
 </div>
 
 <div id="descriptiondiv" class="stuffbox">
 <h3><label for="link_description"><?php _e('Description') ?></label></h3>
 <div class="inside">
-	<input type="text" name="link_description" size="30" tabindex="1" value="<?php echo isset($link->link_description) ? $link->link_description : ''; ?>" id="link_description" /><br />
-    <?php _e('This will be shown when someone hovers over the link in the blogroll, or optionally below the link.'); ?>
+	<input type="text" name="link_description" size="30" tabindex="1" value="<?php echo isset($link->link_description) ? $link->link_description : ''; ?>" id="link_description" />
+    <p><?php _e('This will be shown when someone hovers over the link in the blogroll, or optionally below the link.'); ?></p>
 </div>
 </div>
 

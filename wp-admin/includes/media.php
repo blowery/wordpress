@@ -173,9 +173,12 @@ win.send_to_editor('<?php echo addslashes($html); ?>');
  */
 function media_handle_upload($file_id, $post_id, $post_data = array()) {
 	$overrides = array('test_form'=>false);
-	
-	$post = get_post($post_id);
-	$time = $post->post_date_gmt;
+
+	$time = current_time('mysql');
+	if ( $post = get_post($post_id) ) {
+		if ( substr( $post->post_date, 0, 4 ) > 0 )
+			$time = $post->post_date;
+	}
 
 	$file = wp_handle_upload($_FILES[$file_id], $overrides, $time);
 
@@ -206,7 +209,7 @@ function media_handle_upload($file_id, $post_id, $post_data = array()) {
 	), $post_data );
 
 	// Save the data
-	$id = wp_insert_attachment($attachment, $file, $post_parent);
+	$id = wp_insert_attachment($attachment, $file, $post_id);
 	if ( !is_wp_error($id) ) {
 		wp_update_attachment_metadata( $id, wp_generate_attachment_metadata( $id, $file ) );
 	}
@@ -259,7 +262,7 @@ function media_handle_sideload($file_array, $post_id, $desc = null, $post_data =
 	), $post_data );
 
 	// Save the data
-	$id = wp_insert_attachment($attachment, $file, $post_parent);
+	$id = wp_insert_attachment($attachment, $file, $post_id);
 	if ( !is_wp_error($id) ) {
 		wp_update_attachment_metadata( $id, wp_generate_attachment_metadata( $id, $file ) );
 		return $url;
@@ -902,8 +905,6 @@ function get_attachment_fields_to_edit($post, $errors = null) {
 		$post = (object) $post;
 
 	$edit_post = sanitize_post($post, 'edit');
-	$file = wp_get_attachment_url($post->ID);
-	$link = get_attachment_link($post->ID);
 
 	$form_fields = array(
 		'post_title'   => array(
@@ -986,10 +987,8 @@ function get_media_items( $post_id, $errors ) {
 				$attachments[$attachment->ID] = $attachment;
 	}
 
-	if ( empty($attachments) )
-		return '';
-
-	foreach ( $attachments as $id => $attachment )
+	$output = '';
+	foreach ( (array) $attachments as $id => $attachment )
 		if ( $item = get_media_item( $id, array( 'errors' => isset($errors[$id]) ? $errors[$id] : null) ) )
 			$output .= "\n<div id='media-item-$id' class='media-item child-of-$attachment->post_parent preloaded'><div class='progress'><div class='bar'></div></div><div id='media-upload-error-$id'></div><div class='filename'></div>$item\n</div>";
 
@@ -1018,10 +1017,6 @@ function get_media_item( $attachment_id, $args = null ) {
 	else
 		return false;
 
-	$title_label = __('Title');
-	$description_label = __('Description');
-	$tags_label = __('Tags');
-
 	$toggle_on = __('Show');
 	$toggle_off = __('Hide');
 
@@ -1029,13 +1024,14 @@ function get_media_item( $attachment_id, $args = null ) {
 
 	$filename = basename($post->guid);
 	$title = attribute_escape($post->post_title);
-	$description = attribute_escape($post->post_content);
+
 	if ( $_tags = get_the_tags($attachment_id) ) {
 		foreach ( $_tags as $tag )
 			$tags[] = $tag->name;
 		$tags = attribute_escape(join(', ', $tags));
 	}
 
+	$type = '';
 	if ( isset($post_mime_types) ) {
 		$keys = array_keys(wp_match_mime_types(array_keys($post_mime_types), $post->post_mime_type));
 		$type = array_shift($keys);
@@ -1456,7 +1452,7 @@ jQuery(function($){
 <form enctype="multipart/form-data" method="post" action="<?php echo attribute_escape($form_action_url); ?>" class="media-upload-form validate" id="gallery-form">
 <?php wp_nonce_field('media-form'); ?>
 <?php //media_upload_form( $errors ); ?>
-<table class="widefat">
+<table class="widefat" cellspacing="0">
 <thead><tr>
 <th><?php _e('Media'); ?></th>
 <th class="order-head"><?php _e('Order'); ?></th>
@@ -1554,8 +1550,8 @@ unset($type_links);
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => ceil($wp_query->found_posts / 10),
 	'current' => $_GET['paged']
 ));

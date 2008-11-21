@@ -785,7 +785,7 @@ function edit_comment_link( $link = 'Edit This', $before = '', $after = '' ) {
  * @return string
  */
 function get_edit_bookmark_link( $link = 0 ) {
-	$link = &get_bookmark( $link );
+	$link = get_bookmark( $link );
 
 	if ( !current_user_can('manage_links') )
 		return;
@@ -1230,20 +1230,20 @@ function get_comments_pagenum_link( $pagenum = 1, $max_page = 0 ) {
 
 	$base = trailingslashit( get_bloginfo( 'home' ) );
 
-	$result = $base . $request;
+	$result = user_trailingslashit($base . $request);
 	
 	if ( 'newest' == get_option('default_comments_page') ) {
 		if ( $pagenum != $max_page ) {
 			if ( $wp_rewrite->using_permalinks() )
-				$result = user_trailingslashit( trailingslashit($base . $request) . 'comment-page-' . $pagenum, 'commentpaged');
+				$result = user_trailingslashit( trailingslashit($result) . 'comment-page-' . $pagenum, 'commentpaged');
 			else
-				$result = add_query_arg( 'cpage', $pagenum, $base . $request );
+				$result = add_query_arg( 'cpage', $pagenum, $result );
 		}
 	} elseif ( $pagenum > 1 ) {
 		if ( $wp_rewrite->using_permalinks() )
-			$result = user_trailingslashit( trailingslashit($base . $request) . 'comment-page-' . $pagenum, 'commentpaged');
+			$result = user_trailingslashit( trailingslashit($result) . 'comment-page-' . $pagenum, 'commentpaged');
 		else
-			$result = add_query_arg( 'cpage', $pagenum, $base . $request );
+			$result = add_query_arg( 'cpage', $pagenum, $result );
 	}
 
 	$result .= '#comments';
@@ -1281,7 +1281,7 @@ function next_comments_link($label='', $max_page = 0) {
 		return;
 
 	if ( empty($label) )
-		$label = __('&raquo; Newer Comments');
+		$label = __('Newer Comments &raquo;');
 
 	echo '<a href="' . clean_url( get_comments_pagenum_link( $nextpage, $max_page ) );
 	$attr = apply_filters( 'next_comments_link_attributes', '' );

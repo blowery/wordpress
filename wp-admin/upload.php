@@ -136,11 +136,6 @@ if ( isset($_GET['detached']) ) {
 	list($post_mime_types, $avail_post_mime_types) = wp_edit_attachments_query();
 }
 
-if ( is_singular() ) {
-	wp_enqueue_script( 'admin-comments' );
-	enqueue_comment_hotkeys_js();
-}
-
 require_once('admin-header.php'); ?>
 
 <?php
@@ -225,8 +220,8 @@ if ( ! isset($page_links_total) )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => $page_links_total,
 	'current' => $_GET['paged']
 ));
@@ -297,7 +292,7 @@ foreach ($arc_result as $arc_row) {
 <div class="clear"></div>
 
 <?php if ( isset($orphans) ) { ?>
-<table class="widefat">
+<table class="widefat" cellspacing="0">
 <thead>
 <tr>
 	<th scope="col" class="check-column"><input type="checkbox" /></th>
@@ -337,10 +332,13 @@ foreach ($arc_result as $arc_row) {
 		<p>
 		<?php
 		$actions = array();
-		$actions['edit'] = '<a href="' . get_edit_post_link($post->ID, true) . '">' . __('Edit') . '</a>';
-		$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID) . "' onclick=\"if ( confirm('" . js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this attachment '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this attachment '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+		if ( current_user_can('edit_post', $post->ID) )
+			$actions['edit'] = '<a href="' . get_edit_post_link($post->ID, true) . '">' . __('Edit') . '</a>';
+		if ( current_user_can('delete_post', $post->ID) )
+			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID) . "' onclick=\"if ( confirm('" . js_escape(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this attachment '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this attachment '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 		$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
-		$actions['attach'] = '<a href="#the-list" onclick="findPosts.open(\'media[]\',\''.$post->ID.'\');return false;">'.__('Attach').'</a>';
+		if ( current_user_can('edit_post', $post->ID) )
+			$actions['attach'] = '<a href="#the-list" onclick="findPosts.open(\'media[]\',\''.$post->ID.'\');return false;">'.__('Attach').'</a>';
 		$action_count = count($actions);
 		$i = 0;
 		foreach ( $actions as $action => $link ) {
@@ -406,43 +404,6 @@ if ( $page_links )
 </form>
 <br class="clear" />
 
-<?php
-
-if ( 1 == count($posts) && is_singular() ) :
-
-	$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_approved != 'spam' ORDER BY comment_date", $id) );
-	if ( $comments ) :
-		// Make sure comments, post, and post_author are cached
-		update_comment_cache($comments);
-		$post = get_post($id);
-		$authordata = get_userdata($post->post_author);
-	?>
-
-<br class="clear" />
-
-<table class="widefat" style="margin-top: .5em">
-<thead>
-	<tr>
-		<th scope="col"><?php _e('Comment') ?></th>
-		<th scope="col"><?php _e('Date') ?></th>
-		<th scope="col"><?php _e('Actions') ?></th>
-	</tr>
-</thead>
-<tbody id="the-comment-list" class="list:comment">
-<?php
-		foreach ($comments as $comment)
-			_wp_comment_row( $comment->comment_ID, 'detail', false, false );
-?>
-</tbody>
-</table>
-
-<?php
-wp_comment_reply();
-endif; // comments
-endif; // posts;
-
-?>
-
 </div>
 
 <script type="text/javascript">
@@ -460,7 +421,7 @@ endif; // posts;
 		});
 	});
 })(jQuery);
-columns.init('media');
+columns.init('upload');
 /* ]]> */
 </script>
 

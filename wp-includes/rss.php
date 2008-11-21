@@ -459,7 +459,7 @@ function fetch_rss ($url) {
 		// setup headers
 		if ( $cache_status == 'STALE' ) {
 			$rss = $cache->get( $url );
-			if ( $rss->etag and $rss->last_modified ) {
+			if ( isset($rss->etag) and $rss->last_modified ) {
 				$request_headers['If-None-Match'] = $rss->etag;
 				$request_headers['If-Last-Modified'] = $rss->last_modified;
 			}
@@ -538,12 +538,17 @@ endif;
 function _fetch_remote_file ($url, $headers = "" ) {
 	$resp = wp_remote_request($url, array('headers' => $headers, 'timeout' => MAGPIE_FETCH_TIME_OUT));
 	if ( is_wp_error($resp) ) {
+		$error = array_shift($resp->errors);
+
 		$resp = new stdClass;
 		$resp->status = 500;
+		$resp->response_code = 500;
+		$resp->error = $error[0] . "\n"; //\n = Snoopy compatibility
 		return $resp;
 	}
 	$response = new stdClass;
 	$response->status = $resp['response']['code'];
+	$response->response_code = $resp['response']['code'];
 	$response->headers = $resp['headers'];
 	$response->results = $resp['body'];
 
@@ -564,7 +569,7 @@ function _response_to_rss ($resp) {
 	$rss = new MagpieRSS( $resp->results );
 
 	// if RSS parsed successfully
-	if ( $rss && !$rss->ERROR) {
+	if ( $rss && (!isset($rss->ERROR) || !$rss->ERROR) ) {
 
 		// find Etag, and Last-Modified
 		foreach( (array) $resp->headers as $h) {

@@ -29,7 +29,7 @@ function get_bookmark($bookmark, $output = OBJECT, $filter = 'raw') {
 		wp_cache_add($bookmark->link_id, $bookmark, 'bookmark');
 		$_bookmark = $bookmark;
 	} else {
-		if ( isset($GLOBALS['link']) && ($GLOBALS['link']->link_id == $link) ) {
+		if ( isset($GLOBALS['link']) && ($GLOBALS['link']->link_id == $bookmark) ) {
 			$_bookmark = & $GLOBALS['link'];
 		} elseif ( ! $_bookmark = wp_cache_get($bookmark, 'bookmark') ) {
 			$_bookmark = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->links WHERE link_id = %d LIMIT 1", $bookmark));
@@ -265,15 +265,22 @@ function sanitize_bookmark($bookmark, $context = 'display') {
 		'link_description', 'link_visible', 'link_owner', 'link_rating', 'link_updated',
 		'link_rel', 'link_notes', 'link_rss', );
 
-	$do_object = false;
-	if ( is_object($bookmark) )
+	if ( is_object($bookmark) ) {
 		$do_object = true;
+		$link_id = $bookmark->link_id;
+	} else {
+		$do_object = false;
+		$link_id = $bookmark['link_id'];
+	}
 
 	foreach ( $fields as $field ) {
-		if ( $do_object )
-			$bookmark->$field = sanitize_bookmark_field($field, $bookmark->$field, $bookmark->link_id, $context);
-		else
-			$bookmark[$field] = sanitize_bookmark_field($field, $bookmark[$field], $bookmark['link_id'], $context);
+		if ( $do_object ) {
+			if ( isset($bookmark->$field) )
+				$bookmark->$field = sanitize_bookmark_field($field, $bookmark->$field, $link_id, $context);
+		} else {
+			if ( isset($bookmark[$field]) )
+				$bookmark[$field] = sanitize_bookmark_field($field, $bookmark[$field], $link_id, $context);
+		}
 	}
 
 	return $bookmark;

@@ -179,7 +179,7 @@ function the_content($more_link_text = null, $stripteaser = 0, $more_file = '') 
 function get_the_content($more_link_text = null, $stripteaser = 0, $more_file = '') {
 	global $id, $post, $more, $page, $pages, $multipage, $preview, $pagenow;
 
-	if ( null == $more_link_text )
+	if ( null === $more_link_text )
 		$more_link_text = __( '(more...)' );
 
 	$output = '';
@@ -687,9 +687,9 @@ function wp_page_menu( $args = array() ) {
  * @since 2.1.0
  * @see Walker_Page::walk() for parameters and return description.
  */
-function walk_page_tree() {
+function walk_page_tree($pages, $depth, $current_page, $r) {
 	$walker = new Walker_Page;
-	$args = func_get_args();
+	$args = array($pages, $depth, $r, $current_page);
 	return call_user_func_array(array(&$walker, 'walk'), $args);
 }
 
@@ -1136,7 +1136,7 @@ function wp_list_post_revisions( $post_id = 0, $args = null ) {
 
 <br class="clear" />
 
-<table class="widefat post-revisions">
+<table class="widefat post-revisions" cellspacing="0">
 	<col />
 	<col style="width: 33%" />
 	<col style="width: 33%" />

@@ -429,7 +429,7 @@ class wp_xmlrpc_server extends IXR_Server {
 
 		foreach( $blogs as $blog ) {
 			// Don't include blogs that aren't hosted at this site
-			if( $blog->site_id != 1 )
+			if( $blog->site_id != $current_site->id )
 				continue;
 
 			$blog_id = $blog->userblog_id;
@@ -443,6 +443,8 @@ class wp_xmlrpc_server extends IXR_Server {
 				'blogName'		=> get_option( 'blogname' ),
 				'xmlrpc'		=> get_option( 'home' ) . '/xmlrpc.php'
 			);
+
+			restore_current_blog( );
 		}
 
 		return $struct;
@@ -1906,7 +1908,7 @@ class wp_xmlrpc_server extends IXR_Server {
 
 		$actual_post = wp_get_single_post($post_ID,ARRAY_A);
 
-		if (!$actual_post) {
+		if (!$actual_post || $actual_post['post_type'] != 'post') {
 			return new IXR_Error(404, __('Sorry, no such post.'));
 		}
 
@@ -1961,7 +1963,7 @@ class wp_xmlrpc_server extends IXR_Server {
 
 		$actual_post = wp_get_single_post($post_ID,ARRAY_A);
 
-		if (!$actual_post) {
+		if (!$actual_post || $actual_post['post_type'] != 'post') {
 			return new IXR_Error(404, __('Sorry, no such post.'));
 		}
 
@@ -3236,7 +3238,7 @@ class wp_xmlrpc_server extends IXR_Server {
 			return new IXR_Error(0, __('The source URL and the target URL cannot both point to the same resource.'));
 
 		// Check if pings are on
-		if ( 'closed' == $post->ping_status )
+		if ( !pings_open($post) )
 	  		return new IXR_Error(33, __('The specified target URL cannot be used as a target. It either doesn\'t exist, or it is not a pingback-enabled resource.'));
 
 		// Let's check that the remote site didn't already pingback this entry

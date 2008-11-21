@@ -66,18 +66,32 @@ table {
 
 #wpcontent {
 	height: 100%;
-	margin-bottom: 50px;
+	padding-bottom: 50px;
+}
+
+#wpbody {
+	clear: both;
+	margin-left: 175px;
+} 
+
+div.folded #wpbody {
+	margin-left: 60px;
 }
 
 #wpbody-content {
-	overflow: hidden;
+	float: left;
+	width: 100%;
 }
 
 #adminmenu {
 	float: left;
 	clear: left;
-	margin: 15px 5px 15px 18px;
+	margin: 15px 5px 15px -160px;
 	position: relative;
+}
+
+div.folded #adminmenu {
+	margin-left: -45px;
 }
 
 #footer {
@@ -148,7 +162,7 @@ input[type="radio"] {
 
 body,
 td {
-	font: 13px "Lucida Grande", "Lucida Sans Unicode", Tahoma, Verdana, sans-serif;
+	font: 13px "Lucida Grande", Verdana, Arial, sans-serif;
 }
 
 p {
@@ -179,7 +193,7 @@ dt {
 textarea,
 input,
 select {
-	font: 13px/19px Verdana, Arial, Helvetica, sans-serif;
+	font: 13px/19px "Lucida Grande", Verdana, Arial, sans-serif;
 	margin: 1px;
 	padding: 3px;
 }
@@ -250,7 +264,7 @@ h6 {
 	margin: 0 0 5px;
 	padding: 0;
 	white-space: nowrap;
-	font-size: 12px;
+	font-size: 11px;
 	float: left;
 }
 
@@ -291,12 +305,12 @@ h6 {
 	border-radius: 4px;
 }
 
-.widefat a {
-	text-decoration: none;
+.widefat * {
+	word-wrap: break-word;
 }
 
-.widefat abbr {
-	white-space: nowrap;
+.widefat a {
+	text-decoration: none;
 }
 
 .widefat td,
@@ -309,12 +323,12 @@ h6 {
 }
 
 .widefat td {
-	padding: 7px 15px 9px 10px;
+	padding: 5px 7px;
 	vertical-align: top;
 }
 
 .widefat th {
-	padding: 7px 15px 8px 10px;
+	padding: 7px 7px 8px;
 	text-align: left;
 	line-height: 1.3em;
 }
@@ -326,18 +340,20 @@ h6 {
 }
 
 .widefat .check-column {
-	text-align: right;
-	width: 1.5em;
+	width: 2.2em;
 	padding: 0;
 
 }
 
 .widefat tbody th.check-column {
-	padding: 10px 0 22px;
+	padding: 7px 0 22px;
 }
 
 .widefat .num,
-.widefat .column-comments {
+.column-comments,
+.column-links,
+.column-posts,
+.column-parent {
 	text-align: center;
 }
 
@@ -345,11 +361,8 @@ h6 {
 	vertical-align: middle;
 }
 
-.wrap,
-.updated,
-.error {
-	margin: 0 15px;
-	padding: 0;
+.wrap {
+	margin: 0 15px 0 5px;
 }
 
 .updated,
@@ -357,7 +370,11 @@ h6 {
 	border-width: 1px;
 	border-style: solid;
 	padding: 0 0.6em;
-	margin: 3px 15px 5px;
+	margin: 5px 15px 2px;
+	-moz-border-radius: 3px;
+	-khtml-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	border-radius: 3px;
 }
 
 .updated p,
@@ -373,7 +390,7 @@ h6 {
 .wrap h2 {
 	font: italic normal normal 24px/29px Georgia, "Times New Roman", Times, serif;
 	margin: 0;
-	padding: 10px 15px 5px 0;
+	padding: 12px 15px 1px 0;
 }
 
 .wrap h2.long-header {

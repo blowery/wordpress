@@ -22,6 +22,8 @@ wp_reset_vars(array('action'));
  * @param int $page_ID Page ID.
  */
 function redirect_page($page_ID) {
+	global $action;
+
 	$referredby = '';
 	if ( !empty($_POST['referredby']) ) {
 		$referredby = preg_replace('|https?://[^/]+|i', '', $_POST['referredby']);
@@ -166,7 +168,6 @@ case 'delete':
 	$sendback = wp_get_referer();
 	if (strpos($sendback, 'page.php') !== false) $sendback = admin_url('page-new.php');
 	elseif (strpos($sendback, 'attachments.php') !== false) $sendback = admin_url('attachments.php');
-	$sendback = preg_replace('|[^a-z0-9-~+_.?#=&;,/:]|i', '', $sendback);
 	wp_redirect($sendback);
 	exit();
 	break;

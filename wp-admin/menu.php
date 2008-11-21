@@ -50,7 +50,7 @@ $menu[20] = array( __('Pages'), 'edit_pages', 'page-new.php', '', 'menu-top', 'm
 	//$submenu['page-new.php'][10] = array( __('Drafts'), 'edit_pages', 'edit-page-drafts.php' );
 	$submenu['page-new.php'][15] = array( __('Edit'), 'edit_pages', 'edit-pages.php' );
 
-$menu[25] = array( sprintf( __('Comments %s'), "<span id='awaiting-mod' class='count-$awaiting_mod'><span class='comment-count'>" . number_format_i18n($awaiting_mod) . "</span></span>" ), 'edit_posts', 'edit-comments.php', '', 'menu-top', 'menu-comments', 'div' );
+$menu[25] = array( sprintf( __('Comments %s'), "<span id='awaiting-mod' class='count-$awaiting_mod'><span class='pending-count'>" . number_format_i18n($awaiting_mod) . "</span></span>" ), 'edit_posts', 'edit-comments.php', '', 'menu-top', 'menu-comments', 'div' );
 
 $_wp_last_object_menu = 25; // The index of the last top-level menu in the object menu group
 
@@ -65,7 +65,7 @@ $update_count = 0;
 if ( !empty($update_plugins->response) )
 	$update_count = count( $update_plugins->response );
 
-$menu[35] = array( sprintf( __('Plugins %s'), "<span id='update-plugins' class='count-$update_count'><span class='plugin-count'>" . number_format_i18n($update_count) . "</span></span>" ), 'activate_plugins', 'plugins.php', '', 'menu-top', 'menu-plugins', 'div' );
+$menu[35] = array( sprintf( __('Plugins %s'), "<span class='update-plugins count-$update_count'><span class='plugin-count'>" . number_format_i18n($update_count) . "</span></span>" ), 'activate_plugins', 'plugins.php', '', 'menu-top', 'menu-plugins', 'div' );
 	$submenu['plugins.php'][5]  = array( __('Installed'), 'activate_plugins', 'plugins.php' );
 	$submenu['plugins.php'][10] = array(_c('Add New|plugin'), 'install_plugins', 'plugin-install.php');	
 	$submenu['plugins.php'][15] = array( __('Editor'), 'edit_plugins', 'plugin-editor.php' );

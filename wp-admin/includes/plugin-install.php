@@ -27,10 +27,12 @@
  * @return mixed
  */
 function plugins_api($action, $args = null) {
-	global $wp_version;
 
 	if( is_array($args) )
 		$args = (object)$args;
+
+	if ( !isset($args->per_page) )
+		$args->per_page = 24;
 
 	$args = apply_filters('plugins_api_args', $args, $action); //NOTE: Ensure that an object is returned via this filter.
 	$res = apply_filters('plugins_api', false, $action, $args); //NOTE: Allows a plugin to completely override the builtin WordPress.org API.
@@ -140,7 +142,7 @@ function install_dashboard() {
 	</form>
 	
 	<h4><?php _e('Popular tags') ?></h4>
-	<p><?php _e('You may also browse based on the most popular tags on wordpress.org') ?></p>
+	<p><?php _e('You may also browse based on the most popular tags in the Plugin Directory:') ?></p>
 	<?php
 
 	$api_tags = install_popular_tags();
@@ -247,8 +249,6 @@ function install_updated($page = 1) {
  * @param int $totalpages Number of pages.
  */
 function display_plugins_table($plugins, $page = 1, $totalpages = 1){
-	global $tab;
-
 	$type = isset($_REQUEST['type']) ? stripslashes( $_REQUEST['type'] ) : '';
 	$term = isset($_REQUEST['s']) ? stripslashes( $_REQUEST['s'] ) : '';
 
@@ -271,8 +271,8 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 			$page_links = paginate_links( array(
 				'base' => add_query_arg('paged', '%#%', $url),
 				'format' => '',
-				'prev_text' => __('&laquo;'),
-				'next_text' => __('&raquo;'),
+				'prev_text' => __('&larr;'),
+				'next_text' => __('&rarr;'),
 				'total' => $totalpages,
 				'current' => $page
 			));
@@ -282,7 +282,7 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 ?>
 		<br class="clear" />
 	</div>
-	<table class="widefat" id="install-plugins">
+	<table class="widefat" id="install-plugins" cellspacing="0">
 		<thead>
 			<tr>
 				<th scope="col" class="name"><?php _e('Name'); ?></th>
@@ -383,7 +383,9 @@ function install_plugin_information() {
 	$plugins_allowedtags = array('a' => array('href' => array(), 'title' => array(), 'target' => array()),
 								'abbr' => array('title' => array()), 'acronym' => array('title' => array()),
 								'code' => array(), 'pre' => array(), 'em' => array(), 'strong' => array(),
-								'div' => array(), 'p' => array(), 'ul' => array(), 'ol' => array(), 'li' => array());
+								'div' => array(), 'p' => array(), 'ul' => array(), 'ol' => array(), 'li' => array(),
+								'h1' => array(), 'h2' => array(), 'h3' => array(), 'h4' => array(), 'h5' => array(), 'h6' => array(),
+								'img' => array('src' => array(), 'class' => array(), 'alt' => array()));
 	//Sanitize HTML
 	foreach ( (array)$api->sections as $section_name => $content )
 		$api->sections[$section_name] = wp_kses($content, $plugins_allowedtags);
@@ -426,8 +428,23 @@ function install_plugin_information() {
 					break;
 				}
 			}
-			if ( 'install' == $type && file_exists( WP_PLUGIN_DIR  . '/' . $api->slug ) ) //TODO: Make more.. searchable?
-				$type = 'latest_installed';
+			if ( 'install' == $type && is_dir( WP_PLUGIN_DIR  . '/' . $api->slug ) ) {
+				$installed_plugin = get_plugins('/' . $api->slug);
+				if ( ! empty($installed_plugin) ) {
+					$key = array_shift( $key = array_keys($installed_plugin) ); //Use the first plugin regardless of the name, Could have issues for multiple-plugins in one directory if they share different version numbers
+					if ( version_compare($api->version, $installed_plugin[ $key ]['Version'], '>') ){
+						$type = 'latest_installed';
+					} elseif ( version_compare($api->version, $installed_plugin[ $key ]['Version'], '<') ) {
+						$type = 'newer_installed';
+						$newer_version = $installed_plugin[ $key ]['Version'];
+					} else {
+						//If the above update check failed, Then that probably means that the update checker has out-of-date information, force a refresh
+						delete_option('update_plugins');
+						$update_file = $api->slug . '/' . $key; //This code branch only deals with a plugin which is in a folder the same name as its slug, Doesnt support plugins which have 'non-standard' names
+						$type = 'update_available';
+					}
+				}
+			}
 
 			switch ( $type ) :
 				default:
@@ -439,6 +456,11 @@ function install_plugin_information() {
 				case 'update_available':
 					if ( current_user_can('update_plugins') ) :
 						?><a href="<?php echo wp_nonce_url(admin_url('update.php?action=upgrade-plugin&plugin=' . $update_file), 'upgrade-plugin_' . $update_file) ?>" target="_parent"><?php _e('Install Update Now') ?></a><?php
+					endif;
+				break;
+				case 'newer_installed':
+					if ( current_user_can('install_plugins') || current_user_can('update_plugins') ) :
+					?><a><?php printf(__('Newer Version (%s) Installed'), $newer_version) ?></a><?php
 					endif;
 				break;
 				case 'latest_installed':
@@ -672,7 +694,7 @@ function do_plugin_install_local_package($package, $filename = '') {
 		$install_actions = apply_filters('install_plugin_complete_actions', array(
 							'activate_plugin' => '<a href="' . wp_nonce_url('plugins.php?action=activate&amp;plugin=' . $plugin_file, 'activate-plugin_' . $plugin_file) . '" title="' . __('Activate this plugin') . '" target="_parent">' . __('Activate Plugin') . '</a>',
 							'plugins_page' => '<a href="' . admin_url('plugins.php') . '" title="' . __('Goto plugins page') . '" target="_parent">' . __('Return to Plugins page') . '</a>'
-							), $plugin_information, $plugin_file);
+							), array(), $plugin_file);
 		if ( ! empty($install_actions) )
 			show_message('<strong>' . __('Actions:') . '</strong> ' . implode(' | ', (array)$install_actions));
 	}

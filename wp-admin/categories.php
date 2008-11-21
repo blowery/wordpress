@@ -70,7 +70,6 @@ case 'bulk-delete':
 	}
 
 	$sendback = wp_get_referer();
-	$sendback = preg_replace('|[^a-z0-9-~+_.?#=&;,/:]|i', '', $sendback);
 
 	wp_redirect($sendback);
 	exit();
@@ -165,8 +164,8 @@ if( ! isset( $catsperpage ) || $catsperpage < 0 )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => ceil(wp_count_terms('category') / $catsperpage),
 	'current' => $pagenum
 ));
@@ -189,16 +188,16 @@ if ( $page_links )
 
 <div class="clear"></div>
 
-<table class="widefat">
+<table class="widefat fixed" cellspacing="0">
 	<thead>
 	<tr>
-<?php print_column_headers('category'); ?>
+<?php print_column_headers('categories'); ?>
 	</tr>
 	</thead>
 
 	<tfoot>
 	<tr>
-<?php print_column_headers('category', false); ?>
+<?php print_column_headers('categories', false); ?>
 	</tr>
 	</tfoot>
 

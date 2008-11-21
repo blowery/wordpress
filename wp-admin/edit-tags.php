@@ -161,8 +161,8 @@ if( ! isset( $tagsperpage ) || $tagsperpage < 0 )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => ceil(wp_count_terms('post_tag') / $tagsperpage),
 	'current' => $pagenum
 ));
@@ -185,16 +185,16 @@ if ( $page_links )
 
 <div class="clear"></div>
 
-<table class="widefat tag">
+<table class="widefat tag fixed" cellspacing="0">
 	<thead>
 	<tr>
-<?php print_column_headers('tag'); ?>
+<?php print_column_headers('edit-tags'); ?>
 	</tr>
 	</thead>
 
 	<tfoot>
 	<tr>
-<?php print_column_headers('tag', false); ?>
+<?php print_column_headers('edit-tags', false); ?>
 	</tr>
 	</tfoot>
 

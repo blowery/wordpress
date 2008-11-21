@@ -760,7 +760,9 @@ function auth_redirect() {
 	else
 		$proto = 'http://';
 
-	$login_url = site_url( 'wp-login.php?redirect_to=' . urlencode($proto . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']), 'login' );
+	$redirect = ( strpos($_SERVER['REQUEST_URI'], '/options.php') && wp_get_referer() ) ? wp_get_referer() : $proto . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+
+	$login_url = site_url( 'wp-login.php?redirect_to=' . urlencode( $redirect ), 'login' );
 
 	wp_redirect($login_url);
 	exit();
@@ -1270,6 +1272,9 @@ function wp_salt($scheme = 'auth') {
 				update_option('logged_in_salt', $salt);
 			}
 		}
+	} else {
+		// ensure each auth scheme has its own unique salt
+		$salt = hash_hmac('md5', $scheme, $secret_key);
 	}
 
 	return apply_filters('salt', $secret_key . $salt, $scheme);
@@ -1509,9 +1514,7 @@ function get_avatar( $id_or_email, $size = '96', $default = '', $alt = false ) {
 			$default = $avatar_default;
 	}
 
-	if ( 'custom' == $default )
-		$default = add_query_arg( 's', $size, $defaults[$avatar_default][1] );
-	elseif ( 'mystery' == $default )
+	if ( 'mystery' == $default )
 		$default = "http://www.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s={$size}"; // ad516503a11cd5ca435acc9bb6523536 == md5('unknown@gravatar.com')
 	elseif ( 'blank' == $default )
 		$default = includes_url('images/blank.gif');
@@ -1521,6 +1524,8 @@ function get_avatar( $id_or_email, $size = '96', $default = '', $alt = false ) {
 		$default = "http://www.gravatar.com/avatar/s={$size}";
 	elseif ( empty($email) )
 		$default = "http://www.gravatar.com/avatar/?d=$default&amp;s={$size}";
+	elseif ( strpos($default, 'http://') === 0 )
+		$default = add_query_arg( 's', $size, $default );
 
 	if ( !empty($email) ) {
 		$out = 'http://www.gravatar.com/avatar/';
@@ -1532,9 +1537,9 @@ function get_avatar( $id_or_email, $size = '96', $default = '', $alt = false ) {
 		if ( !empty( $rating ) )
 			$out .= "&amp;r={$rating}";
 
-		$avatar = "<img alt='{$safe_alt}' src='{$out}' class='avatar avatar-{$size}' height='{$size}' width='{$size}' />";
+		$avatar = "<img alt='{$safe_alt}' src='{$out}' class='avatar avatar-{$size} photo' height='{$size}' width='{$size}' />";
 	} else {
-		$avatar = "<img alt='{$safe_alt}' src='{$default}' class='avatar avatar-{$size} avatar-default' height='{$size}' width='{$size}' />";
+		$avatar = "<img alt='{$safe_alt}' src='{$default}' class='avatar avatar-{$size} photo avatar-default' height='{$size}' width='{$size}' />";
 	}
 
 	return apply_filters('get_avatar', $avatar, $id_or_email, $size, $default, $alt);

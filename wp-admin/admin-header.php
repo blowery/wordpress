@@ -28,6 +28,24 @@ wp_admin_css( 'css/ie' );
 <script type="text/javascript">
 //<![CDATA[
 addLoadEvent = function(func) {if (typeof jQuery != "undefined") jQuery(document).ready(func); else if (typeof wpOnload!='function'){wpOnload=func;} else {var oldonload=wpOnload; wpOnload=function(){oldonload();func();}}};
+
+function convertEntities(o) {
+	var c = function(s) {
+		if (/&[^;]+;/.test(s)) {
+			var e = document.createElement("div");
+			e.innerHTML = s;
+			return !e.firstChild ? s : e.firstChild.nodeValue;
+		}
+		return s;
+	}
+
+	if ( typeof o === 'object' ) {
+		for (var v in o)
+			o[v] = c(o[v]);
+		return o;
+	} else if ( typeof o === 'string' )
+		return c(o);
+};
 //]]>
 </script>
 <?php
@@ -91,7 +109,7 @@ if ( function_exists('mb_strlen') ) {
 <?php
 do_action('admin_notices');
 
-screen_meta($pagenow, $hook_suffix);
+screen_meta($hook_suffix);
 unset($hook_suffix);
 
 if ( $parent_file == 'options-general.php' ) {

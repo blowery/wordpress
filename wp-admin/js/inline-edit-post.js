@@ -11,11 +11,8 @@ inlineEditPost = {
 		// get all editable rows
 		t.rows = $('tr.iedit');
 
-		// prepare the edit row
-//		.dblclick(function() { inlineEditPost.toggle(this); })
+		// prepare the edit rows
 		qeRow.keyup(function(e) { if(e.which == 27) return inlineEditPost.revert(); });
-
-//		.dblclick(function() { inlineEditPost.revert(); })
 		bulkRow.keyup(function(e) { if (e.which == 27) return inlineEditPost.revert(); });
 
 		$('a.cancel', qeRow).click(function() { return inlineEditPost.revert(); });
@@ -25,7 +22,6 @@ inlineEditPost = {
 		$('a.cancel', bulkRow).click(function() { return inlineEditPost.revert(); });
 
 		// add events
-//		t.rows.dblclick(function() { inlineEditPost.toggle(this); });
 		t.addEvents(t.rows);
 
 		$('#bulk-title-div').parents('fieldset').after(
@@ -51,17 +47,9 @@ inlineEditPost = {
 
 		$('select[name="_status"] option[value="future"]', bulkRow).remove();
 
-		$('#doaction').click(function(e){
-			if ( $('select[name="action"]').val() == 'edit' ) {
-				e.preventDefault();
-				t.setBulk();
-			} else if ( $('form#posts-filter tr.inline-editor').length > 0 ) {
-				t.revert();
-			}
-		});
-
-		$('#doaction2').click(function(e){
-			if ( $('select[name="action2"]').val() == 'edit' ) {
+		$('#doaction, #doaction2').click(function(e){
+			var n = $(this).attr('id').substr(2);
+			if ( $('select[name="'+n+'"]').val() == 'edit' ) {
 				e.preventDefault();
 				t.setBulk();
 			} else if ( $('form#posts-filter tr.inline-editor').length > 0 ) {
@@ -90,16 +78,18 @@ inlineEditPost = {
 	},
 
 	setBulk : function() {
-		var te = '', c = '';
+		var te = '', c = '', type = this.type;
 		this.revert();
 
+		$('#bulk-edit td').attr('colspan', $('.widefat:first thead th:visible').length);
 		$('table.widefat tbody').prepend( $('#bulk-edit') );
 		$('#bulk-edit').addClass('inline-editor').show();
 
 		$('tbody th.check-column input[type="checkbox"]').each(function(i){
 			if ( $(this).attr('checked') ) {
 				var id = $(this).val();
-				te += '<div id="ttle'+id+'"><a id="_'+id+'" class="ntdelbutton">X</a>'+$('#inline_'+id+' .post_title').text()+'</div>';
+				var theTitle = $('#inline_'+id+' .post_title').text() || '#'+id;
+				te += '<div id="ttle'+id+'"><a id="_'+id+'" class="ntdelbutton">X</a>'+theTitle+'</div>';
 			}
 		});
 
@@ -112,7 +102,7 @@ inlineEditPost = {
 		});
 
 		// enable autocomplete for tags
-		if ( this.type == 'post' )
+		if ( type == 'post' )
 			$('tr.inline-editor textarea[name="tags_input"]').suggest( 'admin-ajax.php?action=ajax-tag-search', { delay: 500, minchars: 2, multiple: true, multipleSep: ", " } );
 	},
 
@@ -123,12 +113,13 @@ inlineEditPost = {
 		if ( typeof(id) == 'object' )
 			id = t.getId(id);
 
-		var fields = ['post_title', 'post_name', 'post_author', '_status', 'jj', 'mm', 'aa', 'hh', 'mn', 'post_password'];
+		var fields = ['post_title', 'post_name', 'post_author', '_status', 'jj', 'mm', 'aa', 'hh', 'mn', 'ss', 'post_password'];
 		if ( t.type == 'page' ) fields.push('post_parent', 'menu_order', 'page_template');
 		if ( t.type == 'post' ) fields.push('tags_input');
 
 		// add the new blank row
 		var editRow = $('#inline-edit').clone(true);
+		$('td', editRow).attr('colspan', $('.widefat:first thead th:visible').length);
 
 		if ( $(t.what+id).hasClass('alternate') )
 			$(editRow).addClass('alternate');
@@ -205,19 +196,22 @@ inlineEditPost = {
 		$.post('admin-ajax.php', params,
 			function(r) {
 				var row = $(inlineEditPost.what+id);
+				$('table.widefat .inline-edit-save .waiting').hide();
 
 				if (r) {
-					r = r.replace(/hide-if-no-js/, '');
-					
-	
-					$('#edit-'+id).remove();
-					row.html($(r).html());
-					if ( 'draft' == $('input[name="post_status"]').val() )
-						row.find('td.column-comments').hide();
-					row.show()
-						.animate( { backgroundColor: '#CCEEBB' }, 500)
-						.animate( { backgroundColor: '#eefee7' }, 500);
-					inlineEditPost.addEvents(row);
+					if ( -1 != r.indexOf('<tr') ) {
+						r = r.replace(/hide-if-no-js/, '');
+
+						$('#edit-'+id).remove();
+						row.html($(r).html());
+						if ( 'draft' == $('input[name="post_status"]').val() )
+							row.find('td.column-comments').hide();
+						inlineEditPost.addEvents(row);
+						row.fadeIn();
+					} else {
+						r = r.replace( /<.[^<>]*?>/g, '' );
+						$('#edit-'+id+' .inline-edit-save').append('<span class="error">'+r+'</span>');
+					}
 				} else {
 					$('#edit-'+id+' .inline-edit-save').append('<span class="error">'+inlineEditL10n.error+'</span>');
 				}

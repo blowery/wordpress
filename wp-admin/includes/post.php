@@ -75,8 +75,15 @@ function _wp_translate_postdata( $update = false, $post_data = null ) {
 
 	// Posts 'submitted for approval' present are submitted to $_POST the same as if they were being published.
 	// Change status from 'publish' to 'pending' if user lacks permissions to publish or to resave published posts.
-	if ( isset($post_data['post_status']) && ('publish' == $post_data['post_status'] && !current_user_can( 'publish_posts' )) )
-		if ( $previous_status != 'publish' OR !current_user_can( 'edit_published_pages') )
+	if ( 'page' == $post_data['post_type'] ) {
+		$publish_cap = 'publish_pages';
+		$edit_cap = 'edit_published_pages';
+	} else {
+		$publish_cap = 'publish_posts';
+		$edit_cap = 'edit_published_posts';
+	}
+	if ( isset($post_data['post_status']) && ('publish' == $post_data['post_status'] && !current_user_can( $publish_cap )) )
+		if ( $previous_status != 'publish' || !current_user_can( $edit_cap ) )
 			$post_data['post_status'] = 'pending';
 
 	if ( ! isset($post_data['post_status']) )
@@ -153,18 +160,20 @@ function edit_post( $post_data = null ) {
 	if ( is_wp_error($post_data) )
 		wp_die( $post_data->get_error_message() );
 
-	switch ( $post_data['visibility'] ) {
-		case 'public' :
-			unset( $post_data['post_password'] );
-			break;
-		case 'password' :
-			unset( $post_data['sticky'] );
-			break;
-		case 'private' :
-			$post_data['post_status'] = 'private';
-			$post_data['post_password'] = '';
-			unset( $post_data['sticky'] );
-			break;
+	if ( isset($post_data['visibility']) ) {
+		switch ( $post_data['visibility'] ) {
+			case 'public' :
+				unset( $post_data['post_password'] );
+				break;
+			case 'password' :
+				unset( $post_data['sticky'] );
+				break;
+			case 'private' :
+				$post_data['post_status'] = 'private';
+				$post_data['post_password'] = '';
+				unset( $post_data['sticky'] );
+				break;
+		}
 	}
 
 	// Meta Stuff
@@ -337,6 +346,7 @@ function get_default_post_to_edit() {
 	$post->post_name = '';
 	$post->post_author = '';
 	$post->post_date = '';
+	$post->post_password = '';
 	$post->post_status = 'draft';
 	$post->post_type = 'post';
 	$post->to_ping = '';
@@ -456,18 +466,20 @@ function wp_write_post() {
 	if ( is_wp_error($translated) )
 		return $translated;
 
-	switch ( $_POST['visibility'] ) {
-		case 'public' :
-			$_POST['post_password'] = '';
-			break;
-		case 'password' :
-			unset( $_POST['sticky'] );
-			break;
-		case 'private' :
-			$_POST['post_status'] = 'private';
-			$_POST['post_password'] = '';
-			unset( $_POST['sticky'] );
-			break;
+	if ( isset($_POST['visibility']) ) {
+		switch ( $_POST['visibility'] ) {
+			case 'public' :
+				$_POST['post_password'] = '';
+				break;
+			case 'password' :
+				unset( $_POST['sticky'] );
+				break;
+			case 'private' :
+				$_POST['post_status'] = 'private';
+				$_POST['post_password'] = '';
+				unset( $_POST['sticky'] );
+				break;
+		}
 	}
 
 	// Create the post.
@@ -757,7 +769,6 @@ function get_available_post_statuses($type = 'post') {
  * @return unknown
  */
 function wp_edit_posts_query( $q = false ) {
-	global $wpdb;
 	if ( false === $q )
 		$q = $_GET;
 	$q['m']   = isset($q['m']) ? (int) $q['m'] : 0;
@@ -820,7 +831,6 @@ function get_available_post_mime_types($type = 'attachment') {
  * @return unknown
  */
 function wp_edit_attachments_query( $q = false ) {
-	global $wpdb;
 	if ( false === $q )
 		$q = $_GET;
 

@@ -9,7 +9,6 @@
 /** WordPress Administration Bootstrap */
 require_once('admin.php');
 
-$title = __('Edit Comments');
 wp_enqueue_script('admin-comments');
 enqueue_comment_hotkeys_js();
 
@@ -67,6 +66,13 @@ if ( ( isset( $_REQUEST['delete_all_spam'] ) || isset( $_REQUEST['delete_all_spa
 	 exit;
 }
 
+$post_id = isset($_GET['p']) ? (int) $_GET['p'] : 0;
+
+if ( $post_id )
+	$title = sprintf(__('Edit Comments on &#8220;%s&#8221;'), wp_html_excerpt(_draft_or_post_title($post_id), 50));
+else
+	$title = __('Edit Comments');
+
 require_once('admin-header.php');
 
 $mode = ( ! isset($_GET['mode']) || empty($_GET['mode']) ) ? 'detail' : attribute_escape($_GET['mode']);
@@ -74,8 +80,6 @@ $mode = ( ! isset($_GET['mode']) || empty($_GET['mode']) ) ? 'detail' : attribut
 $comment_status = !empty($_GET['comment_status']) ? attribute_escape($_GET['comment_status']) : '';
 
 $comment_type = !empty($_GET['comment_type']) ? attribute_escape($_GET['comment_type']) : '';
-
-$post_id = isset($_GET['p']) ? (int) $_GET['p'] : 0;
 
 $search_dirty = ( isset($_GET['s']) ) ? $_GET['s'] : '';
 $search = attribute_escape( $search_dirty ); ?>
@@ -120,9 +124,9 @@ $num_comments = wp_count_comments();
 //, number_format_i18n($num_comments->moderated) ), "<span class='comment-count'>" . number_format_i18n($num_comments->moderated) . "</span>"),
 //, number_format_i18n($num_comments->spam) ), "<span class='spam-comment-count'>" . number_format_i18n($num_comments->spam) . "</span>")
 $stati = array(
-		'moderated' => __ngettext_noop('Pending <span class="count">(%s)</span>', 'Pending <span class="count">(%s)</span>'),
+		'moderated' => __ngettext_noop('Pending (<span class="pending-count">%s</span>)', 'Pending (<span class="pending-count">%s</span>)'),
 		'approved' => __ngettext_noop('Approved', 'Approved'), // singular not used
-		'spam' => __ngettext_noop('Spam <span class="count">(%s)</span>', 'Spam <span class="count">(%s)</span>')
+		'spam' => __ngettext_noop('Spam (<span class="spam-count">%s</span>)', 'Spam (<span class="spam-count">%s</span>)')
 	);
 $class = ( '' === $comment_status ) ? ' class="current"' : '';
 $status_links[] = "<li><a href='edit-comments.php'$class>" . __( 'All' ) . '</a>';
@@ -172,8 +176,8 @@ $extra_comments = array_slice($_comments, $comments_per_page);
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'apage', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => ceil($total / $comments_per_page),
 	'current' => $page
 ));
@@ -248,16 +252,16 @@ if ( 'spam' == $comment_status ) {
 <div class="clear"></div>
 
 <?php if ( $comments ) { ?>
-<table class="widefat">
+<table class="widefat comments fixed" cellspacing="0">
 <thead>
 	<tr>
-<?php print_column_headers('comment'); ?>
+<?php print_column_headers('edit-comments'); ?>
 	</tr>
 </thead>
 
 <tfoot>
 	<tr>
-<?php print_column_headers('comment', false); ?>
+<?php print_column_headers('edit-comments', false); ?>
 	</tr>
 </tfoot>
 
@@ -317,22 +321,16 @@ if ( $page_links )
 </form>
 
 <div id="ajax-response"></div>
-<?php
-} elseif ( 'moderated' == $_GET['comment_status'] ) {
-?>
-<p>
-<?php _e('No comments awaiting moderation&hellip; yet.') ?>
-</p>
-<?php
-} else {
-?>
-<p>
-<?php _e('No results found.') ?>
-</p>
-<?php
-}
-?>
 
+<?php } elseif ( 'moderated' == $_GET['comment_status'] ) { ?>
+<p><?php _e('No comments awaiting moderation&hellip; yet.') ?></p>
+</form>
+
+<?php } else { ?>
+<p><?php _e('No results found.') ?></p>
+</form>
+
+<?php } ?>
 </div>
 
 <script type="text/javascript">

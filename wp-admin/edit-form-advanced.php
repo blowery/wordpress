@@ -78,19 +78,6 @@ function post_submit_meta_box($post) {
 </div>
 
 <div id="minor-publishing-actions">
-<div id="preview-action">
-<noscript>
-<?php if ( 'publish' == $post->post_status ) { ?>
-<a class="preview button" href="<?php echo clean_url(get_permalink($post->ID)); ?>" target="_blank" tabindex="4"><?php _e('View Post'); ?></a>
-<?php } else { ?>
-<a class="preview button" href="<?php echo clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>" target="_blank" tabindex="4"><?php _e('Preview'); ?></a>
-<?php } ?>
-</noscript>
-
-<a class="preview button hide-if-no-js" href="#" id="post-preview" tabindex="4"><?php _e('Preview'); ?></a>
-<input type="hidden" name="wp-preview" id="wp-preview" value="" />
-</div>
-
 <div id="save-action">
 <?php if ( 'publish' != $post->post_status && 'future' != $post->post_status && 'pending' != $post->post_status )  { ?>
 <input <?php if ( 'private' == $post->post_status ) { ?>style="display:none"<?php } ?> type="submit" name="save" id="save-post" value="<?php echo attribute_escape( __('Save Draft') ); ?>" tabindex="4" class="button button-highlighted" />
@@ -98,16 +85,18 @@ function post_submit_meta_box($post) {
 <input type="submit" name="save" id="save-post" value="<?php echo attribute_escape( __('Save as Pending') ); ?>" tabindex="4" class="button button-highlighted" />
 <?php } ?>
 </div>
+
+<div id="preview-action">
+<?php $preview_link = 'publish' == $post->post_status ? clean_url(get_permalink($post->ID)) : clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>
+
+<a class="preview button" href="<?php echo $preview_link; ?>" target="wp-preview" id="post-preview" tabindex="4"><?php _e('Preview'); ?></a>
+<input type="hidden" name="wp-preview" id="wp-preview" value="" />
+</div>
+
 <div class="clear"></div>
 </div><?php // /minor-publishing-actions ?>
 
 <div id="misc-publishing-actions">
-
-<?php if ( false ) { // Stub for 2.8 ?>
-<div class="misc-pub-section" id="visibility">
-<?php _e('Visibility:'); ?> <b><?php _e('Public'); // TODO: dropdown ?></b>
-</div>
-<?php } ?>
 
 <div class="misc-pub-section<?php if ( !$can_publish ) { echo '  misc-pub-section-last'; } ?>"><label for="post_status"><?php _e('Status:') ?></label>
 <b><span id="post-status-display">
@@ -166,7 +155,6 @@ if ( !empty( $post->post_password ) ) {
 } elseif ( is_sticky( $post->ID ) ) {
 	$visibility = 'public';
 	$visibility_trans = __('Public, Sticky');
-	$sticky = 'sticky';
 } else {
 	$visibility = 'public';
 	$visibility_trans = __('Public');
@@ -220,7 +208,7 @@ if ( 0 != $post->ID ) {
 <div class="misc-pub-section curtime misc-pub-section-last">
 	<span id="timestamp">
 	<?php printf($stamp, $date); ?></span>
-	&nbsp;<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
+	<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js" tabindex='4'><?php _e('Edit') ?></a>
 	<div id="timestampdiv" class="hide-if-js"><?php touch_time(($action == 'edit'),1,4); ?></div>
 </div><?php // /misc-pub-section ?>
 <?php endif; ?>
@@ -434,13 +422,13 @@ function post_comment_status_meta_box($post) {
 wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 ?>
 
-<table class="widefat comments-box" style="display:none;">
+<table class="widefat comments-box fixed" cellspacing="0" style="display:none;">
 <thead>
 	<tr>
-		<th scope="col"><?php _e('Comments') ?></th>
-		<th scope="col"><?php _e('Author') ?></th>
-		<th scope="col"><?php _e('Submitted') ?></th>
-	</tr>
+    <th scope="col" class="column-comment"><?php echo _c('Comment|noun') ?></th>
+    <th scope="col" class="column-author"><?php _e('Author') ?></th>
+    <th scope="col" class="column-date"><?php _e('Submitted') ?></th>
+  </tr>
 </thead>
 <tbody id="the-comment-list" class="list:comment">
 </tbody>

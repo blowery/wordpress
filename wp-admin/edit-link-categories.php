@@ -69,8 +69,8 @@ endif; ?>
 
 <form class="search-form" action="" method="get">
 <p class="search-box">
-	<label class="hidden" for="category-search-input"><?php _e( 'Search Categories' ); ?>:</label>
-	<input type="text" class="search-input" id="category-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<label class="hidden" for="link-category-search-input"><?php _e( 'Search Categories' ); ?>:</label>
+	<input type="text" class="search-input" id="link-category-search-input" name="s" value="<?php _admin_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
 </p>
 </form>
@@ -93,8 +93,8 @@ if( ! isset( $catsperpage ) || $catsperpage < 0 )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&laquo;'),
-	'next_text' => __('&raquo;'),
+	'prev_text' => __('&larr;'),
+	'next_text' => __('&rarr;'),
 	'total' => ceil(wp_count_terms('link_category') / $catsperpage),
 	'current' => $pagenum
 ));
@@ -117,16 +117,16 @@ if ( $page_links )
 
 <div class="clear"></div>
 
-<table class="widefat">
+<table class="widefat fixed" cellspacing="0">
 	<thead>
 	<tr>
-<?php print_column_headers('link-category'); ?>
+<?php print_column_headers('edit-link-categories'); ?>
 	</tr>
 	</thead>
 
 	<tfoot>
 	<tr>
-<?php print_column_headers('link-category', false); ?>
+<?php print_column_headers('edit-link-categories', false); ?>
 	</tr>
 	</tfoot>
 
@@ -141,10 +141,8 @@ $categories = get_terms( 'link_category', $args );
 if ( $categories ) {
 	$output = '';
 	foreach ( $categories as $category ) {
-		$category = sanitize_term($category, 'link_category', 'display');
 		$output .= link_cat_row($category);
 	}
-	$output = apply_filters('cat_rows', $output);
 	echo $output;
 	unset($category);
 }
