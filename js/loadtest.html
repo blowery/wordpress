@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <title>a load test</title>
+    <script type="text/javascript">
+      var cur = 1;
+      function nextName() {
+        return (cur++).toString();
+      }
+
+      function loadMany(){
+        var howMany = parseInt(document.getElementById("num").value, 10) || 1;
+        for(var i = 0; i < howMany; i++){
+          var s = document.createElement("script");
+          s.type = "text/javascript";
+          var host = "http://" + (i % 4).toString() + ".js.blowery.org";
+          var nname = nextName();
+          var url = host + "/wait.php?name=" + nname + ":" + encodeURIComponent(host) ;
+          s.src = url;
+          document.getElementsByTagName("body")[0].appendChild(s);
+          
+          var li = document.createElement("li");
+          li.id = "response-" + nname;
+          li.innerHTML = "Requesting " + url + "...";
+          document.getElementById("requests").appendChild(li);
+        }
+      }
+
+      function loaded(t,n){
+        var now = new Date();
+        document.getElementById("response-" + n.split(":")[0]).innerHTML += now.toString() + " " + n + "\n";
+      }
+    </script>
+  </head>
+
+  <body>
+    <button onclick="loadMany();">Load more</button> <input type="text" id="num" value="16" />
+    <ul id="requests">
+      <li>Requests</li>
+    </ul>
+  </body>
+</html>

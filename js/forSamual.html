@@ -1,0 +1,26 @@
+<html>
+<head>
+<title>For Samual</title>
+<style>
+.pdf { color: blue; }
+.normal { color: red; }
+</style>
+<script type="text/javascript">
+function fixupLinks(){
+  var links = document.getElementsByTagName("a");
+  for(var i = 0; i < links.length; i++){
+    var link = links[i];
+    if(link.href.match(/\.pdf$/))
+      link.className = link.className.replace("normal", "pdf");
+  }
+}
+
+window.onload = fixupLinks;
+</script>
+</head>
+<body>
+<p>
+<a href="foo.pdf" class="normal link">foo pdf</a>
+<a href="foo.jpg" class="normal link">foo jpg</a></p>
+</body>
+</html>

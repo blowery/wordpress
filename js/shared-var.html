@@ -1,0 +1,22 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+  <head>
+    <title>shared var</title>
+    <script type="text/javascript">
+      var foo = "awesome";
+      bar = "bartastic";
+      window.baz = "bazzoom";
+    </script>
+    <script type="text/javascript">
+      if(!window.foo) var foo = "not awesome";
+      if(!window.bar) var bar = "not bartastic";
+      if(!window.baz) var baz = "not bazzoom";
+    </script>
+  </head>
+  <body>
+    <p>Foo is <script type="text/javascript">document.write(foo);</script></p>
+    <p>Bar is <script type="text/javascript">document.write(bar);</script></p>
+    <p>Baz is <script type="text/javascript">document.write(baz);</script></p>
+  </body>
+</html>
