@@ -129,6 +129,7 @@ $messages[5] = __('Tag not updated.');
 $messages[6] = __('Tags deleted.'); ?>
 
 <div class="wrap nosubsub">
+<?php screen_icon(); ?>
 <h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
@@ -155,9 +156,9 @@ endif; ?>
 $pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
 if ( empty($pagenum) )
 	$pagenum = 1;
-if( ! isset( $tagsperpage ) || $tagsperpage < 0 )
-	$tagsperpage = 20;
 
+$tagsperpage = apply_filters("tagsperpage",20);
+	
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',

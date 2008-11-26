@@ -203,7 +203,7 @@ function inline_edit_term_row($type) {
 
 	$is_tag = $type == 'tag';
 	$columns = $is_tag ? get_column_headers('tag') : get_column_headers('category');
-	$hidden = array_intersect( array_keys( $columns ), array_filter( (array) get_user_option( "manage-$type-columns-hidden" ) ) );
+	$hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns($type) ) );
 	$col_count = count($columns) - count($hidden);
 	?>
 
@@ -764,9 +764,9 @@ function get_column_headers($page) {
 		case 'edit-comments':
 			$_wp_column_headers[$page] = array(
 				'cb' => '<input type="checkbox" />',
-				'comment' => _c('Comment|noun'),
 				'author' => __('Author'),
-				'date' => __('Submitted'),
+				'comment' => _c('Comment|noun'),
+				//'date' => __('Submitted'),
 				'response' => __('In Response To')
 			);
 
@@ -900,7 +900,7 @@ function register_column_headers($screen, $columns) {
  */
 function get_hidden_columns($page) {
 	$page = str_replace('.php', '', $page);
-	return (array) get_user_option( 'manage-' . $page . '-columns-hidden' );	
+	return (array) get_user_option( 'manage-' . $page . '-columns-hidden', 0, false );	
 }
 
 /**
@@ -922,7 +922,7 @@ function inline_edit_row( $type ) {
 		$post = get_default_post_to_edit();
 
 	$columns = $is_page ? wp_manage_pages_columns() : wp_manage_posts_columns();
-	$hidden = array_intersect( array_keys( $columns ), array_filter( (array) get_user_option( "manage-$type-columns-hidden" ) ) );
+	$hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns($type) ) );
 	$col_count = count($columns) - count($hidden);
 	$m = ( isset($mode) && 'excerpt' == $mode ) ? 'excerpt' : 'list';
 	$can_publish = current_user_can("publish_{$type}s");
@@ -1917,7 +1917,7 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
  * @param unknown_type $comment_status
  * @param unknown_type $checkbox
  */
-function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true ) {
+function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, $from_ajax = false ) {
 	global $comment, $post;
 	$comment = get_comment( $comment_id );
 	$post = get_post($comment->comment_post_ID);
@@ -1969,7 +1969,10 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true 
 				break;
 			case 'comment':
 				echo "<td $attributes>";
-				if ( 'detail' == $mode || 'single' == $mode ) comment_text(); ?>
+				echo '<div id="submitted-on">';
+				printf(__('Submitted on <a href="%1$s">%2$s at %3$s</a>'), get_comment_link($comment->comment_ID), get_comment_date(__('Y/m/d')), get_comment_date(__('g:ia')));
+				echo '</div>';
+				comment_text(); ?>
 				<div id="inline-<?php echo $comment->comment_ID; ?>" class="hidden">
 				<textarea class="comment" rows="3" cols="10"><?php echo $comment->comment_content; ?></textarea>
 				<div class="author-email"><?php echo attribute_escape( $comment->comment_author_email ); ?></div>
@@ -2007,8 +2010,8 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true 
 						++$i;
 						( ( ('approve' == $action || 'unapprove' == $action) && 2 === $i ) || 1 === $i ) ? $sep = '' : $sep = ' | ';
 
-						// Reply and quickedit need a hide-if-no-js span
-						if ( 'reply' == $action || 'quickedit' == $action )
+						// Reply and quickedit need a hide-if-no-js span when not added with ajax
+						if ( ('reply' == $action || 'quickedit' == $action) && ! $from_ajax )
 							$action .= ' hide-if-no-js';
 
 						echo "<span class='$action'>$sep$link</span>";
@@ -2697,14 +2700,14 @@ function do_meta_boxes($page, $context, $object) {
 
 	//do_action('do_meta_boxes', $page, $context, $object);
 
-	$hidden = (array) get_user_option( "meta-box-hidden_$page" );
+	$hidden = (array) get_user_option( "meta-box-hidden_$page", 0, false );
 
 	echo "<div id='$context-sortables' class='meta-box-sortables'>\n";
 
 	$i = 0;
 	do {
 		// Grab the ones the user has manually sorted. Pull them out of their previous context/priority and into the one the user chose
-		if ( !$already_sorted && $sorted = get_user_option( "meta-box-order_$page" ) ) {
+		if ( !$already_sorted && $sorted = get_user_option( "meta-box-order_$page", 0, false ) ) {
 			foreach ( $sorted as $box_context => $ids )
 				foreach ( explode(',', $ids) as $id )
 					if ( $id )
@@ -2777,7 +2780,7 @@ function meta_box_prefs($page) {
 	if ( empty($wp_meta_boxes[$page]) )
 		return;
 
-	$hidden = (array) get_user_option( "meta-box-hidden_$page" );
+	$hidden = (array) get_user_option( "meta-box-hidden_$page", 0, false );
 
 	foreach ( array_keys($wp_meta_boxes[$page]) as $context ) {
 		foreach ( array_keys($wp_meta_boxes[$page][$context]) as $priority ) {
@@ -3080,9 +3083,11 @@ function the_post_password() {
  */
 function favorite_actions() {
 	$actions = array(
-		'post-new.php' => array(__('Add New Post'), 'edit_posts'),
-		'page-new.php' => array(__('Add New Page'), 'edit_pages'),
-		'edit-comments.php' => array(__('Manage Comments'), 'moderate_comments')
+		'post-new.php' => array(__('New Post'), 'edit_posts'),
+		'edit.php?post_status=draft' => array(__('Drafts'), 'edit_posts'),	
+		'page-new.php' => array(__('New Page'), 'edit_pages'),
+		'media-new.php' => array(__('Upload'), 'upload_files'),
+		'edit-comments.php' => array(__('Comments'), 'moderate_comments')
 		);
 
 	$actions = apply_filters('favorite_actions', $actions);
@@ -3320,6 +3325,20 @@ function add_contextual_help($screen, $help) {
 		$_wp_contextual_help = array();
 
 	$_wp_contextual_help[$screen] = $help;
+}
+
+function screen_icon() {
+	global $parent_file, $hook_suffix;
+
+	if ( isset($parent_file) && !empty($parent_file) )
+		$name = substr($parent_file, 0, -4);
+	else
+		$name = str_replace(array('.php', '-new', '-add'), '', $hook_suffix);
+
+	unset($hook_suffix);
+?>
+	<div id="icon-<?php echo $name; ?>" class="icon32"><br /></div>
+<?php
 }
 
 ?>

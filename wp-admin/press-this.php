@@ -127,10 +127,8 @@ switch ($_REQUEST['ajax']) {
 		<div class="postbox">
 		<h2><label for="embed-code"><?php _e('Embed Code') ?></label></h2>
 		<div class="inside">
-
 			<textarea name="embed-code" id="embed-code" rows="8" cols="40"><?php echo format_to_edit($selection, true); ?></textarea>
-
-		<p id="options"><a href="#" class="select button"><?php _e('Insert Video'); ?></a> <a href="#" class="close button"><?php _e('Cancel'); ?></a></p>
+			<p id="options"><a href="#" class="select button"><?php _e('Insert Video'); ?></a> <a href="#" class="close button"><?php _e('Cancel'); ?></a></p>
 		</div>
 		</div>
 		<?php break;
@@ -140,7 +138,6 @@ switch ($_REQUEST['ajax']) {
 			jQuery('.cancel').click(function() {
 				tb_remove();
 			});
-
 			jQuery('.select').click(function() {
 				image_selector();
 			});
@@ -213,6 +210,7 @@ switch ($_REQUEST['ajax']) {
 			if ( empty($matches[0]) ) return '';
 
 			$sources = array();
+			
 			foreach ($matches[3] as $src) {
 				// if no http in url
 				if(strpos($src, 'http') === false)
@@ -223,6 +221,7 @@ switch ($_REQUEST['ajax']) {
 						$src = 'http://'.str_replace('//','/', $host['host'].'/'.dirname($host['path']).'/'.$src);
 				$sources[] = clean_url($src);
 			}
+			
 			return "'" . implode("','", $sources) . "'";
 		}
 
@@ -235,7 +234,6 @@ switch ($_REQUEST['ajax']) {
 		// gather images and load some default JS
 		var last = null
 		var img, img_tag, aspect, w, h, skip, i, strtoappend = "";
-		if(!my_src) {
 			var my_src = eval(
 				jQuery.ajax({
 			   		type: "GET",
@@ -246,13 +244,30 @@ switch ($_REQUEST['ajax']) {
 					dataType : "script"
 				}).responseText
 			);
-		}
-
+			if(my_src.length == 0) {
+				var my_src = eval(
+				jQuery.ajax({
+			   		type: "GET",
+			   		url: "<?php echo clean_url($_SERVER['PHP_SELF']); ?>",
+					cache : false,
+					async : false,
+			   		data: "ajax=photo_images&u=<?php echo urlencode($url); ?>",
+					dataType : "script"
+				}).responseText
+				);
+				if(my_src.length == 0) {
+					strtoappend = '<?php _e('Unable to retrieve images or no images on page.'); ?>';
+				}
+			}
+		
 		for (i = 0; i < my_src.length; i++) {
 			img = new Image();
 			img.src = my_src[i];
 			img_attr = 'id="img' + i + '"';
 			skip = false;
+			
+			maybeappend = '<a href="?ajax=photo_thickbox&amp;i=' + encodeURI(img.src) + '&amp;u=<?php echo urlencode($url); ?>&amp;height=400&amp;width=500" title="" class="thickbox"><img src="' + img.src + '" ' + img_attr + '/></a>';
+			
 			if (img.width && img.height) {
 				if (img.width >= 30 && img.height >= 30) {
 					aspect = img.width / img.height;
@@ -266,18 +281,20 @@ switch ($_REQUEST['ajax']) {
 						h = parseInt(img.height * scale);
 					}
 					img_attr += ' style="width: ' + w + 'px; height: ' + h + 'px;"';
-					strtoappend += '<a href="?ajax=photo_thickbox&amp;i=' + encodeURI(img.src) + '&amp;u=<?php echo $url; ?>&amp;height=400&amp;width=500" title="" class="thickbox"><img src="' + img.src + '" ' + img_attr + '/></a>';
+					strtoappend += maybeappend;
 				}
+			} else {
+				strtoappend += maybeappend;
 			}
 		}
-
+		
 		function pick(img, desc) {
 			if (img) {
 				if('object' == typeof jQuery('.photolist input') && jQuery('.photolist input').length != 0) length = jQuery('.photolist input').length;
 				if(length == 0) length = 1;
 				jQuery('.photolist').append('<input name="photo_src[' + length + ']" value="' + img +'" type="hidden"/>');
 				jQuery('.photolist').append('<input name="photo_description[' + length + ']" value="' + desc +'" type="hidden"/>');
-				insert_editor("\n\n" + '<p style="text-align: center;"><a href="<?php echo $url; ?>"><img src="' + img +'" alt="' + desc + '" /></a></p>');
+				insert_editor( "\n\n" + encodeURI('<p style="text-align: center;"><a href="<?php echo $url; ?>"><img src="' + img +'" alt="' + desc + '" /></a></p>'));
 			}
 			return false;
 		}
@@ -293,14 +310,19 @@ switch ($_REQUEST['ajax']) {
 		}
 
 		jQuery(document).ready(function() {
-			jQuery('#extra_fields').html('<div class="postbox"><h2>Photo <small id="photo_directions">(<?php _e("click images to select") ?>)</small></h2><ul id="actions"><li><a href="#" id="photo_add_url" class="thickbox button"><?php _e("Add from URL") ?> +</a></li></ul><div class="inside"><div class="titlewrap"><div id="img_container"></div></div><p id="options"><a href="#" class="close button"><?php _e('Cancel'); ?></a></p></div>');
+			jQuery('#extra_fields').html('<div class="postbox"><h2>Photo <small id="photo_directions">(<?php _e("click images to select") ?>)</small></h2><ul id="actions"><li><a href="#" id="photo_add_url" class="thickbox button"><?php _e("Add from URL") ?> +</a></li></ul><div class="inside"><div class="titlewrap"><div id="img_container"></div></div><p id="options"><a href="#" class="close button"><?php _e('Cancel'); ?></a><a href="#" class="refresh button"><?php _e('Refresh'); ?></a></p></div>');
 			jQuery('.close').click(function() {
 				jQuery('#extra_fields').hide();
 				jQuery('#extra_fields').html('');
 			});
+			jQuery('.refresh').click(function() {
+						show('photo');
+					});
 			jQuery('#img_container').html(strtoappend);
 			jQuery('#photo_add_url').attr('href', '?ajax=photo_thickbox_url&height=200&width=500');
 			tb_init('#extra_fields .thickbox');
+			
+			
 		});
 		<?php break;
 }
@@ -350,26 +372,35 @@ die;
 	// auto-save tags on post save/publish
 	jQuery('#publish').click( tag_save_on_publish );
 	jQuery('#save').click( tag_save_on_publish );
-
-
+	function insert_plain_editor(text) {
+		edCanvas = document.getElementById('content');
+		edInsertContent(edCanvas, text);
+	}
 	function set_editor(text) {
 		if ( '' == text || '<p></p>' == text ) text = '<p><br /></p>';
 		if ( tinyMCE.activeEditor ) tinyMCE.execCommand('mceSetContent', false, text);
 	}
 	function insert_editor(text) {
-		if ( '' != text && tinyMCE.activeEditor ) tinyMCE.execCommand('mceInsertContent', false, '<p>' + tinymce.DOM.decode(text) + '</p>');
+		if ( '' != text && tinyMCE.activeEditor && ! tinyMCE.activeEditor.isHidden()) {
+			tinyMCE.execCommand('mceInsertContent', false, '<p>' + decodeURI(tinymce.DOM.decode(text)) + '</p>', {format : 'raw'});
+		} else {
+			insert_plain_editor(text);
+		}
 	}
 	function append_editor(text) {
-		if ( '' != text && tinyMCE.activeEditor ) tinyMCE.execCommand('mceSetContent', false, tinyMCE.activeEditor.getContent({format : 'raw'}) + '<p>' + text + '</p>');
-		tinyMCE.execCommand('mceCleanup');
+		if ( '' != text && tinyMCE.activeEditor && ! tinyMCE.activeEditor.isHidden()) {
+			tinyMCE.execCommand('mceSetContent', false, tinyMCE.activeEditor.getContent({format : 'raw'}) + '<p>' + text + '</p>');
+			tinyMCE.execCommand('mceCleanup');
+		} else {
+			insert_plain_editor(text);
+		}
 	}
 
 	function show(tab_name) {
-		
+		jQuery('#extra_fields').html('');
+		jQuery('#extra_fields').show();
 		switch(tab_name) {
 			case 'video' :
-				jQuery('#extra_fields').html('');
-				jQuery('#extra_fields').show();
 				jQuery('#extra_fields').load('<?php echo clean_url($_SERVER['PHP_SELF']); ?>', { ajax: 'video', s: '<?php echo attribute_escape($selection); ?>'}, function() {
 					<?php
 					$content = '';
@@ -389,39 +420,32 @@ die;
 					}
 					?>
 					jQuery('#embed-code').prepend('<?php echo htmlentities($content); ?>');
-
 				});
 				return false;
 				break;
 			case 'photo' :
-					jQuery('#extra_fields').html('');
-					jQuery('#extra_fields').show();
-					jQuery('#extra_fields').before('<p id="waiting"><img src="images/loading.gif" alt="" /> <?php echo js_escape( __( 'Loading...' ) ); ?></p>');
-					jQuery.ajax({
-						type: "GET",
-						cache : false,
-						url: "<?php echo clean_url($_SERVER['PHP_SELF']); ?>",
-						data: "ajax=photo_js&u=<?php echo urlencode($url)?>",
-						dataType : "script",
-						success : function() {
-							jQuery('#waiting').remove();
-						}
-					});
-
+				jQuery('#extra_fields').before('<p id="waiting"><img src="images/loading.gif" alt="" /> <?php echo js_escape( __( 'Loading...' ) ); ?></p>');
+				jQuery.ajax({
+					type: "GET",
+					cache : false,
+					url: "<?php echo clean_url($_SERVER['PHP_SELF']); ?>",
+					data: "ajax=photo_js&u=<?php echo urlencode($url)?>",
+					dataType : "script",
+					success : function() {
+						jQuery('#waiting').remove();
+					}
+				});
 				return false;
 				break;
 		}
 	}
-
 	jQuery(document).ready(function() {
 		//resize screen
-		top.resizeTo(720-screen.width+screen.availWidth,660-screen.height+screen.availHeight);
+		window.resizeTo(720,570);
+		// set button actions
     	jQuery('#photo_button').click(function() { show('photo'); return false; });
 		jQuery('#video_button').click(function() { show('video'); return false; });
-		jQuery('#visual_mode_button').click(function() {
-			
-		});
-		// Set default tabs
+		// auto select
 		<?php if ( preg_match("/youtube\.com\/watch/i", $url) ) { ?>
 			show('video');
 		<?php } elseif ( preg_match("/vimeo\.com\/[0-9]+/i", $url) ) { ?>
@@ -430,126 +454,114 @@ die;
 			show('photo');
 		<?php } ?>
 		
-		jQuery('#submit').click(function() { jQuery('saving').css('display', 'block'); });
+		jQuery('#publish, #save').click(function() { jQuery('#saving').css('display', 'inline'); });
 	});
 </script>
 </head>
 <body class="press-this">
-<div id="wphead">
-</div>
-
+<div id="wphead"></div>
 <form action="press-this.php?action=post" method="post">
-	
-	
-	<div id="poststuff" class="metabox-holder">
+<div id="poststuff" class="metabox-holder">
 	<div id="side-info-column">
 		<div class="sleeve">
 			<h1 id="viewsite"><a class="button" href="<?php echo get_option('home'); ?>/" target="_blank"><?php bloginfo('name'); ?> &rsaquo; <?php _e('Press This') ?></a></span></h1>
 			
 			<?php wp_nonce_field('press-this') ?>
 			<input type="hidden" name="post_type" id="post_type" value="text"/>
-		
+			<input type="hidden" name="autosave" id="autosave" />
+			<input type="hidden" id="original_post_status" name="original_post_status" value="draft" />
+			<input type="hidden" id="prev_status" name="prev_status" value="draft" />
+			
 			<!-- This div holds the photo metadata -->
 			<div class="photolist"></div>
 		
 			<div id="categorydiv" class="stuffbox">
-			<h2><?php _e('Categories') ?></h2>
+				<h2><?php _e('Categories') ?></h2>
 				<div class="inside">
 			
-			<div id="categories-all" class="ui-tabs-panel">
-				<ul id="categorychecklist" class="list:category categorychecklist form-no-clear">
-					<?php wp_category_checklist($post->ID, false, false, $popular_ids) ?>
-				</ul>
-				
-			</div>
+					<div id="categories-all" class="ui-tabs-panel">
+						<ul id="categorychecklist" class="list:category categorychecklist form-no-clear">
+							<?php wp_category_checklist($post->ID, false, false, $popular_ids) ?>
+						</ul>
+					</div>
 
-			<div id="category-adder" class="wp-hidden-children">
-				<a id="category-add-toggle" href="#category-add" class="hide-if-no-js" tabindex="3"><?php _e( '+ Add New Category' ); ?></a>
-				<p id="category-add" class="wp-hidden-child">
-					<label class="hidden" for="newcat"><?php _e( 'Add New Category' ); ?></label><input type="text" name="newcat" id="newcat" class="form-required form-input-tip" value="<?php _e( 'New category name' ); ?>" tabindex="3" aria-required="true"/>
-					<label class="hidden" for="newcat_parent"><?php _e('Parent category'); ?>:</label><?php wp_dropdown_categories( array( 'hide_empty' => 0, 'name' => 'newcat_parent', 'orderby' => 'name', 'hierarchical' => 1, 'show_option_none' => __('Parent category'), 'tab_index' => 3 ) ); ?>
-					<input type="button" id="category-add-sumbit" class="add:categorychecklist:category-add button" value="<?php _e( 'Add' ); ?>" tabindex="3" />
-					<?php wp_nonce_field( 'add-category', '_ajax_nonce', false ); ?>
-					<span id="category-ajax-response"></span>
-				</p>
-			</div>
-			</div>
+					<div id="category-adder" class="wp-hidden-children">
+						<a id="category-add-toggle" href="#category-add" class="hide-if-no-js" tabindex="3"><?php _e( '+ Add New Category' ); ?></a>
+						<p id="category-add" class="wp-hidden-child">
+							<label class="hidden" for="newcat"><?php _e( 'Add New Category' ); ?></label><input type="text" name="newcat" id="newcat" class="form-required form-input-tip" value="<?php _e( 'New category name' ); ?>" tabindex="3" aria-required="true"/>
+							<label class="hidden" for="newcat_parent"><?php _e('Parent category'); ?>:</label><?php wp_dropdown_categories( array( 'hide_empty' => 0, 'name' => 'newcat_parent', 'orderby' => 'name', 'hierarchical' => 1, 'show_option_none' => __('Parent category'), 'tab_index' => 3 ) ); ?>
+							<input type="button" id="category-add-sumbit" class="add:categorychecklist:category-add button" value="<?php _e( 'Add' ); ?>" tabindex="3" />
+							<?php wp_nonce_field( 'add-category', '_ajax_nonce', false ); ?>
+							<span id="category-ajax-response"></span>
+						</p>
+					</div>
+				</div>
 			</div>
 			
 			<div class="stuffbox">
-			<h2><?php _e('Tags') ?></h2>
+				<h2><?php _e('Tags') ?></h2>
 				<div class="inside">
 			
-			<div id="jaxtag"><label class="hidden" for="newtag"><?php _e('Tags'); ?></label><input type="text" name="tags_input" class="tags-input" id="tags-input" size="40" tabindex="3" value="<?php echo get_tags_to_edit( $post->ID ); ?>" /></div>
-			
-			<div id="tagchecklist"></div>
+					<div id="jaxtag">
+						<label class="hidden" for="newtag"><?php _e('Tags'); ?></label>
+						<input type="text" name="tags_input" class="tags-input" id="tags-input" size="40" tabindex="3" value="<?php echo get_tags_to_edit( $post->ID ); ?>" />
+					</div>
+					<div id="tagchecklist"></div>
 				</div>
 			</div>
 			<div id="submitdiv" class="postbox">
 				<h2><?php _e('Publish') ?></h2>
 				<div class="inside">
-				<p>
-					<input class="button" type="submit" name="draft" value="<?php _e('Save Draft') ?>" id="save" />
-					<input class="button-primary" type="submit" name="publish" value="<?php _e('Publish') ?>" id="publish" />
-					<img src="images/loading-publish.gif" alt="" id="saving" style="display:none;"/>
-				</p>
+					<p>
+						<input class="button" type="submit" name="draft" value="<?php _e('Save Draft') ?>" id="save" />
+						<input class="button-primary" type="submit" name="publish" value="<?php _e('Publish') ?>" id="publish" />
+						<img src="images/loading-publish.gif" alt="" id="saving" style="display:none;"/>
+					</p>
 				</div>
 			</div>
 		</div>
 	</div>
 	
-		<div class="posting">
-			<?php
-			if ( isset($posted) && intval($posted) ) {
-				$post_ID = intval($posted);
-			?>
-			<div id="message" class="updated fade"><p><strong><?php _e('Your post has been saved.'); ?></strong> <a onclick="window.opener.location.replace(this.href); window.close();" href="<?php echo get_permalink( $post_ID); ?>"><?php _e('View post'); ?></a> | <a href="<?php echo get_edit_post_link( $post_ID ); ?>" onclick="window.opener.location.replace(this.href); window.close();"><?php _e('Edit post'); ?></a> | <a href="#" onclick="window.close();"><?php _e('Close Window'); ?></a></p></div>
-			<?php
-			}
-			?>
+	<div class="posting">
+		<?php if ( isset($posted) && intval($posted) ) { $post_ID = intval($posted); ?>
+		<div id="message" class="updated fade"><p><strong><?php _e('Your post has been saved.'); ?></strong> <a onclick="window.opener.location.replace(this.href); window.close();" href="<?php echo get_permalink( $post_ID); ?>"><?php _e('View post'); ?></a> | <a href="<?php echo get_edit_post_link( $post_ID ); ?>" onclick="window.opener.location.replace(this.href); window.close();"><?php _e('Edit post'); ?></a> | <a href="#" onclick="window.close();"><?php _e('Close Window'); ?></a></p></div>
+		<?php } ?>
+
+		<div id="titlediv">
+			<div class="titlewrap">
+				<input name="title" id="title" class="text" value="<?php echo attribute_escape($title);?>"/>
+			</div>
+		</div>
 			
+		<div id="extra_fields" style="display: none"></div>
 			
-				<div id="titlediv">
-					<div class="titlewrap">
-						<input name="title" id="title" class="text" value="<?php echo attribute_escape($title);?>"/>
-					</div>
-				</div>
-			
-			<div id="extra_fields" style="display: none"></div>
-			
-			<div class="postdivrich">
-				<ul id="actions">
-					<li id="photo_button">
-						
-						Add: <a title="<?php _e('Insert an Image'); ?>" href="#">
+		<div class="postdivrich">
+			<ul id="actions">
+				<li id="photo_button">	
+					Add: <a title="<?php _e('Insert an Image'); ?>" href="#">
 <img alt="<?php _e('Insert an Image'); ?>" src="images/media-button-image.gif"/></a>
-					</li>
-					<li id="video_button">
-						<a title="<?php _e('Embed a Video'); ?>" href="#"><img alt="<?php _e('Embed a Video'); ?>" src="images/media-button-video.gif"/></a>
-						</li>
-					<li id="switcher">
-						<?php wp_print_scripts( 'quicktags' ); ?>
-		
-			<?php add_filter('the_editor_content', 'wp_richedit_pre'); ?>
-			<a id="edButtonHTML" onclick="switchEditors.go('<?php echo $id; ?>', 'html');"><?php _e('HTML'); ?></a>
-			<a id="edButtonPreview" class="active" onclick="switchEditors.go('<?php echo $id; ?>', 'tinymce');"><?php _e('Visual'); ?></a>
-			<div class="zerosize"><input accesskey="e" type="button" onclick="switchEditors.go('<?php echo $id; ?>')" /></div>
-		</li>
-				</ul>
+				</li>
+				<li id="video_button">
+					<a title="<?php _e('Embed a Video'); ?>" href="#"><img alt="<?php _e('Embed a Video'); ?>" src="images/media-button-video.gif"/></a>
+				</li>
+				<li id="switcher">
+					<?php wp_print_scripts( 'quicktags' ); ?>
+					<?php add_filter('the_editor_content', 'wp_richedit_pre'); ?>
+					<a id="edButtonHTML" onclick="switchEditors.go('<?php echo $id; ?>', 'html');"><?php _e('HTML'); ?></a>
+					<a id="edButtonPreview" class="active" onclick="switchEditors.go('<?php echo $id; ?>', 'tinymce');"><?php _e('Visual'); ?></a>
+					<div class="zerosize"><input accesskey="e" type="button" onclick="switchEditors.go('<?php echo $id; ?>')" /></div>
+				</li>
+			</ul>
 			<div id="quicktags"></div>
-	
-				
-			
-				<div class="editor-container">
-					<textarea name="content" id="content" style="width:100%;" class="mceEditor" rows="15">
+			<div class="editor-container">
+				<textarea name="content" id="content" style="width:100%;" class="mceEditor" rows="15">
 					<?php if ($selection) echo wp_richedit_pre(htmlspecialchars_decode($selection)); ?>
-					<?php if ($url) { echo '<p>'; if($selection) _e('via '); echo "<a href='$url'>$title</a>"; echo '</p>'; } ?>
-					</textarea>
-				</div>
-			
-			</div>
+					<?php if ($url) { echo '<p>'; if($selection) _e('via '); echo "<a href='$url'>$title</a>."; echo '</p>'; } ?>
+				</textarea>
+			</div>			
 		</div>
 	</div>
+</div>
 </form>
 </body>
 </html>

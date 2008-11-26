@@ -56,6 +56,7 @@ if ( isset($_GET['inline']) ) {
 	$parent_file = 'edit.php';
 	require_once('admin-header.php'); ?>
 	<div class="wrap">
+	<?php screen_icon(); ?>
 	<h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 	<form enctype="multipart/form-data" method="post" action="media-upload.php?inline=&amp;upload-page-form=" class="media-upload-form type-form validate" id="file-form">
@@ -102,7 +103,7 @@ if ( isset($_GET['inline']) ) {
 	$body_id = 'media-upload';
 	
 	// let the action code decide how to handle the request
-	if ( $tab == 'type' )
+	if ( $tab == 'type' || $tab == 'type_url' )
 		do_action("media_upload_$type");
 	else
 		do_action("media_upload_$tab");

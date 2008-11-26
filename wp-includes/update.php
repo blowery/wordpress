@@ -27,6 +27,9 @@ function wp_version_check() {
 	$php_version = phpversion();
 
 	$current = get_option( 'update_core' );
+	if ( ! is_object($current) )
+		$current = new stdClass;
+
 	$locale = get_locale();
 	if (
 		isset( $current->last_checked ) &&
@@ -34,6 +37,10 @@ function wp_version_check() {
 		$current->version_checked == $wp_version
 	)
 		return false;
+
+	// Update last_checked for current to prevent multiple blocking requests if request hangs
+	$current->last_checked = time();
+	update_option( 'update_core', $current );
 
 	if ( method_exists( $wpdb, 'db_version' ) )
 		$mysql_version = preg_replace('/[^0-9.].*/', '', $wpdb->db_version($wpdb->users));
@@ -108,6 +115,8 @@ function wp_update_plugins() {
 	$plugins = get_plugins();
 	$active  = get_option( 'active_plugins' );
 	$current = get_option( 'update_plugins' );
+	if ( ! is_object($current) )
+		$current = new stdClass;
 
 	$new_option = '';
 	$new_option->last_checked = time();
@@ -137,6 +146,10 @@ function wp_update_plugins() {
 	// Bail if we've checked in the last 12 hours and if nothing has changed
 	if ( $time_not_changed && !$plugin_changed )
 		return false;
+
+	// Update last_checked for current to prevent multiple blocking requests if request hangs
+	$current->last_checked = time();
+	update_option( 'update_plugins', $current );
 
 	$to_send->plugins = $plugins;
 	$to_send->active = $active;
@@ -193,13 +206,19 @@ function wp_update_themes( ) {
 
 	$installed_themes = get_themes( );
 	$current_theme = get_option( 'update_themes' );
+	if ( ! is_object($current_theme) )
+		$current_theme = new stdClass;
 
 	$new_option = '';
 	$new_option->last_checked = time( );
-	$time_not_changed = isset( $current->last_checked ) && 43200 > ( time( ) - $current->last_checked );
+	$time_not_changed = isset( $current_theme->last_checked ) && 43200 > ( time( ) - $current_theme->last_checked );
 
 	if( $time_not_changed )
 		return false;
+
+	// Update last_checked for current to prevent multiple blocking requests if request hangs
+	$current_theme->last_checked = time();
+	update_option( 'update_themes', $current_theme );
 
 	$themes = array( );
 	$themes['current_theme'] = $current_theme;

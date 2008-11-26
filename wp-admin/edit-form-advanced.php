@@ -425,9 +425,8 @@ wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 <table class="widefat comments-box fixed" cellspacing="0" style="display:none;">
 <thead>
 	<tr>
-    <th scope="col" class="column-comment"><?php echo _c('Comment|noun') ?></th>
     <th scope="col" class="column-author"><?php _e('Author') ?></th>
-    <th scope="col" class="column-date"><?php _e('Submitted') ?></th>
+    <th scope="col" class="column-comment"><?php echo _c('Comment|noun') ?></th>
   </tr>
 </thead>
 <tbody id="the-comment-list" class="list:comment">
@@ -435,7 +434,7 @@ wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 </table>
 <p class="hide-if-no-js"><a href="#commentstatusdiv" id="show-comments" onclick="commentsBox.get(<?php echo $total; ?>);return false;"><?php _e('Show comments'); ?></a> <img class="waiting" style="display:none;" src="images/loading.gif" alt="" /></p>
 <?php
-	$hidden = (array) get_user_option( "meta-box-hidden_post" );
+	$hidden = (array) get_user_option( "meta-box-hidden_post", 0, false );
 	if ( ! in_array('commentstatusdiv', $hidden) ) { ?>
 		<script type="text/javascript">commentsBox.get(<?php echo $total; ?>, 10);</script>
 <?php
@@ -508,6 +507,7 @@ require_once('admin-header.php');
 <?php endif; ?>
 
 <div class="wrap">
+<?php screen_icon(); ?>
 <h2><?php echo wp_specialchars( $title ); ?></h2>
 <?php if ( $notice ) : ?>
 <div id="notice" class="error"><p><?php echo $notice ?></p></div>

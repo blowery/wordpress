@@ -39,12 +39,14 @@ function convertEntities(o) {
 		return s;
 	}
 
-	if ( typeof o === 'object' ) {
-		for (var v in o)
-			o[v] = c(o[v]);
-		return o;
-	} else if ( typeof o === 'string' )
+	if ( typeof o === 'string' )
 		return c(o);
+	else if ( typeof o === 'object' )
+		for (var v in o) {
+			if ( typeof o[v] === 'string' )
+				o[v] = c(o[v]);
+		}
+	return o;
 };
 //]]>
 </script>
@@ -110,7 +112,7 @@ if ( function_exists('mb_strlen') ) {
 do_action('admin_notices');
 
 screen_meta($hook_suffix);
-unset($hook_suffix);
+//unset($hook_suffix);
 
 if ( $parent_file == 'options-general.php' ) {
 	require(ABSPATH . 'wp-admin/options-head.php');

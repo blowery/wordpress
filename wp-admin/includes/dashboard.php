@@ -182,13 +182,13 @@ function wp_dashboard_right_now() {
 	echo "\n\t".'<tr class="first">';
 
 	// Posts
-	$num = isset($num_posts->publish) ? number_format_i18n( $num_posts->publish ) : 0;
+	$num = number_format_i18n( $num_posts->publish );
 	if ( current_user_can( 'edit_posts' ) )
 		$text = "<a href='edit.php'>$num</a>";
 	else
 		$text = $num;
 	echo '<td class="first b b-posts">' . $text . '</td>';
-	echo '<td class="t posts">' . __ngettext( 'Post', 'Posts', $num ) . '</td>';
+	echo '<td class="t posts">' . __ngettext( 'Post', 'Posts', intval($num_posts->publish) ) . '</td>';
 	/* TODO: Show status breakdown on hover
 	if ( $can_edit_pages && !empty($num_pages->publish) ) { // how many pages is not exposed in feeds.  Don't show if !current_user_can
 		$post_type_texts[] = '<a href="edit-pages.php">'.sprintf( __ngettext( '%s page', '%s pages', $num_pages->publish ), number_format_i18n( $num_pages->publish ) ).'</a>';
@@ -238,12 +238,12 @@ function wp_dashboard_right_now() {
 	echo '<td class="first b b-cats">'.$num.'</td>';
 	echo '<td class="t cats">' . __ngettext( 'Category', 'Categories', $num_cats ) . '</td>';
 
-	// Spam Comments
-	$num = number_format_i18n($num_comm['spam']);
+	// Pending Comments
+	$num = number_format_i18n($num_comm['awaiting_moderation']);
 	if ( current_user_can( 'moderate_comments' ) )
-		$num = "<a href='edit-comments.php?comment_status=spam'><span class='spam-count'>$num</span></a>";
-	echo '<td class="b b-spam">'.$num.'</td>';
-	echo '<td class="last t spam">' . __ngettext( 'Spam', 'Spam', $num_comm['spam'] ) . '</td>';
+		$num = "<a href='edit-comments.php?comment_status=moderated'><span class='pending-count'>$num</span></a>";
+	echo '<td class="b b-waiting">'.$num.'</td>';
+	echo '<td class="last t waiting">' . __ngettext( 'Pending', 'Pending', $num_comm['awaiting_moderation'] ) . '</td>';
 
 	echo "</tr>\n\t<tr>";
 
@@ -254,12 +254,12 @@ function wp_dashboard_right_now() {
 	echo '<td class="first b b-tags">'.$num.'</td>';
 	echo '<td class="t tags">' . __ngettext( 'Tag', 'Tags', $num_tags ) . '</td>';
 
-	// Pending Comments
-	$num = number_format_i18n($num_comm['awaiting_moderation']);
+	// Spam Comments
+	$num = number_format_i18n($num_comm['spam']);
 	if ( current_user_can( 'moderate_comments' ) )
-		$num = "<a href='edit-comments.php?comment_status=moderated'><span class='pending-count'>$num</span></a>";
-	echo '<td class="b b-waiting">'.$num.'</td>';
-	echo '<td class="last t waiting">' . __ngettext( 'Pending', 'Pending', $num_comm['awaiting_moderation'] ) . '</td>';
+		$num = "<a href='edit-comments.php?comment_status=spam'><span class='spam-count'>$num</span></a>";
+	echo '<td class="b b-spam">'.$num.'</td>';
+	echo '<td class="last t spam">' . __ngettext( 'Spam', 'Spam', $num_comm['spam'] ) . '</td>';
 
 	echo "</tr>";
 	do_action('right_now_table_end');

@@ -91,6 +91,7 @@ else
 	$mode = attribute_escape($_GET['mode']); ?>
 
 <div class="wrap">
+<?php screen_icon(); ?>
 <h2><?php echo wp_specialchars( $title ); ?></h2>
 
 <?php
@@ -119,6 +120,7 @@ $_SERVER['REQUEST_URI'] = remove_query_arg( array('locked', 'skipped', 'updated'
 <?php } ?>
 
 <form id="posts-filter" action="" method="get">
+
 <ul class="subsubsub">
 <?php
 if ( empty($locked_post_status) ) :
@@ -158,6 +160,8 @@ endif;
 <input type="hidden" name="post_status" value="<?php echo attribute_escape($_GET['post_status']) ?>" />
 <?php endif; ?>
 <input type="hidden" name="mode" value="<?php echo $mode; ?>" />
+
+<?php if ( have_posts() ) { ?>
 
 <div class="tablenav">
 <?php
@@ -263,6 +267,11 @@ if ( $page_links )
 </div>
 <br class="clear" />
 </div>
+
+<?php } else { // have_posts() ?>
+<div class="clear"></div>
+<p><?php _e('No posts found') ?></p>
+<?php } ?>
 
 </form>
 

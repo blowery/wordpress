@@ -451,5 +451,3 @@ caption:"' . mce_escape( __('Edit Image Caption') ) . '",
 alt:"' . mce_escape( __('Edit Alternate Text') ) . '"
 });
 ';
-
-// mce_put_file( ABSPATH . WPINC . '/js/tinymce/langs/wp-langs-' . $language . '.js', $lang );

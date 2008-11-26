@@ -958,21 +958,19 @@ class wpdb {
 			return '';
 
 		$bt = debug_backtrace();
-		$caller = '';
+		$caller = array();
 
-		foreach ( (array) $bt as $trace ) {
-			if ( @$trace['class'] == __CLASS__ )
+		$bt = array_reverse( $bt );
+		foreach ( (array) $bt as $call ) {
+			if ( @$call['class'] == __CLASS__ )
 				continue;
-			elseif ( strtolower(@$trace['function']) == 'call_user_func_array' )
-				continue;
-			elseif ( strtolower(@$trace['function']) == 'apply_filters' )
-				continue;
-			elseif ( strtolower(@$trace['function']) == 'do_action' )
-				continue;
-
-			$caller = $trace['function'];
-			break;
+			$function = $call['function'];
+			if ( isset( $call['class'] ) )
+				$function = $call['class'] . "->$function";
+			$caller[] = $function;
 		}
+		$caller = join( ', ', $caller );
+
 		return $caller;
 	}
 

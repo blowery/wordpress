@@ -25,6 +25,9 @@ if ( ! defined('ABSPATH') ) die();
 <?php
 if ( have_posts() ) {
 add_filter('the_title','wp_specialchars');
+$alt = '';
+$posts_columns = get_column_headers('upload');
+$hidden = get_hidden_columns('upload');
 while (have_posts()) : the_post();
 $alt = ( 'alternate' == $alt ) ? '' : 'alternate';
 global $current_user;
@@ -35,9 +38,6 @@ $att_title = _draft_or_post_title();
 	<tr id='post-<?php echo $id; ?>' class='<?php echo trim( $alt . ' author-' . $post_owner . ' status-' . $post->post_status ); ?>' valign="top">
 
 <?php
-$posts_columns = wp_manage_media_columns();
-$hidden = (array) get_user_option( 'manage-media-columns-hidden' );
-
 foreach ($posts_columns as $column_name => $column_display_name ) {
 	$class = "class=\"$column_name column-$column_name\"";
 
