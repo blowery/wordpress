@@ -163,7 +163,7 @@ function edit_post( $post_data = null ) {
 	if ( isset($post_data['visibility']) ) {
 		switch ( $post_data['visibility'] ) {
 			case 'public' :
-				unset( $post_data['post_password'] );
+				$post_data['post_password'] = '';
 				break;
 			case 'password' :
 				unset( $post_data['sticky'] );
@@ -900,7 +900,6 @@ function get_sample_permalink($id, $title=null, $name = null) {
 	// drafts, so we will fake, that our post is published
 	if (in_array($post->post_status, array('draft', 'pending'))) {
 		$post->post_status = 'publish';
-		$post->post_date = date('Y-m-d H:i:s');
 		$post->post_name = sanitize_title($post->post_name? $post->post_name : $post->post_title, $post->ID);
 	}
 
@@ -947,10 +946,18 @@ function get_sample_permalink_html($id, $new_title=null, $new_slug=null) {
 		return '';
 	}
 	$title = __('Click to edit this part of the permalink');
-	if (strlen($post_name) > 30) {
-		$post_name_abridged = substr($post_name, 0, 14). '&hellip;' . substr($post_name, -14);
+	if (function_exists('mb_strlen')) {
+		if (mb_strlen($post_name) > 30) {
+			$post_name_abridged = mb_substr($post_name, 0, 14). '&hellip;' . mb_substr($post_name, -14);
+		} else {
+			$post_name_abridged = $post_name;
+		}
 	} else {
-		$post_name_abridged = $post_name;
+		if (strlen($post_name) > 30) {
+			$post_name_abridged = substr($post_name, 0, 14). '&hellip;' . substr($post_name, -14);
+		} else {
+			$post_name_abridged = $post_name;
+		}
 	}
 	$post_name_html = '<span id="editable-post-name" title="'.$title.'">'.$post_name_abridged.'</span><span id="editable-post-name-full">'.$post_name.'</span>';
 	$display_link = str_replace(array('%pagename%','%postname%'), $post_name_html, $permalink);
@@ -1339,3 +1346,4 @@ tinyMCE.init(tinyMCEPreInit.mceInit);
 
 <?php
 }
+?>

@@ -41,7 +41,7 @@ if ( empty($order_by) )
 	$order_by = 'order_name';
 
 $title = __('Edit Links');
-$this_file = $parent_file = 'edit.php';
+$this_file = $parent_file = 'link-manager.php';
 include_once ("./admin-header.php");
 
 if (!current_user_can('manage_links'))
@@ -71,7 +71,10 @@ switch ($order_by) {
 
 <div class="wrap nosubsub">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( stripslashes($_GET['s']) ) ); ?>
+</h2>
 
 <?php
 if ( isset($_GET['deleted']) ) {
@@ -97,7 +100,7 @@ if ( isset($_GET['deleted']) ) {
 
 <div class="alignleft actions">
 <select name="action">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -197,11 +200,13 @@ if ( $links ) {
 					$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("link.php?action=delete&amp;link_id=$link->link_id", 'delete-bookmark_' . $link->link_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf( __("You are about to delete this link '%s'\n  'Cancel' to stop, 'OK' to delete."), $link->link_name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 					$action_count = count($actions);
 					$i = 0;
+					echo '<div class="row-actions">';
 					foreach ( $actions as $action => $linkaction ) {
 						++$i;
 						( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 						echo "<span class='$action'>$linkaction$sep</span>";
 					}
+					echo '</div>';
 					echo '</td>';
 					break;
 				case 'url':
@@ -250,7 +255,7 @@ if ( $links ) {
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />

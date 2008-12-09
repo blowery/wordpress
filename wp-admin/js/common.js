@@ -192,23 +192,38 @@ jQuery(document).ready( function($) {
 			var checks = $( lastClicked ).parents( 'form:first' ).find( ':checkbox' );
 			var first = checks.index( lastClicked );
 			var last = checks.index( this );
+			var checked = $(this).attr('checked');
 			if ( 0 < first && 0 < last && first != last ) {
-				checks.slice( first, last ).attr( 'checked', $( this ).is( ':checked' ) ? 'checked' : '' );
+				checks.slice( first, last ).attr( 'checked', function(){
+					if ( $(this).parents('tr').is(':visible') )
+						return checked ? 'checked' : '';
+
+					return '';
+				});
 			}
 		}
 		lastClicked = this;
 		return true;
 	} );
-
 	$( 'thead :checkbox, tfoot :checkbox' ).click( function(e) {
 		var c = $(this).attr('checked');
-
-		$(this).parents( 'form:first' ).find( 'table .check-column :checkbox' ).attr( 'checked', function() {
-			if ( e.shiftKey )
+		if ( 'undefined' == typeof  toggleWithKeyboard)
+			toggleWithKeyboard = false;
+		var toggle = e.shiftKey || toggleWithKeyboard;
+		$(this).parents( 'form:first' ).find( 'table tbody:visible').find( '.check-column :checkbox' ).attr( 'checked', function() {
+			if ( $(this).parents('tr').is(':hidden') )
+				return '';
+			if ( toggle )
 				return $(this).attr( 'checked' ) ? '' : 'checked';
 			else if (c)
 				return 'checked';
-
+			return '';
+		});
+		$(this).parents( 'form:first' ).find( 'table thead:visible, table tfoot:visible').find( '.check-column :checkbox' ).attr( 'checked', function() {
+			if ( toggle )
+				return '';
+			else if (c)
+				return 'checked';
 			return '';
 		});
 	});
@@ -301,7 +316,7 @@ adminMenu = {
 					}
 					m.addClass('sub-open');
 				},
-				out: function(){ $(this).find('.wp-submenu').removeClass('sub-open'); },
+				out: function(){ $(this).find('.wp-submenu').removeClass('sub-open').css({'marginTop':''}); },
 				timeout: 220,
 				sensitivity: 8,
 				interval: 100
@@ -349,3 +364,32 @@ columns = {
 }
 
 })(jQuery);
+
+
+jQuery(document).ready(function($){
+	if ( 'undefined' != typeof google && google.gears ) return;
+	
+	var gf = false;
+	if ( 'undefined' != typeof GearsFactory ) {
+		gf = new GearsFactory();
+	} else {
+		try {
+			gf = new ActiveXObject('Gears.Factory');
+			if ( factory.getBuildInfo().indexOf('ie_mobile') != -1 )
+				gf.privateSetGlobalObject(this);
+		} catch (e) {
+			if ( ( 'undefined' != typeof navigator.mimeTypes ) && navigator.mimeTypes['application/x-googlegears'] ) {
+				gf = document.createElement("object");
+				gf.style.display = "none";
+				gf.width = 0;
+				gf.height = 0;
+				gf.type = "application/x-googlegears";
+				document.documentElement.appendChild(gf);
+			}
+		}
+	}
+	if ( gf && gf.hasPermission )
+		return;
+		
+	$('.turbo-nag').show();
+});

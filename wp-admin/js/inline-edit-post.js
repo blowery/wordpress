@@ -21,6 +21,15 @@ inlineEditPost = {
 
 		$('a.cancel', bulkRow).click(function() { return inlineEditPost.revert(); });
 
+		$('#inline-edit .inline-edit-private input[value=private]').click( function(){
+			var pw = $('input.inline-edit-password-input');
+			if ( $(this).attr('checked') ) {
+				pw.val('').attr('disabled', 'disabled');
+			} else {
+				pw.attr('disabled', '');
+			}
+		});
+
 		// add events
 		t.addEvents(t.rows);
 
@@ -88,8 +97,8 @@ inlineEditPost = {
 		$('tbody th.check-column input[type="checkbox"]').each(function(i){
 			if ( $(this).attr('checked') ) {
 				var id = $(this).val();
-				var theTitle = $('#inline_'+id+' .post_title').text() || '#'+id;
-				te += '<div id="ttle'+id+'"><a id="_'+id+'" class="ntdelbutton">X</a>'+theTitle+'</div>';
+				var theTitle = $('#inline_'+id+' .post_title').text() || inlineEditL10n.notitle;
+				te += '<div id="ttle'+id+'"><a id="_'+id+'" class="ntdelbutton" title="'+inlineEditL10n.ntdeltitle+'">X</a>'+theTitle+'</div>';
 			}
 		});
 
@@ -146,7 +155,10 @@ inlineEditPost = {
 		// handle the post status
 		var status = $('._status', rowData).text();
 		if ( status != 'future' ) $('select[name="_status"] option[value="future"]', editRow).remove();
-		if ( status == 'private' ) $('input[name="keep_private"]', editRow).attr("checked", "checked");
+		if ( status == 'private' ) {
+			$('input[name="keep_private"]', editRow).attr("checked", "checked");
+			$('input.inline-edit-password-input').val('').attr('disabled', 'disabled');
+		}
 
 		// remove the current page and children from the parent dropdown
 		var pageOpt = $('select[name="post_parent"] option[value="'+id+'"]', editRow);
@@ -195,17 +207,20 @@ inlineEditPost = {
 		// make ajax request
 		$.post('admin-ajax.php', params,
 			function(r) {
-				var row = $(inlineEditPost.what+id);
 				$('table.widefat .inline-edit-save .waiting').hide();
 
 				if (r) {
 					if ( -1 != r.indexOf('<tr') ) {
-						r = r.replace(/hide-if-no-js/, '');
+						$(inlineEditPost.what+id).remove();
+						$('#edit-'+id).before(r).remove();
 
-						$('#edit-'+id).remove();
-						row.html($(r).html());
+						var row = $(inlineEditPost.what+id);
+						row.hide();
+
 						if ( 'draft' == $('input[name="post_status"]').val() )
 							row.find('td.column-comments').hide();
+
+						row.find('.hide-if-no-js').removeClass('hide-if-no-js');
 						inlineEditPost.addEvents(row);
 						row.fadeIn();
 					} else {
@@ -216,7 +231,7 @@ inlineEditPost = {
 					$('#edit-'+id+' .inline-edit-save').append('<span class="error">'+inlineEditL10n.error+'</span>');
 				}
 			}
-		);
+		, 'html');
 		return false;
 	},
 

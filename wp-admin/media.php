@@ -9,7 +9,7 @@
 /** Load WordPress Administration Bootstrap */
 require_once('admin.php');
 
-$parent_file = 'edit.php';
+$parent_file = 'upload.php';
 $submenu_file = 'upload.php';
 
 wp_reset_vars(array('action'));
@@ -63,9 +63,9 @@ case 'edit' :
 	wp_enqueue_script( 'wp-ajax-response' );
 //	wp_admin_css( 'media' );
 
-
 	require( 'admin-header.php' );
 
+	$parent_file = 'upload.php';
 	$message = '';
 	$class = '';
 	if ( isset($_GET['message']) ) {
@@ -82,7 +82,7 @@ case 'edit' :
 ?>
 
 <div class="wrap">
-
+<?php screen_icon(); ?>
 <h2><?php _e( 'Edit Media' ); ?></h2>
 
 <form method="post" action="<?php echo clean_url( remove_query_arg( 'message' ) ); ?>" class="media-upload-form" id="media-single-form">

@@ -25,6 +25,7 @@ $messages[3] = __('Custom field deleted.');
 $messages[4] = __('Post updated.');
 $messages[6] = sprintf(__('Post published. <a href="%s">View post</a>'), get_permalink($post_ID));
 $messages[7] = __('Post saved.');
+$messages[8] = sprintf(__('Post submitted. <a href="%s">Preview post</a>'), add_query_arg( 'preview', 'true', get_permalink($post_ID) ) );
 
 if ( isset($_GET['revision']) )
 	$messages[5] = sprintf( __('Post restored to revision from %s'), wp_post_revision_title( (int) $_GET['revision'], false ) );
@@ -146,12 +147,13 @@ switch ( $post->post_status ) {
 <div class="misc-pub-section " id="visibility">
 <?php _e('Visibility:'); ?> <b><span id="post-visibility-display"><?php
 
-if ( !empty( $post->post_password ) ) {
-	$visibility = 'password';
-	$visibility_trans = __('Password protected');
-} elseif ( 'private' == $post->post_status ) {
+if ( 'private' == $post->post_status ) {
+	$post->post_password = '';
 	$visibility = 'private';
 	$visibility_trans = __('Private');
+} elseif ( !empty( $post->post_password ) ) {
+	$visibility = 'password';
+	$visibility_trans = __('Password protected');
 } elseif ( is_sticky( $post->ID ) ) {
 	$visibility = 'public';
 	$visibility_trans = __('Public, Sticky');
@@ -434,7 +436,7 @@ wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 </table>
 <p class="hide-if-no-js"><a href="#commentstatusdiv" id="show-comments" onclick="commentsBox.get(<?php echo $total; ?>);return false;"><?php _e('Show comments'); ?></a> <img class="waiting" style="display:none;" src="images/loading.gif" alt="" /></p>
 <?php
-	$hidden = (array) get_user_option( "meta-box-hidden_post", 0, false );
+	$hidden = get_hidden_meta_boxes('post');
 	if ( ! in_array('commentstatusdiv', $hidden) ) { ?>
 		<script type="text/javascript">commentsBox.get(<?php echo $total; ?>, 10);</script>
 <?php

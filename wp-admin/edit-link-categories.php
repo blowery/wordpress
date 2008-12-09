@@ -61,7 +61,10 @@ $messages[6] = __('Categories deleted.'); ?>
 
 <div class="wrap nosubsub">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( stripslashes($_GET['s']) ) ); ?>
+</h2>
 
 <?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
 <div id="message" class="updated fade"><p><?php echo $messages[$msg]; ?></p></div>
@@ -94,8 +97,8 @@ if( ! isset( $catsperpage ) || $catsperpage < 0 )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil(wp_count_terms('link_category') / $catsperpage),
 	'current' => $pagenum
 ));
@@ -106,7 +109,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -160,7 +163,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
@@ -170,6 +173,12 @@ if ( $page_links )
 </div>
 <br class="clear" />
 </form>
+
+<div class="form-wrap">
+<p><?php printf(__('<strong>Note:</strong><br />Deleting a category does not delete the links in that category. Instead, links that were only assigned to the deleted category are set to the category <strong>%s</strong>.'), get_term_field('name', get_option('default_link_category'), 'link_category')) ?></p>
+</div>
+
+
 </div>
 </div><!-- /col-right -->
 
@@ -209,10 +218,6 @@ if ( $page_links )
 
 <?php } ?>
 
-<div class="form-wrap">
-<p><?php printf(__('<strong>Note:</strong><br />Deleting a category does not delete the links in that category. Instead, links that were only assigned to the deleted category are set to the category <strong>%s</strong>.'), get_term_field('name', get_option('default_link_category'), 'link_category')) ?></p>
-</div>
-
 </div>
 </div><!-- /col-left -->
 
@@ -234,5 +239,5 @@ if ( $page_links )
 /* ]]> */
 </script>
 
-<?php inline_edit_term_row('link-category'); ?>
+<?php inline_edit_term_row('edit-link-categories'); ?>
 <?php include('admin-footer.php'); ?>

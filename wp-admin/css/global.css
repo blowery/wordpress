@@ -74,7 +74,7 @@ table {
 	margin-left: 175px;
 } 
 
-div.folded #wpbody {
+.folded #wpbody {
 	margin-left: 60px;
 }
 
@@ -86,12 +86,23 @@ div.folded #wpbody {
 #adminmenu {
 	float: left;
 	clear: left;
-	margin: 15px 5px 15px -160px;
+	width: 145px;
+	margin-top: 15px;
+	margin-right: 5px;
+	margin-bottom: 15px;
+	margin-left: -160px;
 	position: relative;
+	padding: 0;
+	list-style: none;
 }
 
-div.folded #adminmenu {
+.folded #adminmenu {
 	margin-left: -45px;
+}
+
+.folded #adminmenu,
+.folded #adminmenu li.menu-top {
+	width: 28px;
 }
 
 #footer {
@@ -265,7 +276,7 @@ h6 {
 
 .subsubsub {
 	list-style: none;
-	margin: 0 0 5px;
+	margin: 8px 0 5px;
 	padding: 0;
 	white-space: nowrap;
 	font-size: 11px;
@@ -321,14 +332,41 @@ h6 {
 .widefat th {
 	border-bottom-width: 1px;
 	border-bottom-style: solid;
-	border-bottom-color: #ccc;
 	font-size: 11px;
 	vertical-align: text-top;
 }
 
 .widefat td {
-	padding: 5px 7px;
+	padding: 7px 7px 5px;
 	vertical-align: top;
+}
+
+.widefat thead tr th:first {
+	-moz-border-radius-topleft: 4px;
+	-webkit-border-top-left-radius: 4px;
+	-khtml-border-top-left-radius: 4px;
+	border-top-left-radius: 4px;
+}
+
+.widefat thead tr th:last {
+	-moz-border-radius-topright: 4px;
+	-webkit-border-top-right-radius: 4px;
+	-khtml-border-top-right-radius: 4px;
+	border-top-right-radius: 4px;
+}
+
+.widefat tfoot tr th:first {
+	-moz-border-radius-bottomleft: 4px;
+	-webkit-border-bottom-left-radius: 4px;
+	-khtml-border-bottom-left-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+
+.widefat tfoot tr th:last {
+	-moz-border-radius-bottomright: 4px;
+	-webkit-border-bottom-right-radius: 4px;
+	-khtml-border-bottom-right-radius: 4px;
+	border-bottom-right-radius: 4px;
 }
 
 .widefat td p {
@@ -388,17 +426,20 @@ h6 {
 .updated p,
 .error p {
 	margin: 0.5em 0;
+	line-height: 1;
+	padding: 2px;
 }
 
 .wrap .updated,
 .wrap .error {
-	margin: 5px 0 12px;
+	margin: 5px 0;
 }
 
 .wrap h2 {
 	font: italic normal normal 24px/29px Georgia, "Times New Roman", "Bitstream Charter", Times, serif;
 	margin: 0;
-	padding: 12px 15px 1px 0;
+	padding: 14px 15px 3px 0;
+	line-height: 35px;
 	text-shadow: rgba(255,255,255,1) 0px 1px 0px;
 }
 

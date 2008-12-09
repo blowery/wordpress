@@ -453,8 +453,9 @@ case 'add-comment' :
 	$start = isset($_POST['page']) ? intval($_POST['page']) * 25 - 1: 24;
 	$status = isset($_POST['comment_status']) ? $_POST['comment_status'] : false;
 	$mode = isset($_POST['mode']) ? $_POST['mode'] : 'detail';
-
-	list($comments, $total) = _wp_get_comment_list( $status, $search, $start, 1 );
+	$p = isset($_POST['p']) ? $_POST['p'] : 0;
+	$comment_type = isset($_POST['comment_type']) ? $_POST['comment_type'] : '';
+	list($comments, $total) = _wp_get_comment_list( $status, $search, $start, 1, $p, $comment_type );
 
 	if ( get_option('show_avatars') )
 		add_filter( 'comment_author', 'floated_admin_avatar' );
@@ -599,7 +600,7 @@ case 'edit-comment' :
 	$x = new WP_Ajax_Response();
 
 	ob_start();
-		_wp_comment_row( $comment_id, $mode, false, $checkbox );
+		_wp_comment_row( $comment_id, $mode, true, $checkbox );
 		$comment_list_item = ob_get_contents();
 	ob_end_clean();
 
@@ -915,10 +916,10 @@ case 'inline-save-tax':
 	check_ajax_referer( 'taxinlineeditnonce', '_inline_edit' );
 
 	if ( ! current_user_can('manage_categories') )
-		die( '<tr colspan="6"><td>' . __('Cheatin&#8217; uh?') . '</td></tr>' );
+		die( __('Cheatin&#8217; uh?') );
 
 	if ( ! isset($_POST['tax_ID']) || ! ( $id = (int) $_POST['tax_ID'] ) )
-		exit;
+		die(-1);
 
 	switch ($_POST['tax_type']) {
 		case 'cat' :
@@ -929,10 +930,13 @@ case 'inline-save-tax':
 			if ( isset($_POST['parent']) && (int) $_POST['parent'] > 0 )
 				$data['category_parent'] = $_POST['parent'];
 
+			$cat = get_category($id, ARRAY_A);
+			$data['category_description'] = $cat['category_description'];
+
 			$updated = wp_update_category($data);
 
 			if ( $updated && !is_wp_error($updated) )
-				echo _cat_row( $id, 0 );
+				echo _cat_row( $updated, 0 );
 			else
 				die( __('Category not updated.') );
 
@@ -941,16 +945,15 @@ case 'inline-save-tax':
 			$updated = wp_update_term($id, 'link_category', $_POST);
 
 			if ( $updated && !is_wp_error($updated) )
-				echo link_cat_row($id);
+				echo link_cat_row($updated['term_id']);
 			else
 				die( __('Category not updated.') );
 
 			break;
 		case 'tag' :
 			$updated = wp_update_term($id, 'post_tag', $_POST);
-
 			if ( $updated && !is_wp_error($updated) ) {
-				$tag = get_term( $id, 'post_tag' );
+				$tag = get_term( $updated['term_id'], 'post_tag' );
 				if ( !$tag || is_wp_error( $tag ) )
 					die( __('Tag not updated.') );
 

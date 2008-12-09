@@ -135,6 +135,7 @@ case 'delete':
 <?php echo $referer; ?>
 
 <div class="wrap">
+<?php screen_icon(); ?>
 <h2><?php _e('Delete Users'); ?></h2>
 <p><?php _e('You have specified these users for deletion:'); ?></p>
 <ul>
@@ -238,7 +239,10 @@ if ( ! empty($messages) ) {
 
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( get_search_query() ) ); ?>
+</h2>
 
 <div class="filter">
 <form id="list-filter" action="" method="get">
@@ -300,7 +304,7 @@ unset($role_links);
 
 <div class="alignleft actions">
 <select name="action">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -366,7 +370,7 @@ foreach ( $wp_user_search->get_results() as $userid ) {
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />

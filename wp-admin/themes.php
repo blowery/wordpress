@@ -53,8 +53,8 @@ $start = $offset = ( $page - 1 ) * $per_page;
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ) . '#themenav',
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil($theme_total / $per_page),
 	'current' => $page
 ));
@@ -121,17 +121,19 @@ function theme_update_available( $theme ) {
 <?php theme_update_available($ct); ?>
 
 </div>
-
+<div class="clear"></div>
 <h3><?php _e('Available Themes'); ?></h3>
 <div class="clear"></div>
 
 <?php if ( $page_links ) : ?>
+<div class="tablenav">
 <div class="tablenav-pages"><?php $page_links_text = sprintf( '<span class="displaying-num">' . __( 'Displaying %s&#8211;%s of %s' ) . '</span>%s',
 	number_format_i18n( $start + 1 ),
 	number_format_i18n( min( $page * $per_page, $theme_total ) ),
 	number_format_i18n( $theme_total ),
 	$page_links
 ); echo $page_links_text; ?></div>
+</div>
 <?php endif; ?>
 
 <?php if ( 1 < $theme_total ) { ?>

@@ -34,12 +34,19 @@ function media_upload_tabs() {
  */
 function update_gallery_tab($tabs) {
 	global $wpdb;
+
 	if ( !isset($_REQUEST['post_id']) ) {
 		unset($tabs['gallery']);
 		return $tabs;
 	}
+
 	if ( intval($_REQUEST['post_id']) )
 		$attachments = intval($wpdb->get_var($wpdb->prepare("SELECT count(*) FROM $wpdb->posts WHERE post_type = 'attachment' AND post_parent = %d", $_REQUEST['post_id'])));
+
+	if ( empty($attachments) ) {
+		unset($tabs['gallery']);
+		return $tabs;
+	}
 
 	$tabs['gallery'] = sprintf(__('Gallery (%s)'), "<span id='attachments-count'>$attachments</span>");
 
@@ -133,6 +140,8 @@ function image_add_caption( $html, $id, $alt, $title, $align, $url, $size ) {
 
 	$html = preg_replace( '/align[^\s\'"]+\s?/', '', $html );
 	if ( empty($align) ) $align = 'none';
+
+	$alt = ! empty($alt) ? addslashes($alt) : '';
 
 	$shcode = '[caption id="' . $id . '" align="align' . $align
 	. '" width="' . $width . '" caption="' . $alt . '"]' . $html . '[/caption]';
@@ -328,7 +337,7 @@ if ( is_string($content_func) )
 function media_buttons() {
 	global $post_ID, $temp_ID;
 	$uploading_iframe_ID = (int) (0 == $post_ID ? $temp_ID : $post_ID);
-	$context = apply_filters('media_buttons_context', __('Upload %s'));
+	$context = apply_filters('media_buttons_context', __('Upload/Insert %s'));
 	$media_upload_iframe_src = "media-upload.php?post_id=$uploading_iframe_ID";
 	$media_title = __('Add Media');
 	$image_upload_iframe_src = apply_filters('image_upload_iframe_src', "$media_upload_iframe_src&amp;type=image");
@@ -370,6 +379,8 @@ function media_upload_form_handler() {
 			$post['post_excerpt'] = $attachment['post_excerpt'];
 		if ( isset($attachment['menu_order']) )
 			$post['menu_order'] = $attachment['menu_order'];
+		if ( isset($attachment['post_parent']) )
+			$post['post_parent'] = $attachment['post_parent'];
 
 		$post = apply_filters('attachment_fields_to_save', $post, $attachment);
 
@@ -747,8 +758,8 @@ function image_align_input_fields($post, $checked='') {
 function image_size_input_fields($post, $checked='') {
 		
 		// get a list of the actual pixel dimensions of each possible intermediate version of this image
-		$size_names = array('thumbnail' => 'Thumbnail', 'medium' => 'Medium', 'large' => 'Large', 'full' => 'Full size');
-		
+		$size_names = array('thumbnail' => __('Thumbnail'), 'medium' => __('Medium'), 'large' => __('Large'), 'full' => __('Full size'));		
+
 		foreach ( $size_names as $size => $name) {
 			$downsize = image_downsize($post->ID, $size);
 
@@ -1183,6 +1194,13 @@ function get_media_item( $attachment_id, $args = null ) {
 	foreach ( $hidden_fields as $name => $value )
 		$item .= "\t<input type='hidden' name='$name' id='$name' value='" . attribute_escape( $value ) . "' />\n";
 
+	if ( $post->post_parent < 1 && (int) $_REQUEST['post_id'] ) {
+		$parent = (int) $_REQUEST['post_id'];
+		$parent_name = "attachments[$attachment_id][post_parent]";
+
+		$item .= "\t<input type='hidden' name='$parent_name' id='$parent_name' value='" . $parent . "' />\n";
+	}
+
 	return $item;
 }
 
@@ -1327,9 +1345,7 @@ function media_upload_type_form($type = 'file', $errors = null, $id = null) {
 <input type="hidden" name="post_id" id="post_id" value="<?php echo (int) $post_id; ?>" />
 <?php wp_nonce_field('media-form'); ?>
 
-<div class="media-blank">
-<h3><?php _e('Add media files from your computer'); ?></h3>
-</div>
+<h3 class="media-title"><?php _e('Add media files from your computer'); ?></h3>
 
 <?php media_upload_form( $errors ); ?>
 
@@ -1344,16 +1360,20 @@ jQuery(function($){
 });
 -->
 </script>
-<?php if ( $id && !is_wp_error($id) ) { ?>
 <div id="media-items">
-<?php echo get_media_items( $id, $errors ); ?>
-</div>
-<input type="submit" class="button savebutton" name="save" value="<?php echo attribute_escape( __( 'Save all changes' ) ); ?>" />
-<?php
-	} elseif ( is_wp_error($id) ) {
+<?php 
+if ( $id ) {
+	if ( !is_wp_error($id) ) {
+		echo get_media_items( $id, $errors );
+	} else {
 		echo '<div id="media-upload-error">'.wp_specialchars($id->get_error_message()).'</div>';
 		exit;
 	}
+}
+?>
+</div>
+<input type="submit" class="button savebutton" name="save" value="<?php echo attribute_escape( __( 'Save all changes' ) ); ?>" />
+<?php
 }
 
 /**
@@ -1382,9 +1402,7 @@ function media_upload_type_url_form($type = 'file', $errors = null, $id = null) 
 
 <?php if ( is_callable($callback) ) { ?>
 
-<div class="media-blank">
-<h3><?php _e('Add media file from URL'); ?></h3>
-</div>
+<h3 class="media-title"><?php _e('Add media file from URL'); ?></h3>
 
 <script type="text/javascript">
 //<![CDATA[
@@ -1678,8 +1696,8 @@ unset($type_links);
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil($wp_query->found_posts / 10),
 	'current' => $_GET['paged']
 ));

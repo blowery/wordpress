@@ -11,7 +11,7 @@
 /** WordPress Administration Bootstrap */
 require_once('admin.php');
 
-$parent_file = 'edit.php';
+$parent_file = 'edit-pages.php';
 $submenu_file = 'edit-pages.php';
 
 wp_reset_vars(array('action'));
@@ -35,14 +35,22 @@ function redirect_page($page_ID) {
 		$location = $_POST['referredby'];
 	} elseif ( 'post' == $_POST['originalaction'] && !empty($_POST['mode']) && 'sidebar' == $_POST['mode'] ) {
 		$location = 'sidebar.php?a=b';
-	} elseif ( isset($_POST['save']) && ( empty($referredby) || $referredby == $referer || 'redo' != $referredby ) ) {
+	} elseif ( ( isset($_POST['save']) || isset($_POST['publish']) ) && ( empty($referredby) || $referredby == $referer || 'redo' != $referredby ) ) {
 		if ( isset($_POST['_wp_original_http_referer']) && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/page.php') === false && strpos( $_POST['_wp_original_http_referer'], '/wp-admin/page-new.php') === false )
 			$location = add_query_arg( array(
 				'_wp_original_http_referer' => urlencode( stripslashes( $_POST['_wp_original_http_referer'] ) ),
 				'message' => 1
 			), get_edit_post_link( $page_ID, 'url' ) );
-		else
-			$location = add_query_arg( 'message', 4, get_edit_post_link( $page_ID, 'url' ) );
+		else {
+			if ( isset( $_POST['publish'] ) ) {
+				if ( 'pending' == get_post_status( $page_ID ) )
+					$location = add_query_arg( 'message', 6, get_edit_post_link( $page_ID, 'url' ) );
+				else
+					$location = add_query_arg( 'message', 5, get_edit_post_link( $page_ID, 'url' ) );
+			} else {
+				$location = add_query_arg( 'message', 4, get_edit_post_link( $page_ID, 'url' ) );
+			}
+		}
 	} elseif ( isset($_POST['addmeta']) ) {
 		$location = add_query_arg( 'message', 2, wp_get_referer() );
 		$location = explode('#', $location);
@@ -166,8 +174,9 @@ case 'delete':
 	}
 
 	$sendback = wp_get_referer();
-	if (strpos($sendback, 'page.php') !== false) $sendback = admin_url('page-new.php');
+	if (strpos($sendback, 'page.php') !== false) $sendback = admin_url('edit-pages.php?deleted=1');
 	elseif (strpos($sendback, 'attachments.php') !== false) $sendback = admin_url('attachments.php');
+	else $sendback = add_query_arg('deleted', 1, $sendback);
 	wp_redirect($sendback);
 	exit();
 	break;

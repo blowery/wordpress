@@ -20,9 +20,7 @@ include('admin-header.php');
 <h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <form name="form1" method="post" action="options.php">
-<?php wp_nonce_field('reading-options') ?>
-<input type='hidden' name='option_page' value='reading' />
-<input type="hidden" name="action" value="update" />
+<?php settings_fields('reading'); ?>
 
 <table class="form-table">
 <?php if ( get_pages() ): ?>
@@ -78,6 +76,9 @@ include('admin-header.php');
 </tr>
 <?php do_settings_fields('reading', 'default'); ?>
 </table>
+
+<?php do_settings_sections('reading'); ?>
+
 <p class="submit">
 	<input type="submit" name="Submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
 </p>

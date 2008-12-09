@@ -109,12 +109,12 @@ function get_permalink($id = 0, $leavename = false) {
 		$category = '';
 		if ( strpos($permalink, '%category%') !== false ) {
 			$cats = get_the_category($post->ID);
-			if ( $cats )
+			if ( $cats ) {
 				usort($cats, '_usort_terms_by_ID'); // order by ID
-			$category = $cats[0]->slug;
-			if ( $parent=$cats[0]->parent )
-				$category = get_category_parents($parent, false, '/', true) . $category;
-
+				$category = $cats[0]->slug;
+				if ( $parent = $cats[0]->parent )
+					$category = get_category_parents($parent, false, '/', true) . $category;
+			}
 			// show default category in permalinks, without
 			// having to assign it explicitly
 			if ( empty($category) ) {
@@ -1214,24 +1214,12 @@ function posts_nav_link( $sep = ' &#8212; ', $prelabel = '&laquo; Previous Page'
  * @return string
  */
 function get_comments_pagenum_link( $pagenum = 1, $max_page = 0 ) {
-	global $wp_rewrite;
+	global $post, $wp_rewrite;
 
 	$pagenum = (int) $pagenum;
 
-	$request = remove_query_arg( 'cpage' );
+	$result = get_permalink( $post->ID );
 
-	$home_root = parse_url(get_option('home'));
-	$home_root = ( isset($home_root['path']) ) ? $home_root['path'] : '';
-	$home_root = preg_quote( trailingslashit( $home_root ), '|' );
-
-	$request = preg_replace('|^'. $home_root . '|', '', $request);
-	$request = preg_replace('|^/+|', '', $request);
-	$request = preg_replace('|comment-page-[0-9]+/?$|', '', $request);
-
-	$base = trailingslashit( get_bloginfo( 'home' ) );
-
-	$result = user_trailingslashit($base . $request);
-	
 	if ( 'newest' == get_option('default_comments_page') ) {
 		if ( $pagenum != $max_page ) {
 			if ( $wp_rewrite->using_permalinks() )
@@ -1276,6 +1264,9 @@ function next_comments_link($label='', $max_page = 0) {
 
 	if ( empty($max_page) )
 		$max_page = $wp_query->max_num_comment_pages;
+
+	if ( empty($max_page) )
+		$max_page = get_comment_pages_count();
 
 	if ( $nextpage > $max_page )
 		return;
@@ -1336,7 +1327,7 @@ function paginate_comments_links($args = array()) {
 	$page = get_query_var('cpage');
 	if ( !$page )
 		$page = 1;
-	$max_page = $wp_query->max_num_comment_pages;
+	$max_page = get_comment_pages_count();
 	$defaults = array(
 		'base' => add_query_arg( 'cpage', '%#%' ),
 		'format' => '',

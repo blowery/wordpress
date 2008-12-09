@@ -101,7 +101,7 @@ if ( isset($_GET['find_detached'] ) ) {
 }
 
 $title = __('Media Library');
-$parent_file = 'edit.php';
+$parent_file = 'upload.php';
 
 if ( ! isset( $_GET['paged'] ) || $_GET['paged'] < 1 )
 	$_GET['paged'] = 1;
@@ -164,7 +164,10 @@ if ( isset($_GET['message']) && (int) $_GET['message'] ) {
 
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( get_search_query() ) ); ?>
+</h2>
 
 <?php
 if ( isset($message) ) { ?>
@@ -221,8 +224,8 @@ if ( ! isset($page_links_total) )
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => $page_links_total,
 	'current' => $_GET['paged']
 ));
@@ -238,7 +241,7 @@ if ( $page_links ) : ?>
 
 <div class="alignleft actions">
 <select name="action" class="select-action">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 <?php if ( isset($orphans) ) { ?>
 <option value="attach"><?php _e('Attach to a post'); ?></option>
@@ -391,7 +394,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action2" class="select-action">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 <?php if ( isset($orphans) ) { ?>
 <option value="attach"><?php _e('Attach to a post'); ?></option>

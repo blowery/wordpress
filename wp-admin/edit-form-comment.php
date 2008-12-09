@@ -18,6 +18,7 @@ $form_extra = "' />\n<input type='hidden' name='comment_ID' value='" . $comment-
 <form name="post" action="comment.php" method="post" id="post">
 <?php wp_nonce_field('update-comment_' . $comment->comment_ID) ?>
 <div class="wrap">
+<?php screen_icon(); ?>
 <h2><?php _e('Edit Comment'); ?></h2>
 
 <div id="poststuff" class="metabox-holder">
@@ -38,7 +39,7 @@ $url = attribute_escape( $comment->comment_author_url );
 <div id="minor-publishing">
 
 <div id="minor-publishing-actions">
-<div id="preview=action">
+<div id="preview-action">
 <a class="preview button" href="<?php echo get_comment_link(); ?>" target="_blank"><?php _e('View Comment'); ?></a>
 </div>
 <div class="clear"></div>

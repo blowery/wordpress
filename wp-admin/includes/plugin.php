@@ -426,8 +426,11 @@ function delete_plugins($plugins, $redirect = '' ) {
 			$errors[] = $plugin_file;
 	}
 
-	if( ! empty($errors) )
+	if ( ! empty($errors) )
 		return new WP_Error('could_not_remove_plugin', sprintf(__('Could not fully remove the plugin(s) %s'), implode(', ', $errors)) );
+
+	// Force refresh of plugin update information
+	delete_option('update_plugins');
 
 	return true;
 }
@@ -577,6 +580,27 @@ function add_object_page( $page_title, $menu_title, $access_level, $file, $funct
 	return $hookname;
 }
 
+function add_utility_page( $page_title, $menu_title, $access_level, $file, $function = '', $icon_url = '') {
+	global $menu, $admin_page_hooks, $_wp_last_utility_menu;
+
+	$file = plugin_basename( $file );
+
+	$admin_page_hooks[$file] = sanitize_title( $menu_title );
+
+	$hookname = get_plugin_page_hookname( $file, '' );
+	if (!empty ( $function ) && !empty ( $hookname ))
+		add_action( $hookname, $function );
+
+	if ( empty($icon_url) )
+		$icon_url = 'images/generic.png';
+
+	$_wp_last_utility_menu++;
+
+	$menu[$_wp_last_utility_menu] = array ( $menu_title, $access_level, $file, $page_title, 'menu-top ' . $hookname, $hookname, $icon_url );
+
+	return $hookname;
+}
+
 function add_submenu_page( $parent, $page_title, $menu_title, $access_level, $file, $function = '' ) {
 	global $submenu;
 	global $menu;
@@ -625,7 +649,7 @@ function add_submenu_page( $parent, $page_title, $menu_title, $access_level, $fi
  * @return unknown
  */
 function add_management_page( $page_title, $menu_title, $access_level, $file, $function = '' ) {
-	return add_submenu_page( 'import.php', $page_title, $menu_title, $access_level, $file, $function );
+	return add_submenu_page( 'tools.php', $page_title, $menu_title, $access_level, $file, $function );
 }
 
 function add_options_page( $page_title, $menu_title, $access_level, $file, $function = '' ) {
@@ -735,7 +759,8 @@ function get_admin_page_parent( $parent = '' ) {
 		}
 	}
 
-	$parent_file = '';
+	if ( empty($parent_file) )
+		$parent_file = '';
 	return '';
 }
 
@@ -986,9 +1011,14 @@ function add_option_whitelist( $new_options, $options = '' ) {
 	}
 	foreach( $new_options as $page => $keys ) {
 		foreach( $keys as $key ) {
-			$pos = array_search( $key, $whitelist_options[ $page ] );
-			if( $pos === false )
+			if ( !isset($whitelist_options[ $page ]) || !is_array($whitelist_options[ $page ]) ) {
+				$whitelist_options[ $page ] = array();
 				$whitelist_options[ $page ][] = $key;
+			} else {
+				$pos = array_search( $key, $whitelist_options[ $page ] );
+				if ( $pos === false )
+					$whitelist_options[ $page ][] = $key;
+			}
 		}
 	}
 	return $whitelist_options;

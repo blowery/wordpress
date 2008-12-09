@@ -25,6 +25,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 		case 'delete':
 			if ( isset($_GET['post']) && ! isset($_GET['bulk_edit']) && (isset($_GET['doaction']) || isset($_GET['doaction2'])) ) {
 				check_admin_referer('bulk-posts');
+				$deleted = 0;
 				foreach( (array) $_GET['post'] as $post_id_del ) {
 					$post_del = & get_post($post_id_del);
 
@@ -38,6 +39,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 						if ( !wp_delete_post($post_id_del) )
 							wp_die( __('Error in deleting...') );
 					}
+					$deleted++;
 				}
 			}
 			break;
@@ -66,6 +68,8 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 		$done['locked'] = count( $done['locked'] );
 		$sendback = add_query_arg( $done, $sendback );
 	}
+	if ( isset($deleted) )
+		$sendback = add_query_arg('deleted', $deleted, $sendback);
 	wp_redirect($sendback);
 	exit();
 } elseif ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
@@ -92,7 +96,10 @@ else
 
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2>
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( get_search_query() ) ); ?>
+</h2>
 
 <?php
 if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET['posted']; ?>
@@ -100,21 +107,27 @@ if ( isset($_GET['posted']) && $_GET['posted'] ) : $_GET['posted'] = (int) $_GET
 <?php $_SERVER['REQUEST_URI'] = remove_query_arg(array('posted'), $_SERVER['REQUEST_URI']);
 endif; ?>
 
-<?php if ( isset($_GET['locked']) || isset($_GET['skipped']) || isset($_GET['updated']) ) { ?>
+<?php if ( isset($_GET['locked']) || isset($_GET['skipped']) || isset($_GET['updated']) || isset($_GET['deleted']) ) { ?>
 <div id="message" class="updated fade"><p>
-<?php if ( (int) $_GET['updated'] ) {
+<?php if ( isset($_GET['updated']) && (int) $_GET['updated'] ) {
 	printf( __ngettext( '%s post updated.', '%s posts updated.', $_GET['updated'] ), number_format_i18n( $_GET['updated'] ) );
 	unset($_GET['updated']);
 }
 
-if ( (int) $_GET['skipped'] )
+if ( isset($_GET['skipped']) && (int) $_GET['skipped'] )
 	unset($_GET['skipped']);
 
-if ( (int) $_GET['locked'] ) {
+if ( isset($_GET['locked']) && (int) $_GET['locked'] ) {
 	printf( __ngettext( '%s post not updated, somebody is editing it.', '%s posts not updated, somebody is editing them.', $_GET['locked'] ), number_format_i18n( $_GET['locked'] ) );
 	unset($_GET['locked']);
-} 
-$_SERVER['REQUEST_URI'] = remove_query_arg( array('locked', 'skipped', 'updated'), $_SERVER['REQUEST_URI'] );
+}
+
+if ( isset($_GET['deleted']) && (int) $_GET['deleted'] ) {
+	printf( __ngettext( 'Post deleted.', '%s posts deleted.', $_GET['deleted'] ), number_format_i18n( $_GET['deleted'] ) );
+	unset($_GET['deleted']);
+}
+
+$_SERVER['REQUEST_URI'] = remove_query_arg( array('locked', 'skipped', 'updated', 'deleted'), $_SERVER['REQUEST_URI'] );
 ?>
 </p></div>
 <?php } ?>
@@ -168,8 +181,8 @@ endif;
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'paged', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => $wp_query->max_num_pages,
 	'current' => $_GET['paged']
 ));
@@ -178,7 +191,7 @@ $page_links = paginate_links( array(
 
 <div class="alignleft actions">
 <select name="action">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
@@ -238,8 +251,8 @@ do_action('restrict_manage_posts');
 <?php } ?>
 
 <div class="view-switch">
-	<a href="<?php echo clean_url(add_query_arg('mode', 'list', $_SERVER['REQUEST_URI'])) ?>"><img <?php if ( 'list' == $mode ) echo 'class="current"'; ?> src="images/list.gif" title="<?php _e('List View') ?>" alt="<?php _e('List View') ?>" /></a>
-	<a href="<?php echo clean_url(add_query_arg('mode', 'excerpt', $_SERVER['REQUEST_URI'])) ?>"><img <?php if ( 'excerpt' == $mode ) echo 'class="current"'; ?> src="images/exc.gif" title="<?php _e('Excerpt View') ?>" alt="<?php _e('Excerpt View') ?>" /></a>
+	<a href="<?php echo clean_url(add_query_arg('mode', 'list', $_SERVER['REQUEST_URI'])) ?>"><img <?php if ( 'list' == $mode ) echo 'class="current"'; ?> id="view-switch-list" src="../wp-includes/images/blank.gif" width="20" height="20" title="<?php _e('List View') ?>" alt="<?php _e('List View') ?>" /></a>
+	<a href="<?php echo clean_url(add_query_arg('mode', 'excerpt', $_SERVER['REQUEST_URI'])) ?>"><img <?php if ( 'excerpt' == $mode ) echo 'class="current"'; ?> id="view-switch-excerpt" src="../wp-includes/images/blank.gif" width="20" height="20" title="<?php _e('Excerpt View') ?>" alt="<?php _e('Excerpt View') ?>" /></a>
 </div>
 
 <div class="clear"></div>
@@ -258,7 +271,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>

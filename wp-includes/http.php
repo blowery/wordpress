@@ -396,7 +396,7 @@ class WP_Http {
 		$body = str_replace(array("\r\n", "\r"), "\n", $body);
 		// The body is not chunked encoding or is malformed.
 		if ( ! preg_match( '/^[0-9a-f]+(\s|\n)+/mi', trim($body) ) )
-			return false;
+			return $body;
 
 		$parsedBody = '';
 		//$parsedHeaders = array(); Unsupported
@@ -672,7 +672,11 @@ class WP_Http_Fopen {
 		if ( function_exists('stream_get_meta_data') ) {
 			$meta = stream_get_meta_data($handle);
 			$theHeaders = $meta['wrapper_data'];
+			if( isset( $meta['wrapper_data']['headers'] ) )
+				$theHeaders = $meta['wrapper_data']['headers'];
 		} else {
+			if( ! isset( $http_response_header ) )
+				global $http_response_header;
 			$theHeaders = $http_response_header;
 		}
 
@@ -760,7 +764,7 @@ class WP_Http_Streams {
 		$arrContext = array('http' =>
 			array(
 				'method' => strtoupper($r['method']),
-				'user-agent' => $r['user-agent'],
+				'user_agent' => $r['user-agent'],
 				'max_redirects' => $r['redirection'],
 				'protocol_version' => (float) $r['httpversion'],
 				'header' => $strHeaders,
@@ -793,7 +797,12 @@ class WP_Http_Streams {
 
 		$strResponse = stream_get_contents($handle);
 		$meta = stream_get_meta_data($handle);
-		$processedHeaders = WP_Http::processHeaders($meta['wrapper_data']);
+
+		$processedHeaders = array();
+		if( isset( $meta['wrapper_data']['headers'] ) )
+			$processedHeaders = WP_Http::processHeaders($meta['wrapper_data']['headers']);
+		else
+			$processedHeaders = WP_Http::processHeaders($meta['wrapper_data']);
 
 		if ( ! empty( $strResponse ) && isset( $processedHeaders['headers']['transfer-encoding'] ) && 'chunked' == $processedHeaders['headers']['transfer-encoding'] )
 			$strResponse = WP_Http::chunkTransferDecode($strResponse);
@@ -973,8 +982,16 @@ class WP_Http_Curl {
 			unset($r['headers']['user-agent']);
 		}
 
+		// If timeout is a float less than 1, round it up to 1.
+		if ( $r['timeout'] > 0 && $r['timeout'] < 1 )
+			$r['timeout'] = 1;
+
 		$handle = curl_init();
 		curl_setopt( $handle, CURLOPT_URL, $url);
+
+		if ( 'HEAD' === $r['method'] ) {
+			curl_setopt( $handle, CURLOPT_NOBODY, true );
+		}
 
 		if ( true === $r['blocking'] ) {
 			curl_setopt( $handle, CURLOPT_HEADER, true );
@@ -985,7 +1002,6 @@ class WP_Http_Curl {
 			curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 0 );
 		}
 
-		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
 		curl_setopt( $handle, CURLOPT_USERAGENT, $r['user-agent'] );
 		curl_setopt( $handle, CURLOPT_CONNECTTIMEOUT, 1 );
 		curl_setopt( $handle, CURLOPT_TIMEOUT, $r['timeout'] );
@@ -1024,7 +1040,7 @@ class WP_Http_Curl {
 				return new WP_Error('http_request_failed', $curl_error);
 			if ( in_array( curl_getinfo( $handle, CURLINFO_HTTP_CODE ), array(301, 302) ) )
 				return new WP_Error('http_request_failed', __('Too many redirects.'));
-			
+
 			$theHeaders = array( 'headers' => array() );
 			$theBody = '';
 		}

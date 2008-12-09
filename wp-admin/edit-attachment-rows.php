@@ -7,7 +7,8 @@
  */
 
 if ( ! defined('ABSPATH') ) die();
-?>
+
+if ( have_posts() ) { ?>
 <table class="widefat fixed" cellspacing="0">
 	<thead>
 	<tr>
@@ -23,7 +24,6 @@ if ( ! defined('ABSPATH') ) die();
 	
 	<tbody id="the-list" class="list:post">
 <?php
-if ( have_posts() ) {
 add_filter('the_title','wp_specialchars');
 $alt = '';
 $posts_columns = get_column_headers('upload');
@@ -86,11 +86,13 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 		$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
 		$action_count = count($actions);
 		$i = 0;
+		echo '<div class="row-actions">';
 		foreach ( $actions as $action => $link ) {
 			++$i;
 			( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 			echo "<span class='$action'>$link$sep</span>";
 		}
+		echo '</div>';
 		?></p></td>
 		<?php
 		break;
@@ -195,15 +197,14 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 }
 ?>
 	</tr>
-<?php
-endwhile;
-} else {
-?>
-  <tr>
-    <td colspan="8"><?php _e('No posts found.') ?></td>
-  </tr>
+<?php endwhile; ?>
+	</tbody>
+</table>
+<?php } else { ?>
+
+<p><?php _e('No posts found.') ?></p>
+
 <?php
 } // end if ( have_posts() )
 ?>
-	</tbody>
-</table>
+	

@@ -22,8 +22,8 @@ input.button-highlighted {
 	margin-bottom: -1px;
 }
 
-#side-info-column {
-	height: 0;
+* html #side-info-column {
+	height: auto;
 }
 
 * html #wpbody-content #screen-options-link-wrap {
@@ -179,6 +179,24 @@ ul#adminmenu {
 }
 /* end Inline Editor */
 
+* html .row-actions {
+	visibility: visible;
+}
+
+#dashboard-widgets h3 a {
+	height: 20px;
+	line-height: 20px;
+}
+
+#the-comment-list .comment-item,
+ul#widget-list li.widget-list-item {
+	zoom: 100%;
+}
+
+#wphead-info {
+	float: right;
+}
+
 #titlediv #title {
 	width: 98%;
 }
@@ -186,12 +204,6 @@ ul#adminmenu {
 a.button {
 	line-height: 1.4em;
 	margin: 1px;
-}
-
-.widefat thead tr th,
-.widefat tfoot tr th {
-	background: #DFDFDF url(../images/gray-grad.png) repeat-x scroll left top;
-	color: #333333;
 }
 
 * html div.widget-liquid-left-holder,

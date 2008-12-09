@@ -236,6 +236,7 @@ function wp_handle_upload( &$file, $overrides = false, $time = null ) {
 		__( "The uploaded file exceeds the <em>MAX_FILE_SIZE</em> directive that was specified in the HTML form." ),
 		__( "The uploaded file was only partially uploaded." ),
 		__( "No file was uploaded." ),
+		'',
 		__( "Missing a temporary folder." ),
 		__( "Failed to write file to disk." ));
 
@@ -436,7 +437,7 @@ function download_url( $url ) {
 	if ( ! $tmpfname )
 		return new WP_Error('http_no_file', __('Could not create Temporary file'));
 
-	$handle = @fopen($tmpfname, 'w');
+	$handle = @fopen($tmpfname, 'wb');
 	if ( ! $handle )
 		return new WP_Error('http_no_file', __('Could not create Temporary file'));
 
@@ -497,7 +498,7 @@ function unzip_file($file, $to) {
 		if ( $fs->is_dir($tmppath) ) { //Found the highest folder that exists, Create from here(ie +1)
 			for ( $i = $i + 1; $i <= count($path); $i++ ) {
 				$tmppath = implode('/', array_slice($path, 0, $i) );
-				if ( ! $fs->mkdir($tmppath, 0755) )
+				if ( ! $fs->mkdir($tmppath, FS_CHMOD_DIR) )
 					return new WP_Error('mkdir_failed', __('Could not create directory'), $tmppath);
 			}
 			break; //Exit main for loop
@@ -515,7 +516,7 @@ function unzip_file($file, $to) {
 			if ( $fs->is_dir($tmppath) ) {//Found the highest folder that exists, Create from here
 				for ( $i = $i + 1; $i <= count($path); $i++ ) { //< count() no file component please.
 					$tmppath = $to . implode('/', array_slice($path, 0, $i) );
-					if ( ! $fs->is_dir($tmppath) && ! $fs->mkdir($tmppath, 0755) )
+					if ( ! $fs->is_dir($tmppath) && ! $fs->mkdir($tmppath, FS_CHMOD_DIR) )
 						return new WP_Error('mkdir_failed', __('Could not create directory'), $tmppath);
 				}
 				break; //Exit main for loop
@@ -526,7 +527,7 @@ function unzip_file($file, $to) {
 		if ( ! $file['folder'] ) {
 			if ( !$fs->put_contents( $to . $file['filename'], $file['content']) )
 				return new WP_Error('copy_failed', __('Could not copy file'), $to . $file['filename']);
-			$fs->chmod($to . $file['filename'], 0644);
+			$fs->chmod($to . $file['filename'], FS_CHMOD_FILE);
 		}
 	}
 	return true;
@@ -557,10 +558,10 @@ function copy_dir($from, $to) {
 				if ( ! $wp_filesystem->copy($from . $filename, $to . $filename, true) )
 					return new WP_Error('copy_failed', __('Could not copy file'), $to . $filename);
 			}
-			$wp_filesystem->chmod($to . $filename, 0644);
+			$wp_filesystem->chmod($to . $filename, FS_CHMOD_FILE);
 		} elseif ( 'd' == $fileinfo['type'] ) {
 			if ( !$wp_filesystem->is_dir($to . $filename) ) {
-				if ( !$wp_filesystem->mkdir($to . $filename, 0755) )
+				if ( !$wp_filesystem->mkdir($to . $filename, FS_CHMOD_DIR) )
 					return new WP_Error('mkdir_failed', __('Could not create directory'), $to . $filename);
 			}
 			$result = copy_dir($from . $filename, $to . $filename);
@@ -602,6 +603,12 @@ function WP_Filesystem( $args = false ) {
 
 	if ( !$wp_filesystem->connect() )
 		return false; //There was an erorr connecting to the server.
+
+	// Set the permission constants if not already set.
+	if ( ! defined('FS_CHMOD_DIR') )
+		define('FS_CHMOD_DIR', 0755 );
+	if ( ! defined('FS_CHMOD_FILE') )
+		define('FS_CHMOD_FILE', 0644 );
 
 	return true;
 }
@@ -705,34 +712,45 @@ jQuery(function($){
 <div class="wrap">
 <h2><?php _e('Connection Information') ?></h2>
 <p><?php _e('To perform the requested action, connection information is required.') ?></p>
+
 <table class="form-table">
 <tr valign="top">
 <th scope="row"><label for="hostname"><?php _e('Hostname') ?></label></th>
 <td><input name="hostname" type="text" id="hostname" value="<?php echo attribute_escape($hostname); if ( !empty($port) ) echo ":$port"; ?>"<?php if( defined('FTP_HOST') ) echo ' disabled="disabled"' ?> size="40" /></td>
 </tr>
+
 <tr valign="top">
 <th scope="row"><label for="username"><?php _e('Username') ?></label></th>
 <td><input name="username" type="text" id="username" value="<?php echo attribute_escape($username) ?>"<?php if( defined('FTP_USER') ) echo ' disabled="disabled"' ?> size="40" /></td>
 </tr>
+
 <tr valign="top">
 <th scope="row"><label for="password"><?php _e('Password') ?></label></th>
 <td><input name="password" type="password" id="password" value=""<?php if( defined('FTP_PASS') ) echo ' disabled="disabled"' ?> size="40" /><?php if( defined('FTP_PASS') && !empty($password) ) echo '<em>'.__('(Password not shown)').'</em>'; ?></td>
 </tr>
+
 <tr id="ssh_keys" valign="top" style="<?php if ( 'ssh' != $connection_type ) echo 'display:none' ?>">
-<th scope="row"><label id="keys" for="keys"><?php _e('Authentication Keys') ?></label></th>
-<td><label for="public_key"><?php _e('Public Key:') ?></label ><input name="public_key" type="text" id="public_key" value=""<?php if( defined('FTP_PUBKEY') ) echo ' disabled="disabled"' ?> size="40" /> <label for="private_key"><?php _e('Private Key:') ?></label> <input name="private_key" type="text" id="private_key" value=""<?php if( defined('FTP_PRIKEY') ) echo ' disabled="disabled"' ?> size="40" /><br/><div><?php _e('Enter the location on the server where the keys are located. If a passphrase is needed, enter that in the password field above.') ?></div></td>
+<th scope="row"><?php _e('Authentication Keys') ?>
+<div class="key-labels textright">
+<label for="public_key"><?php _e('Public Key:') ?></label ><br />
+<label for="private_key"><?php _e('Private Key:') ?></label>
+</div></th>
+<td><br /><input name="public_key" type="text" id="public_key" value=""<?php if( defined('FTP_PUBKEY') ) echo ' disabled="disabled"' ?> size="40" /><br /><input name="private_key" type="text" id="private_key" value=""<?php if( defined('FTP_PRIKEY') ) echo ' disabled="disabled"' ?> size="40" />
+<div><?php _e('Enter the location on the server where the keys are located. If a passphrase is needed, enter that in the password field above.') ?></div></td>
 </tr>
+
 <tr valign="top">
 <th scope="row"><?php _e('Connection Type') ?></th>
 <td>
-<fieldset><legend class="hidden"><?php _e('Connection Type') ?> </legend>
-<p><label><input id="ftp" name="connection_type"  type="radio" value="ftp" <?php checked('ftp', $connection_type); if ( defined('FTP_SSL') || defined('FTP_SSH') ) echo ' disabled="disabled"'; ?>/> <?php _e('FTP') ?></label><br />
+<fieldset><legend class="hidden"><?php _e('Connection Type') ?></legend>
+<label><input id="ftp" name="connection_type"  type="radio" value="ftp" <?php checked('ftp', $connection_type); if ( defined('FTP_SSL') || defined('FTP_SSH') ) echo ' disabled="disabled"'; ?>/> <?php _e('FTP') ?></label><br />
 <label><input id="ftps" name="connection_type" type="radio" value="ftps" <?php checked('ftps', $connection_type); if ( defined('FTP_SSH') || defined('FTP_SSH') ) echo ' disabled="disabled"';  ?>/> <?php _e('FTPS (SSL)') ?></label><br />
-<?php if ( extension_loaded('ssh2') ) { ?><label><input id="ssh" name="connection_type" type="radio" value="ssh" <?php checked('ssh', $connection_type);  if ( defined('FTP_SSL') || defined('FTP_SSH') ) echo ' disabled="disabled"'; ?>/> <?php _e('SSH') ?></label><?php } ?></p>
+<?php if ( extension_loaded('ssh2') ) { ?><label><input id="ssh" name="connection_type" type="radio" value="ssh" <?php checked('ssh', $connection_type);  if ( defined('FTP_SSL') || defined('FTP_SSH') ) echo ' disabled="disabled"'; ?>/> <?php _e('SSH') ?></label><?php } ?>
 </fieldset>
 </td>
 </tr>
 </table>
+
 <?php if ( isset( $_POST['version'] ) ) : ?>
 <input type="hidden" name="version" value="<?php echo attribute_escape($_POST['version']) ?>" />
 <?php endif; ?>

@@ -130,7 +130,10 @@ $messages[6] = __('Tags deleted.'); ?>
 
 <div class="wrap nosubsub">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( stripslashes($_GET['s']) ) ); ?>
+</h2>
 
 <?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
 <div id="message" class="updated fade"><p><?php echo $messages[$msg]; ?></p></div>
@@ -162,8 +165,8 @@ $tagsperpage = apply_filters("tagsperpage",20);
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => ceil(wp_count_terms('post_tag') / $tagsperpage),
 	'current' => $pagenum
 ));
@@ -174,7 +177,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
@@ -217,7 +220,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="" selected="selected"><?php _e('Actions'); ?></option>
+<option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
 <input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
@@ -292,7 +295,7 @@ else
 /* ]]> */
 </script>
 
-<?php inline_edit_term_row('tag'); ?>
+<?php inline_edit_term_row('edit-tags'); ?>
 
 <?php
 break;

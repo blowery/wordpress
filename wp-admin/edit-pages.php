@@ -17,6 +17,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 		case 'delete':
 			if ( isset($_GET['post']) && ! isset($_GET['bulk_edit']) && (isset($_GET['doaction']) || isset($_GET['doaction2'])) ) {
 				check_admin_referer('bulk-pages');
+				$deleted = 0;
 				foreach( (array) $_GET['post'] as $post_id_del ) {
 					$post_del = & get_post($post_id_del);
 
@@ -30,6 +31,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 						if ( !wp_delete_post($post_id_del) )
 							wp_die( __('Error in deleting...') );
 					}
+					$deleted++;
 				}
 			}
 			break;
@@ -58,6 +60,8 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 		$done['locked'] = count( $done['locked'] );
 		$sendback = add_query_arg( $done, $sendback );
 	}
+	if ( isset($deleted) )
+		$sendback = add_query_arg('deleted', $deleted, $sendback);
 	wp_redirect($sendback);
 	exit();
 } elseif ( isset($_GET['_wp_http_referer']) && ! empty($_GET['_wp_http_referer']) ) {
@@ -67,7 +71,7 @@ if ( isset($_GET['action']) && ( -1 != $_GET['action'] || -1 != $_GET['action2']
 
 if ( empty($title) )
 	$title = __('Edit Pages');
-$parent_file = 'edit.php';
+$parent_file = 'edit-pages.php';
 wp_enqueue_script('inline-edit-post');
 
 $post_stati  = array(	//	array( adj, noun )
@@ -100,25 +104,33 @@ require_once('admin-header.php'); ?>
 
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2>
+<h2><?php echo wp_specialchars( $title );
+if ( isset($_GET['s']) && $_GET['s'] )
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( get_search_query() ) ); ?>
+</h2>
 
-<?php if ( isset($_GET['locked']) || isset($_GET['skipped']) || isset($_GET['updated']) ) { ?>
+<?php if ( isset($_GET['locked']) || isset($_GET['skipped']) || isset($_GET['updated']) || isset($_GET['deleted']) ) { ?>
 <div id="message" class="updated fade"><p>
-<?php if ( (int) $_GET['updated'] ) {
+<?php if ( isset($_GET['updated']) && (int) $_GET['updated'] ) {
 	printf( __ngettext( '%s page updated.', '%s pages updated.', $_GET['updated'] ), number_format_i18n( $_GET['updated'] ) );
 	unset($_GET['updated']);
 }
 
-if ( (int) $_GET['skipped'] ) {
+if ( isset($_GET['skipped']) && (int) $_GET['skipped'] ) {
 	printf( __ngettext( '%s page not updated, invalid parent page specified.', '%s pages not updated, invalid parent page specified.', $_GET['skipped'] ), number_format_i18n( $_GET['skipped'] ) );
 	unset($_GET['skipped']);
 }
 
-if ( (int) $_GET['locked'] ) {
+if ( isset($_GET['locked']) && (int) $_GET['locked'] ) {
 	printf( __ngettext( '%s page not updated, somebody is editing it.', '%s pages not updated, somebody is editing them.', $_GET['locked'] ), number_format_i18n( $_GET['skipped'] ) );
 	unset($_GET['locked']);
 }
-$_SERVER['REQUEST_URI'] = remove_query_arg( array('locked', 'skipped', 'updated'), $_SERVER['REQUEST_URI'] );
+
+if ( isset($_GET['deleted']) && (int) $_GET['deleted'] ) {
+	printf( __ngettext( 'Page deleted.', '%s pages deleted.', $_GET['deleted'] ), number_format_i18n( $_GET['deleted'] ) );
+	unset($_GET['deleted']);
+}
+$_SERVER['REQUEST_URI'] = remove_query_arg( array('locked', 'skipped', 'updated', 'deleted'), $_SERVER['REQUEST_URI'] );
 ?>
 </p></div>
 <?php } ?>
@@ -181,8 +193,8 @@ $num_pages = ceil($wp_query->post_count / $per_page);
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
-	'prev_text' => __('&larr;'),
-	'next_text' => __('&rarr;'),
+	'prev_text' => __('&laquo;'),
+	'next_text' => __('&raquo;'),
 	'total' => $num_pages,
 	'current' => $pagenum
 ));
@@ -198,7 +210,7 @@ if ( $page_links ) : ?>
 
 <div class="alignleft actions">
 <select name="action">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
@@ -237,7 +249,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="-1" selected="selected"><?php _e('Actions'); ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="edit"><?php _e('Edit'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>

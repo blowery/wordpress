@@ -271,8 +271,8 @@ function display_plugins_table($plugins, $page = 1, $totalpages = 1){
 			$page_links = paginate_links( array(
 				'base' => add_query_arg('paged', '%#%', $url),
 				'format' => '',
-				'prev_text' => __('&larr;'),
-				'next_text' => __('&rarr;'),
+				'prev_text' => __('&laquo;'),
+				'next_text' => __('&raquo;'),
 				'total' => $totalpages,
 				'current' => $page
 			));
@@ -866,7 +866,7 @@ function wp_install_plugin_local_package($package, $feedback = '') {
 
 	if( $wp_filesystem->exists( $plugins_dir . $filelist[0] ) ) {
 		$wp_filesystem->delete($working_dir, true);
-		return new WP_Error('install_folder_exists', __('Folder allready exists.'), $filelist[0] );
+		return new WP_Error('install_folder_exists', __('Folder already exists.'), $filelist[0] );
 	}
 
 	apply_filters('install_feedback', __('Installing the plugin'));

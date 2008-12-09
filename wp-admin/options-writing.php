@@ -20,9 +20,7 @@ include('admin-header.php');
 <h2><?php echo wp_specialchars( $title ); ?></h2> 
 
 <form method="post" action="options.php">
-<?php wp_nonce_field('writing-options') ?>
-<input type='hidden' name='option_page' value='writing' />
-<input type="hidden" name="action" value="update" />
+<?php settings_fields('writing'); ?>
 
 <table class="form-table">
 <tr valign="top">
@@ -125,9 +123,6 @@ wp_dropdown_categories(array('hide_empty' => 0, 'name' => 'default_email_categor
 	<p><?php printf(__('WordPress is not notifying any <a href="http://codex.wordpress.org/Update_Services">Update Services</a> because of your blog\'s <a href="%s">privacy settings</a>.'), 'options-privacy.php'); ?></p>
 
 <?php endif; ?>
-
-<h3><?php _e('Press This') ?></h3>
-<p><?php _e('Drag-and-drop the following link to your bookmarks bar or right click it and add it to your favorites for a posting shortcut.') ?>  <a href="<?php echo htmlspecialchars( get_shortcut_link() ); ?>" title="<?php echo attribute_escape(__('Press This')) ?>"><?php _e('Press This') ?></a></p>
 
 <?php do_settings_sections('writing'); ?>
 

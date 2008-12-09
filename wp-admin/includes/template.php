@@ -126,11 +126,13 @@ function _cat_row( $category, $level, $name_override = false ) {
 			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("categories.php?action=delete&amp;cat_ID=$category->term_id", 'delete-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
+		$edit .= '<div class="row-actions">';
 		foreach ( $actions as $action => $link ) {
 			++$i;
 			( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 			$edit .= "<span class='$action'>$link$sep</span>";
 		}
+		$edit .= '</div>';
 	} else {
 		$edit = $name;
 	}
@@ -201,8 +203,8 @@ function inline_edit_term_row($type) {
 	if ( ! current_user_can( 'manage_categories' ) )
 		return;
 
-	$is_tag = $type == 'tag';
-	$columns = $is_tag ? get_column_headers('tag') : get_column_headers('category');
+	$is_tag = $type == 'edit-tags';
+	$columns = get_column_headers($type);
 	$hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns($type) ) );
 	$col_count = count($columns) - count($hidden);
 	?>
@@ -288,11 +290,13 @@ function link_cat_row( $category, $name_override = false ) {
 			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("link-category.php?action=delete&amp;cat_ID=$category->term_id", 'delete-link-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
+		$edit .= '<div class="row-actions">';
 		foreach ( $actions as $action => $link ) {
 			++$i;
 			( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 			$edit .= "<span class='$action'>$link$sep</span>";
 		}
+		$edit .= '</div>';
 	} else {
 		$edit = $name;
 	}
@@ -333,6 +337,9 @@ function link_cat_row( $category, $name_override = false ) {
 				break;
 			case 'description':
 				$output .= "<td $attributes>$category->description</td>";
+				break;
+			case 'slug':
+				$output .= "<td $attributes>$category->slug</td>";
 				break;
 			case 'links':
 				$attributes = 'class="links column-links num"' . $style;
@@ -605,11 +612,13 @@ function _tag_row( $tag, $class = '' ) {
 					$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this tag '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 					$action_count = count($actions);
 					$i = 0;
+					$out .= '<div class="row-actions">';
 					foreach ( $actions as $action => $link ) {
 						++$i;
 						( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 						$out .= "<span class='$action'>$link$sep</span>";
 					}
+					$out .= '</div>';
 					$out .= '<div class="hidden" id="inline_' . $qe_data->term_id . '">';
 					$out .= '<div class="name">' . $qe_data->name . '</div>';
 					$out .= '<div class="slug">' . $qe_data->slug . '</div></div></td>';
@@ -703,7 +712,7 @@ function wp_manage_media_columns() {
 	$posts_columns['icon'] = '';
 	$posts_columns['media'] = _c('File|media column header');
 	$posts_columns['author'] = __('Author');
-	$posts_columns['tags'] = _c('Tags|media column header');
+	//$posts_columns['tags'] = _c('Tags|media column header');
 	$posts_columns['parent'] = _c('Attached to|media column header');
 	$posts_columns['comments'] = '<div class="vers"><img alt="Comments" src="images/comment-grey-bubble.png" /></div>';
 	//$posts_columns['comments'] = __('Comments');
@@ -800,6 +809,7 @@ function get_column_headers($page) {
 				'cb' => '<input type="checkbox" />',
 				'name' => __('Name'),
 				'description' => __('Description'),
+				'slug' => __('Slug'),
 				'links' => __('Links')
 			);
 
@@ -916,13 +926,16 @@ function inline_edit_row( $type ) {
 	global $current_user, $mode;
 
 	$is_page = 'page' == $type;
-	if ( $is_page )
+	if ( $is_page ) {
+		$screen = 'edit-pages';
 		$post = get_default_page_to_edit();
-	else
+	} else {
+		$screen = 'edit';
 		$post = get_default_post_to_edit();
+	}
 
 	$columns = $is_page ? wp_manage_pages_columns() : wp_manage_posts_columns();
-	$hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns($type) ) );
+	$hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns($screen) ) );
 	$col_count = count($columns) - count($hidden);
 	$m = ( isset($mode) && 'excerpt' == $mode ) ? 'excerpt' : 'list';
 	$can_publish = current_user_can("publish_{$type}s");
@@ -940,7 +953,7 @@ function inline_edit_row( $type ) {
 	?>" style="display: none"><td colspan="<?php echo $col_count; ?>">
 
 	<fieldset class="inline-edit-col-left"><div class="inline-edit-col">
-		<h4><?php echo $bulk ? __( 'Bulk Edit' ) : __( 'Quick Edit' ); ?></h4>
+		<h4><?php echo $bulk ? ( $is_page ? __( 'Bulk Edit Pages' ) : __( 'Bulk Edit Posts' ) ) : __( 'Quick Edit' ); ?></h4>
 
 
 <?php if ( $bulk ) : ?>
@@ -998,8 +1011,10 @@ function inline_edit_row( $type ) {
 				<span class="input-text-wrap"><input type="text" name="post_password" class="inline-edit-password-input" value="" /></span>
 			</label>
 
+			<em style="margin:5px 10px 0 0" class="alignleft"><?php echo _c( '&ndash;OR&ndash;|Between password field and private checkbox on post quick edit interface' ); ?></em>
+
 			<label class="alignleft inline-edit-private">
-				<input type="checkbox" name="keep_private" value="private" <?php checked($post->post_status, 'private'); ?> />
+				<input type="checkbox" name="keep_private" value="private" />
 				<span class="checkbox-title"><?php echo $is_page ? __('Private page') : __('Private post'); ?></span>
 			</label>
 		</div>
@@ -1033,13 +1048,13 @@ function inline_edit_row( $type ) {
 
 		<label>
 			<span class="title"><?php _e( 'Parent' ); ?></span>
-			<select name="post_parent">
-<?php	if ( $bulk ) : ?>
-				<option value="-1"><?php _e('- No Change -'); ?></option>
-<?php	endif; // $bulk ?>
-				<option value="0"><?php _e( 'Main Page (no parent)' ); ?></option>
-				<?php parent_dropdown(); ?>
-			</select>
+<?php
+	$dropdown_args = array('selected' => $post->post_parent, 'name' => 'post_parent', 'show_option_none' => __('Main Page (no parent)'), 'option_none_value' => 0);
+	if ( $bulk )
+		$dropdown_args['show_option_no_change'] =  __('- No Change -');
+	$dropdown_args = apply_filters('quick_edit_dropdown_pages_args', $dropdown_args);
+	wp_dropdown_pages($dropdown_args);
+?>
 		</label>
 
 <?php	if ( !$bulk ) : ?>
@@ -1372,11 +1387,13 @@ function _post_row($a_post, $pending_comments, $mode) {
 				$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
 			$action_count = count($actions);
 			$i = 0;
+			echo '<div class="row-actions">';
 			foreach ( $actions as $action => $link ) {
 				++$i;
 				( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 				echo "<span class='$action'>$link</span>$sep";
 			}
+			echo '</div>';
 
 			get_inline_data($post);
 		?>
@@ -1555,12 +1572,15 @@ foreach ($posts_columns as $column_name=>$column_display_name) {
 		else
 			$actions['view'] = '<a href="' . get_permalink($page->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
 		$action_count = count($actions);
+
 		$i = 0;
+		echo '<div class="row-actions">';
 		foreach ( $actions as $action => $link ) {
 			++$i;
 			( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 			echo "<span class='$action'>$link$sep</span>";
 		}
+		echo '</div>';
 
 		get_inline_data($post);
 		echo '</td>';
@@ -1781,14 +1801,17 @@ function user_row( $user_object, $style = '', $role = '' ) {
 		$edit = "<strong><a href=\"$edit_link\">$user_object->user_login</a></strong><br />";
 		$actions = array();
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
-		$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("users.php?action=delete&amp;user=$user_object->ID", 'bulk-users') . "'>" . __('Delete') . "</a>";
+		if ( $current_user->ID != $user_object->ID )
+			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("users.php?action=delete&amp;user=$user_object->ID", 'bulk-users') . "'>" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
+		$edit .= '<div class="row-actions">';
 		foreach ( $actions as $action => $link ) {
 			++$i;
 			( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 			$edit .= "<span class='$action'>$link$sep</span>";
 		}
+		$edit .= '</div>';
 	} else {
 		$edit = '<strong>' . $user_object->user_login . '</strong>';
 	}
@@ -1869,10 +1892,13 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
 	else
 		$approved = "( comment_approved = '0' OR comment_approved = '1' )";
 
-	if ( $post )
+	if ( $post ) {
 		$post = " AND comment_post_ID = '$post'";
-	else
+		$orderby = "ORDER BY comment_date_gmt ASC LIMIT $start, $num";
+	} else {
 		$post = '';
+		$orderby = "ORDER BY comment_date_gmt DESC LIMIT $start, $num";
+	}
 
 	if ( 'comment' == $type )
 		$typesql = "AND comment_type = ''";
@@ -1895,9 +1921,9 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
 			comment_content LIKE ('%$s%') ) AND
 			$approved
 			$typesql
-			ORDER BY comment_date_gmt DESC LIMIT $start, $num");
+			$orderby");
 	} else {
-		$comments = $wpdb->get_results( "SELECT SQL_CALC_FOUND_ROWS * FROM $wpdb->comments WHERE $approved $post $typesql ORDER BY comment_date_gmt DESC LIMIT $start, $num" );
+		$comments = $wpdb->get_results( "SELECT SQL_CALC_FOUND_ROWS * FROM $wpdb->comments WHERE $approved $post $typesql $orderby" );
 	}
 
 	update_comment_cache($comments);
@@ -1918,22 +1944,17 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
  * @param unknown_type $checkbox
  */
 function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true, $from_ajax = false ) {
-	global $comment, $post;
+	global $comment, $post, $_comment_pending_count;
 	$comment = get_comment( $comment_id );
 	$post = get_post($comment->comment_post_ID);
 	$the_comment_status = wp_get_comment_status($comment->comment_ID);
-
-	if ( current_user_can( 'edit_post', $post->ID ) ) {
-		$post_link = "<a href='" . get_edit_post_link($post->ID) . "'>";
-		$post_link .= get_the_title($comment->comment_post_ID) . '</a>';
-	} else {
-		$post_link = get_the_title($comment->comment_post_ID);
-	}
 
 	$author_url = get_comment_author_url();
 	if ( 'http://' == $author_url )
 		$author_url = '';
 	$author_url_display = $author_url;
+	$author_url_display = str_replace('http://www.', '', $author_url_display);
+	$author_url_display = str_replace('http://', '', $author_url_display);
 	if ( strlen($author_url_display) > 50 )
 		$author_url_display = substr($author_url_display, 0, 49) . '...';
 
@@ -1943,10 +1964,10 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 	else
 		$ptime = mysql2date(__('Y/m/d \a\t g:i A'), $comment->comment_date );
 
-	$delete_url = clean_url( wp_nonce_url( "comment.php?action=deletecomment&p=$comment->comment_post_ID&c=$comment->comment_ID", "delete-comment_$comment->comment_ID" ) );
-	$approve_url = clean_url( wp_nonce_url( "comment.php?action=approvecomment&p=$comment->comment_post_ID&c=$comment->comment_ID", "approve-comment_$comment->comment_ID" ) );
-	$unapprove_url = clean_url( wp_nonce_url( "comment.php?action=unapprovecomment&p=$comment->comment_post_ID&c=$comment->comment_ID", "unapprove-comment_$comment->comment_ID" ) );
-	$spam_url = clean_url( wp_nonce_url( "comment.php?action=deletecomment&dt=spam&p=$comment->comment_post_ID&c=$comment->comment_ID", "delete-comment_$comment->comment_ID" ) );
+	$delete_url = clean_url( wp_nonce_url( "comment.php?action=deletecomment&p=$post->ID&c=$comment->comment_ID", "delete-comment_$comment->comment_ID" ) );
+	$approve_url = clean_url( wp_nonce_url( "comment.php?action=approvecomment&p=$post->ID&c=$comment->comment_ID", "approve-comment_$comment->comment_ID" ) );
+	$unapprove_url = clean_url( wp_nonce_url( "comment.php?action=unapprovecomment&p=$post->ID&c=$comment->comment_ID", "unapprove-comment_$comment->comment_ID" ) );
+	$spam_url = clean_url( wp_nonce_url( "comment.php?action=deletecomment&dt=spam&p=$post->ID&c=$comment->comment_ID", "delete-comment_$comment->comment_ID" ) );
 
 	echo "<tr id='comment-$comment->comment_ID' class='$the_comment_status'>";
 	$columns = get_column_headers('edit-comments');
@@ -1964,7 +1985,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 			case 'cb':
 				if ( !$checkbox ) break;
 				echo '<th scope="row" class="check-column">';
-				if ( current_user_can('edit_post', $comment->comment_post_ID) ) echo "<input type='checkbox' name='delete_comments[]' value='$comment->comment_ID' />";
+				if ( current_user_can('edit_post', $post->ID) ) echo "<input type='checkbox' name='delete_comments[]' value='$comment->comment_ID' />";
 				echo '</th>';
 				break;
 			case 'comment':
@@ -1983,15 +2004,15 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 				<?php
 				$actions = array();
 
-				if ( current_user_can('edit_post', $comment->comment_post_ID) ) {
+				if ( current_user_can('edit_post', $post->ID) ) {
 					$actions['approve'] = "<a href='$approve_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=approved vim-a' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
 					$actions['unapprove'] = "<a href='$unapprove_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=unapproved vim-u' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
 					if ( $comment_status ) { // not looking at all comments
 						if ( 'approved' == $the_comment_status ) {
-							$actions['unapprove'] = "<a href='$unapprove_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment vim-u vim-destructive' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
+							$actions['unapprove'] = "<a href='$unapprove_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=unapproved vim-u vim-destructive' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
 							unset($actions['approve']);
 						} else {
-							$actions['approve'] = "<a href='$approve_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment vim-a vim-destructive' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
+							$actions['approve'] = "<a href='$approve_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=approved vim-a vim-destructive' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
 							unset($actions['unapprove']);
 						}
 					}
@@ -2006,6 +2027,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 					$actions = apply_filters( 'comment_row_actions', $actions, $comment );
 
 					$i = 0;
+					echo '<div class="row-actions">';
 					foreach ( $actions as $action => $link ) {
 						++$i;
 						( ( ('approve' == $action || 'unapprove' == $action) && 2 === $i ) || 1 === $i ) ? $sep = '' : $sep = ' | ';
@@ -2016,6 +2038,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 
 						echo "<span class='$action'>$sep$link</span>";
 					}
+					echo '</div>';
 				}
 
 				echo '</td>';
@@ -2042,13 +2065,31 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 				break;
 			case 'response':
 				if ( 'single' !== $mode ) {
+					if ( isset( $_comment_pending_count[$post->ID] ) ) {
+						$pending_comments = absint( $_comment_pending_count[$post->ID] );
+					} else {
+						$_comment_pending_count_temp = (array) get_pending_comments_num( array( $post->ID ) );
+						$pending_comments = $_comment_pending_count[$post->ID] = $_comment_pending_count_temp[$post->ID];
+					}
+					if ( current_user_can( 'edit_post', $post->ID ) ) {
+						$post_link = "<a href='" . get_edit_post_link($post->ID) . "'>";
+						$post_link .= get_the_title($post->ID) . '</a>';
+					} else {
+						$post_link = get_the_title($post->ID);
+					}
 					echo "<td $attributes>\n";
-					echo "&quot;$post_link&quot; ";
-					echo '<a href="edit-comments.php?p=' . $post->ID;
-					if ( !empty($_GET['comment_type']) ) echo '&amp;comment_type=' . htmlspecialchars( $_GET['comment_type'] );
-					echo '">' . sprintf ( __ngettext('(%s)', '(%s)', $post->comment_count), number_format_i18n($post->comment_count) ) . '</a> <a href="' . get_permalink($post->ID) . '">#</a><br />';
-					echo get_the_time(__('Y/m/d \a\t g:ia'));
-					echo '</td>';
+					echo $post_link;
+
+					echo '<div class="response-links"><span class="post-com-count-wrapper">';
+					$pending_phrase = sprintf( __('%s pending'), number_format( $pending_comments ) );
+					if ( $pending_comments )
+						echo '<strong>';
+					comments_number("<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('0') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('1') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('%') . '</span></a>');
+					if ( $pending_comments )
+						echo '</strong>';
+					echo '</span> ';
+					echo "<a href='" . get_permalink( $post->ID ) . "'>#</a>";
+					echo '</div></td>';
 				}
 		}
 	}
@@ -2074,10 +2115,15 @@ function wp_comment_reply($position = '1', $checkbox = false, $mode = 'single', 
 		echo $content;
 		return;
 	}
+
+	$columns = get_column_headers('edit-comments');
+	$hidden = array_intersect( array_keys( $columns ), array_filter( get_hidden_columns('edit-comments') ) );
+	$col_count = count($columns) - count($hidden);
+
 ?>
 <form method="get" action="">
 <?php if ( $table_row ) : ?>
-<table style="display:none;"><tbody id="com-reply"><tr id="replyrow"><td colspan="6">
+<table style="display:none;"><tbody id="com-reply"><tr id="replyrow"><td colspan="<?php echo $col_count; ?>">
 <?php else : ?>
 <div id="com-reply" style="display:none;"><div id="replyrow">
 <?php endif; ?>
@@ -2279,7 +2325,7 @@ function meta_form() {
 	if ( $keys )
 		natcasesort($keys);
 ?>
-<p><strong><?php _e( 'Add a new custom field:' ) ?></strong></p>
+<p><strong><?php _e( 'Add new custom field:' ) ?></strong></p>
 <table id="newmeta">
 <thead>
 <tr>
@@ -2291,7 +2337,7 @@ function meta_form() {
 <tbody>
 <tr>
 <td id="newmetaleft" class="left">
-<?php if ( $keys ) : ?>
+<?php if ( $keys ) { ?>
 <select id="metakeyselect" name="metakeyselect" tabindex="7">
 <option value="#NONE#"><?php _e( '- Select -' ); ?></option>
 <?php
@@ -2302,12 +2348,13 @@ function meta_form() {
 	}
 ?>
 </select>
-<?php endif; ?>
 <input class="hide-if-js" type="text" id="metakeyinput" name="metakeyinput" tabindex="7" value="" />
 <a href="#postcustomstuff" class="hide-if-no-js" onclick="jQuery('#metakeyinput, #metakeyselect, #enternew, #cancelnew').toggle();return false;">
 <span id="enternew"><?php _e('Enter new'); ?></span>
-<span id="cancelnew" class="hidden"><?php _e('Cancel'); ?></span>
-</a>
+<span id="cancelnew" class="hidden"><?php _e('Cancel'); ?></span></a>
+<?php } else { ?>
+<input type="text" id="metakeyinput" name="metakeyinput" tabindex="7" value="" />
+<?php } ?>
 </td>
 <td><textarea id="metavalue" name="metavalue" rows="2" cols="25" tabindex="8"></textarea></td>
 </tr>
@@ -2700,7 +2747,7 @@ function do_meta_boxes($page, $context, $object) {
 
 	//do_action('do_meta_boxes', $page, $context, $object);
 
-	$hidden = (array) get_user_option( "meta-box-hidden_$page", 0, false );
+	$hidden = get_hidden_meta_boxes($page);
 
 	echo "<div id='$context-sortables' class='meta-box-sortables'>\n";
 
@@ -2728,7 +2775,8 @@ function do_meta_boxes($page, $context, $object) {
 					if ( in_array($box['id'], $hidden) )
 						$style = 'style="display:none;"';
 					echo '<div id="' . $box['id'] . '" class="postbox ' . postbox_classes($box['id'], $page) . '" ' . $style . '>' . "\n";
-					echo "<div class='handlediv'><br /></div><h3 class='hndle'><span>{$box['title']}</span></h3>\n";
+					echo '<div class="handlediv" title="' . __('Click to toggle') . '"><br /></div>';
+					echo "<h3 class='hndle'><span>{$box['title']}</span></h3>\n";
 					echo '<div class="inside">' . "\n";
 					call_user_func($box['callback'], $object, $box);
 					echo "</div>\n";
@@ -2780,7 +2828,7 @@ function meta_box_prefs($page) {
 	if ( empty($wp_meta_boxes[$page]) )
 		return;
 
-	$hidden = (array) get_user_option( "meta-box-hidden_$page", 0, false );
+	$hidden = get_hidden_meta_boxes($page);
 
 	foreach ( array_keys($wp_meta_boxes[$page]) as $context ) {
 		foreach ( array_keys($wp_meta_boxes[$page][$context]) as $priority ) {
@@ -2797,6 +2845,20 @@ function meta_box_prefs($page) {
 			}
 		}
 	}
+}
+
+function get_hidden_meta_boxes($page) {
+	$hidden = (array) get_user_option( "meta-box-hidden_$page", 0, false );
+
+	// Hide slug boxes by default
+	if ( empty($hidden[0]) ) {
+		if ( 'page' == $page )
+			$hidden = array('pageslugdiv');
+		elseif ( 'post' == $page )
+			$hidden = array('slugdiv');
+	}
+
+	return $hidden;
 }
 
 /**
@@ -3204,7 +3266,7 @@ function _post_states($post) {
 		$post_status = '';
 
 	if ( !empty($post->post_password) )
-		$post_states[] = __('Protected');
+		$post_states[] = __('Password protected');
 	if ( 'private' == $post->post_status && 'private' != $post_status )
 		$post_states[] = __('Private');
 	if ( 'draft' == $post->post_status && 'draft' != $post_status )
@@ -3266,10 +3328,31 @@ function screen_meta($screen) {
 
 	if ( !isset($_wp_contextual_help) )
 		$_wp_contextual_help = array();
-	if ( !isset($_wp_contextual_help['post']) )
-		$_wp_contextual_help['post'] =  __('<a href="http://codex.wordpress.org/Writing_Posts" target="_blank">Writing Posts</a>');
+
+	if ( !isset($_wp_contextual_help['post']) ) {
+		$help = drag_drop_help();
+		$help .= '<p>' . __('<a href="http://codex.wordpress.org/Writing_Posts" target="_blank">Writing Posts</a>') . '</p>';
+		$_wp_contextual_help['post'] = $help;
+	}
+
+	if ( !isset($_wp_contextual_help['page']) ) {
+		$help = drag_drop_help();
+		$_wp_contextual_help['page'] = $help;
+	}
+
+	if ( !isset($_wp_contextual_help['dashboard']) ) {
+		$help = drag_drop_help();
+		$_wp_contextual_help['dashboard'] = $help;
+	}
+
+	if ( !isset($_wp_contextual_help['link']) ) {
+		$help = drag_drop_help();
+		$_wp_contextual_help['link'] = $help;
+	}
+
 	if ( !isset($_wp_contextual_help['options-general']) )
 		$_wp_contextual_help['options-general'] =  __('<a href="http://codex.wordpress.org/Settings_General_SubPanel" target="_blank">General Settings</a>');
+
 	$_wp_contextual_help = apply_filters('contextual_help_list', $_wp_contextual_help, $screen); 
 	?>
 	<div id="contextual-help-wrap" class="hidden">
@@ -3327,14 +3410,22 @@ function add_contextual_help($screen, $help) {
 	$_wp_contextual_help[$screen] = $help;
 }
 
-function screen_icon() {
+function drag_drop_help() {
+	return '
+	<p>' .	__('Most of the modules on this screen can be moved. If you hover your mouse over the title bar of a module you’ll notice the 4 arrow cursor appears to let you know it is movable. Click on it, hold down the mouse button and start dragging the module to a new location. As you drag the module, notice the dotted gray box that also moves. This box indicates where the module will be placed when you release the mouse button.') . '</p>
+	<p>' . __('The same modules can be expanded and collapsed by clicking once on their title bar and also completely hidden from the Screen Options tab.') . '</p>
+';
+}
+
+function screen_icon($name = '') {
 	global $parent_file, $hook_suffix;
 
-	if ( isset($parent_file) && !empty($parent_file) )
-		$name = substr($parent_file, 0, -4);
-	else
-		$name = str_replace(array('.php', '-new', '-add'), '', $hook_suffix);
-
+	if ( empty($name) ) {
+		if ( isset($parent_file) && !empty($parent_file) )
+			$name = substr($parent_file, 0, -4);
+		else
+			$name = str_replace(array('.php', '-new', '-add'), '', $hook_suffix);
+	}
 	unset($hook_suffix);
 ?>
 	<div id="icon-<?php echo $name; ?>" class="icon32"><br /></div>

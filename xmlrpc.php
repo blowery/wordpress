@@ -1061,6 +1061,7 @@ class wp_xmlrpc_server extends IXR_Server {
 			"author_url"			=> $comment->comment_author_url,
 			"author_email"			=> $comment->comment_author_email,
 			"author_ip"				=> $comment->comment_author_IP,
+			"type"					=> $comment->comment_type,
 		);
 
 		return $comment_struct;
@@ -2760,7 +2761,7 @@ class wp_xmlrpc_server extends IXR_Server {
 			foreach ( $cats as $cat ) {
 				$struct['categoryId'] = $cat->term_id;
 				$struct['parentId'] = $cat->parent;
-				$struct['description'] = $cat->name;
+				$struct['description'] = $cat->description;
 				$struct['categoryName'] = $cat->name;
 				$struct['htmlUrl'] = wp_specialchars(get_category_link($cat->term_id));
 				$struct['rssUrl'] = wp_specialchars(get_category_feed_link($cat->term_id, 'rss2'));

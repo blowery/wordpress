@@ -449,7 +449,7 @@ function wp_link_pages($args = '') {
 						else
 							$output .= '<a href="' . trailingslashit(get_permalink()) . user_trailingslashit($i, 'single_paged') . '">';
 					}
-					
+
 				}
 				$output .= $link_before;
 				$output .= $j;
@@ -554,7 +554,8 @@ function wp_dropdown_pages($args = '') {
 	$defaults = array(
 		'depth' => 0, 'child_of' => 0,
 		'selected' => 0, 'echo' => 1,
-		'name' => 'page_id', 'show_option_none' => ''
+		'name' => 'page_id', 'show_option_none' => '', 'show_option_no_change' => '',
+		'option_none_value' => ''
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -564,9 +565,11 @@ function wp_dropdown_pages($args = '') {
 	$output = '';
 
 	if ( ! empty($pages) ) {
-		$output = "<select name='$name' id='$name'>\n";
+		$output = "<select name=\"$name\" id=\"$name\">\n";
+		if ( $show_option_no_change )
+			$output .= "\t<option value=\"-1\">$show_option_no_change</option>";
 		if ( $show_option_none )
-			$output .= "\t<option value=''>$show_option_none</option>\n";
+			$output .= "\t<option value=\"$option_none_value\">$show_option_none</option>\n";
 		$output .= walk_page_dropdown_tree($pages, $depth, $r);
 		$output .= "</select>\n";
 	}
@@ -666,6 +669,8 @@ function wp_page_menu( $args = array() ) {
 
 	$menu = '';
 
+	$list_args = $args;
+
 	// Show Home in the menu
 	if ( isset($args['show_home']) && ! empty($args['show_home']) ) {
 		if ( true === $args['show_home'] || '1' === $args['show_home'] || 1 === $args['show_home'] )
@@ -673,12 +678,20 @@ function wp_page_menu( $args = array() ) {
 		else
 			$text = $args['show_home'];
 		$class = '';
-		if ( is_home() && !is_paged() )
+		if ( is_front_page() && !is_paged() )
 			$class = 'class="current_page_item"';
 		$menu .= '<li ' . $class . '><a href="' . get_option('home') . '">' . $link_before . $text . $link_after . '</a></li>';
+		// If the front page is a page, add it to the exclude list
+		if (get_option('show_on_front') == 'page') {
+			if ( !empty( $list_args['exclude'] ) ) {
+				$list_args['exclude'] .= ',';
+			} else {
+				$list_args['exclude'] = '';
+			}
+			$list_args['exclude'] .= get_option('page_on_front');
+		}
 	}
 
-	$list_args = $args;
 	$list_args['echo'] = false;
 	$list_args['title_li'] = '';
 	$menu .= str_replace( array( "\r", "\n", "\t" ), '', wp_list_pages($list_args) );
@@ -686,7 +699,7 @@ function wp_page_menu( $args = array() ) {
 	if ( $menu )
 		$menu = '<ul>' . $menu . '</ul>';
 
-	$menu = '<div id="' . $args['menu_class'] . '">' . $menu . "</div>\n";
+	$menu = '<div class="' . $args['menu_class'] . '">' . $menu . "</div>\n";
 	$menu = apply_filters( 'wp_page_menu', $menu, $args ); 
 	if ( $args['echo'] )
 		echo $menu;

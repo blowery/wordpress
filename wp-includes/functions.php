@@ -423,8 +423,9 @@ function form_option( $option ) {
 /**
  * Retrieve all autoload options or all options, if no autoloaded ones exist.
  *
- * This is different from wp_load_alloptions(), in this that function does not
- * cache all options and will retrieve all options from the database every time
+ * This is different from wp_load_alloptions() in that this function does not
+ * cache its results and will retrieve all options from the database every time
+ * 
  * it is called.
  *
  * @since 1.0.0
@@ -668,31 +669,34 @@ function wp_user_settings() {
 	if ( ! is_admin() )
 		return;
 
+	if ( defined('DOING_AJAX') )
+		return;
+
 	if ( ! $user = wp_get_current_user() )
 		return;
 
-	$settings = get_user_option( 'user-settings', $user->ID );
+	$settings = get_user_option( 'user-settings', $user->ID, false );
 
-	if ( isset($_COOKIE['wp-settings-'.$user->ID]) ) {
-		$cookie = preg_replace( '/[^A-Za-z0-9=&_]/', '', $_COOKIE['wp-settings-'.$user->ID] );
+	if ( isset( $_COOKIE['wp-settings-' . $user->ID] ) ) {
+		$cookie = preg_replace( '/[^A-Za-z0-9=&_]/', '', $_COOKIE['wp-settings-' . $user->ID] );
 
-		if ( ! empty($cookie) && strpos($cookie, '=') ) {
+		if ( ! empty( $cookie ) && strpos( $cookie, '=' ) ) {
 			if ( $cookie == $settings )
 				return;
 
-			$last_time = (int) get_user_option( 'user-settings-time', $user->ID );
-			$saved = isset($_COOKIE['wp-settings-time-'.$user->ID]) ? preg_replace( '/[^0-9]/', '', $_COOKIE['wp-settings-time-'.$user->ID] ) : 0;
+			$last_time = (int) get_user_option( 'user-settings-time', $user->ID, false );
+			$saved = isset( $_COOKIE['wp-settings-time-' . $user->ID]) ? preg_replace( '/[^0-9]/', '', $_COOKIE['wp-settings-time-' . $user->ID] ) : 0;
 
 			if ( $saved > $last_time ) {
-				update_user_option( $user->ID, 'user-settings', $cookie, true );
-				update_user_option( $user->ID, 'user-settings-time', time() - 5, true );
+				update_user_option( $user->ID, 'user-settings', $cookie, false );
+				update_user_option( $user->ID, 'user-settings-time', time() - 5, false );
 				return;
 			}
 		}
 	}
 
-	setcookie('wp-settings-'.$user->ID, $settings, time() + 31536000, SITECOOKIEPATH);
-	setcookie('wp-settings-time-'.$user->ID, time(), time() + 31536000, SITECOOKIEPATH);
+	setcookie( 'wp-settings-' . $user->ID, $settings, time() + 31536000, SITECOOKIEPATH );
+	setcookie( 'wp-settings-time-' . $user->ID, time(), time() + 31536000, SITECOOKIEPATH );
 }
 
 /**
@@ -1744,9 +1748,9 @@ function wp_mkdir_p( $target ) {
 	}
 
 	// If the above failed, attempt to create the parent node, then try again.
-	if ( wp_mkdir_p( dirname( $target ) ) )
+	if ( ( $target != '/' ) && ( wp_mkdir_p( dirname( $target ) ) ) )
 		return wp_mkdir_p( $target );
-
+	
 	return false;
 }
 
@@ -2286,6 +2290,7 @@ if ( ( $wp_locale ) && ( 'rtl' == $wp_locale->text_direction ) ) : ?>
 <body id="error-page">
 <?php endif; ?>
 	<?php echo $message; ?>
+	<?php if ( strlen($message) < 512) echo str_repeat(' ', 512-strlen($message)); ?>
 </body>
 </html>
 <?php
