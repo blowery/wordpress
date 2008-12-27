@@ -1,5 +1,5 @@
 
-switchEditors = {
+var switchEditors = {
 
 	mode : '',
 
@@ -21,7 +21,7 @@ switchEditors = {
 			tinyMCE.execCommand("mceAddControl", false, "content");
 		}
 	},
-	
+
 	saveCallback : function(el, content, body) {
 
 		if ( tinyMCE.activeEditor.isHidden() )
@@ -169,4 +169,4 @@ switchEditors = {
 
 		return pee;
 	}
-}
+};

@@ -553,7 +553,7 @@ function add_menu_page( $page_title, $menu_title, $access_level, $file, $functio
 
 	if ( empty($icon_url) )
 		$icon_url = 'images/generic.png';
-	
+
 	$menu[] = array ( $menu_title, $access_level, $file, $page_title, 'menu-top ' . $hookname, $hookname, $icon_url );
 
 	return $hookname;
@@ -641,7 +641,7 @@ function add_submenu_page( $parent, $page_title, $menu_title, $access_level, $fi
 /**
  * Add sub menu page to the tools main menu.
  *
- * @param string $page_title 
+ * @param string $page_title
  * @param unknown_type $menu_title
  * @param unknown_type $access_level
  * @param unknown_type $file
@@ -1041,9 +1041,11 @@ function remove_option_whitelist( $del_options, $options = '' ) {
 	}
 	foreach( $del_options as $page => $keys ) {
 		foreach( $keys as $key ) {
-			$pos = array_search( $key, $whitelist_options[ $page ] );
-			if( $pos !== false )
-				unset( $whitelist_options[ $page ][ $pos ] );
+			if ( isset($whitelist_options[ $page ]) && is_array($whitelist_options[ $page ]) ) {
+				$pos = array_search( $key, $whitelist_options[ $page ] );
+				if( $pos !== false )
+					unset( $whitelist_options[ $page ][ $pos ] );
+			}
 		}
 	}
 	return $whitelist_options;

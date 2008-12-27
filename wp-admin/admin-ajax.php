@@ -44,6 +44,11 @@ case 'ajax-tag-search' :
 		die('-1');
 
 	$s = $_GET['q']; // is this slashed already?
+	
+	if ( isset($_GET['tax']) )
+		$taxonomy = sanitize_title($_GET['tax']);
+	else
+		die('0');
 
 	if ( false !== strpos( $s, ',' ) ) {
 		$s = explode( ',', $s );
@@ -52,7 +57,9 @@ case 'ajax-tag-search' :
 	$s = trim( $s );
 	if ( strlen( $s ) < 2 )
 		die; // require 2 chars for matching
-	$results = $wpdb->get_col( "SELECT t.name FROM $wpdb->term_taxonomy AS tt INNER JOIN $wpdb->terms AS t ON tt.term_id = t.term_id WHERE tt.taxonomy = 'post_tag' AND t.name LIKE ('%". $s . "%')" );
+
+	$results = $wpdb->get_col( "SELECT t.name FROM $wpdb->term_taxonomy AS tt INNER JOIN $wpdb->terms AS t ON tt.term_id = t.term_id WHERE tt.taxonomy = '$taxonomy' AND t.name LIKE ('%" . $s . "%')" );
+
 	echo join( $results, "\n" );
 	die;
 	break;
@@ -63,24 +70,85 @@ default :
 endswitch;
 endif;
 
+/**
+ * Sends back current comment total and new page links if they need to be updated.
+ *
+ * Contrary to normal success AJAX response ("1"), die with time() on success.
+ *
+ * @since 2.7
+ *
+ * @param int $comment_id
+ * @return die
+ */
+function _wp_ajax_delete_comment_response( $comment_id ) {
+	$total = (int) @$_POST['_total'];
+	$per_page = (int) @$_POST['_per_page'];
+	$page = (int) @$_POST['_page'];
+	$url = clean_url( @$_POST['_url'], null, 'url' );
+	// JS didn't send us everything we need to know.  Just die with success message
+	if ( !$total || !$per_page || !$page || !$url )
+		die( (string) time() );
+
+	if ( --$total < 0 ) // Take the total from POST and decrement it (since we just deleted one)
+		$total = 0;
+
+	if ( 0 != $total % $per_page && 1 != mt_rand( 1, $per_page ) ) // Only do the expensive stuff on a page-break, and about 1 other time per page
+		die( (string) time() );
+
+	$status = 'total_comments'; // What type of comment count are we looking for?
+	$parsed = parse_url( $url );
+	if ( isset( $parsed['query'] ) ) {
+		parse_str( $parsed['query'], $query_vars );
+		if ( !empty( $query_vars['comment_status'] ) )
+			$status = $query_vars['comment_status'];
+	}
+
+	$comment_count = wp_count_comments();
+	$time = time(); // The time since the last comment count
+
+	if ( isset( $comment_count->$status ) ) // We're looking for a known type of comment count
+		$total = $comment_count->$status;
+	// else use the decremented value from above
+
+	$page_links = paginate_links( array(
+		'base' => add_query_arg( 'apage', '%#%', $url ),
+		'format' => '',
+		'prev_text' => __('&laquo;'),
+		'next_text' => __('&raquo;'),
+		'total' => ceil($total / $per_page),
+		'current' => $page
+	) );
+	$x = new WP_Ajax_Response( array(
+		'what' => 'comment',
+		'id' => $comment_id, // here for completeness - not used
+		'supplemental' => array(
+			'pageLinks' => $page_links,
+			'total' => $total,
+			'time' => $time
+		)
+	) );
+	$x->send();
+}
+
 $id = isset($_POST['id'])? (int) $_POST['id'] : 0;
 switch ( $action = $_POST['action'] ) :
-case 'delete-comment' :
+case 'delete-comment' : // On success, die with time() instead of 1
 	check_ajax_referer( "delete-comment_$id" );
 	if ( !$comment = get_comment( $id ) )
-		die('1');
+		die( (string) time() );
 	if ( !current_user_can( 'edit_post', $comment->comment_post_ID ) )
 		die('-1');
 
 	if ( isset($_POST['spam']) && 1 == $_POST['spam'] ) {
 		if ( 'spam' == wp_get_comment_status( $comment->comment_ID ) )
-			die('1');
+			die( (string) time() );
 		$r = wp_set_comment_status( $comment->comment_ID, 'spam' );
 	} else {
 		$r = wp_delete_comment( $comment->comment_ID );
 	}
-
-	die( $r ? '1' : '0' );
+	if ( $r ) // Decide if we need to send back '1' or a more complicated response including page links and comment counts
+		_wp_ajax_delete_comment_response( $comment->comment_ID );
+	die( '0' );
 	break;
 case 'delete-cat' :
 	check_ajax_referer( "delete-category_$id" );
@@ -195,7 +263,7 @@ case 'delete-page' :
 	else
 		die('0');
 	break;
-case 'dim-comment' :
+case 'dim-comment' : // On success, die with time() instead of 1
 	if ( !$comment = get_comment( $id ) )
 		die('0');
 
@@ -206,18 +274,21 @@ case 'dim-comment' :
 
 	$current = wp_get_comment_status( $comment->comment_ID );
 	if ( $_POST['new'] == $current )
-		die('1');
+		die( (string) time() );
 
+	$r = 0;
 	if ( in_array( $current, array( 'unapproved', 'spam' ) ) ) {
 		check_ajax_referer( "approve-comment_$id" );
 		if ( wp_set_comment_status( $comment->comment_ID, 'approve' ) )
-			die('1');
+			$r = 1;
 	} else {
 		check_ajax_referer( "unapprove-comment_$id" );
 		if ( wp_set_comment_status( $comment->comment_ID, 'hold' ) )
-			die('1');
+			$r = 1;
 	}
-	die('0');
+	if ( $r ) // Decide if we need to send back '1' or a more complicated response including page links and comment counts
+		_wp_ajax_delete_comment_response( $comment->comment_ID );
+	die( '0' );
 	break;
 case 'add-category' : // On the Fly
 	check_ajax_referer( $action );
@@ -426,11 +497,16 @@ case 'get-tagcloud' :
 	if ( !current_user_can( 'manage_categories' ) )
 		die('-1');
 
-	$tags = get_tags( array( 'number' => 45, 'orderby' => 'count', 'order' => 'DESC' ) );
-	
-	if ( empty( $tags ) )
+	if ( isset($_POST['tax']) )
+		$taxonomy = sanitize_title($_POST['tax']);
+	else
 		die('0');
 	
+	$tags = get_terms( $taxonomy, array( 'number' => 45, 'orderby' => 'count', 'order' => 'DESC' ) );
+
+	if ( empty( $tags ) )
+		die( __('No tags found!') );
+
 	foreach ( $tags as $key => $tag ) {
 		$tags[ $key ]->link = '#';
 		$tags[ $key ]->id = $tag->term_id;
@@ -440,9 +516,9 @@ case 'get-tagcloud' :
 
 	if ( empty($return) )
 		die('0');
-	
+
 	echo $return;
-	
+
 	exit;
 	break;
 case 'add-comment' :
@@ -712,7 +788,6 @@ case 'autosave' : // The name of this action is hardcoded in edit_post()
 	global $current_user;
 
 	$_POST['post_category'] = explode(",", $_POST['catslist']);
-	$_POST['tags_input'] = explode(",", $_POST['tags_input']);
 	if($_POST['post_type'] == 'page' || empty($_POST['post_category']))
 		unset($_POST['post_category']);
 

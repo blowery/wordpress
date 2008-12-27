@@ -29,6 +29,26 @@ wp_admin_css( 'css/ie' );
 <script type="text/javascript">
 //<![CDATA[
 addLoadEvent = function(func) {if (typeof jQuery != "undefined") jQuery(document).ready(func); else if (typeof wpOnload!='function'){wpOnload=func;} else {var oldonload=wpOnload; wpOnload=function(){oldonload();func();}}};
+
+function convertEntities(o) {
+	var c = function(s) {
+		if (/&[^;]+;/.test(s)) {
+			var e = document.createElement("div");
+			e.innerHTML = s;
+			return !e.firstChild ? s : e.firstChild.nodeValue;
+		}
+		return s;
+	}
+
+	if ( typeof o === 'string' )
+		return c(o);
+	else if ( typeof o === 'object' )
+		for (var v in o) {
+			if ( typeof o[v] === 'string' )
+				o[v] = c(o[v]);
+		}
+	return o;
+};
 //]]>
 </script>
 <?php
@@ -52,7 +72,16 @@ do_action('admin_print_scripts');
 do_action("admin_head-$hook_suffix");
 do_action('admin_head');
 
-if ( $is_iphone ) { ?>
+wp_print_styles('no-js');
+?>
+<script type="text/javascript">
+(function(){
+	var nojs = document.getElementById('no-js');
+	nojs.parentNode.removeChild(nojs);
+})();
+</script>
+
+<?php if ( $is_iphone ) { ?>
 <style type="text/css">.row-actions{visibility:visible;}</style>
 <?php } ?>
 </head>
@@ -63,8 +92,14 @@ if ( $is_iphone ) { ?>
 <div id="wphead">
 <?php
 $blog_name = get_bloginfo('name', 'display');
-if ( '' == $blog_name )
+if ( '' == $blog_name ) {
 	$blog_name = '&nbsp;';
+} else {
+	$blog_name_excerpt = wp_html_excerpt($blog_name, 40);
+	if ( $blog_name != $blog_name_excerpt )
+		$blog_name_excerpt = trim($blog_name_excerpt) . '&hellip;';
+	$blog_name = $blog_name_excerpt;
+}
 $title_class = '';
 if ( function_exists('mb_strlen') ) {
 	if ( mb_strlen($blog_name, 'UTF-8') > 30 )
@@ -75,7 +110,7 @@ if ( function_exists('mb_strlen') ) {
 }
 ?>
 
-<img id="header-logo" src="../wp-includes/images/blank.gif" alt="" width="32" height="32" /> <h1 <?php echo $title_class ?>><a href="<?php echo trailingslashit( get_bloginfo('url') ); ?>" title="<?php _e('Visit site') ?>"><?php echo $blog_name ?></a></h1>
+<img id="header-logo" src="../wp-includes/images/blank.gif" alt="" width="32" height="32" /> <h1 <?php echo $title_class ?>><a href="<?php echo trailingslashit( get_bloginfo('url') ); ?>" title="<?php _e('Visit site') ?>"><?php echo $blog_name ?> <span>&larr; <?php _e('Visit site') ?></span></a></h1>
 
 <div id="wphead-info">
 <div id="user_info">
@@ -87,6 +122,10 @@ if ( function_exists('mb_strlen') ) {
 <?php favorite_actions(); ?>
 </div>
 </div>
+
+<?php if ( get_user_setting('mfold') == 'f' ) { ?>
+<script type="text/javascript">jQuery('#wpcontent').addClass('folded');</script>
+<?php } ?>
 
 <div id="wpbody">
 <?php require(ABSPATH . 'wp-admin/menu-header.php'); ?>

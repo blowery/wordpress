@@ -19,6 +19,7 @@ function list_core_update( $update ) {
 	if ( !isset($update->response) || 'latest' == $update->response )
 		$current = true;
 	$submit = __('Upgrade Automatically');
+	$form_action = 'update-core.php?action=do-core-upgrade';
 	if ( 'development' == $update->response ) {
 		$message = __('You are using a development version of WordPress.  You can upgrade to the latest nightly build automatically or download the nightly build and install it manually:');
 		$download = __('Download nightly build');
@@ -26,6 +27,7 @@ function list_core_update( $update ) {
 		if ( $current ) {
 			$message = sprintf(__('You have the latest version of WordPress. You do not need to upgrade. However, if you want to re-install version %s, you can do so automatically or download the package and re-install manually:'), $version_string);
 			$submit = __('Re-install Automatically');
+			$form_action = 'update-core.php?action=do-core-reinstall';
 		} else {
 			$message = 	sprintf(__('You can upgrade to version %s automatically or download the package and install it manually:'), $version_string);
 		}
@@ -35,7 +37,7 @@ function list_core_update( $update ) {
 	echo '<p>';
 	echo $message;
 	echo '</p>';
-	echo '<form method="post" action="update-core.php?action=do-core-upgrade" name="upgrade" class="upgrade">';
+	echo '<form method="post" action="' . $form_action . '" name="upgrade" class="upgrade">';
 	wp_nonce_field('upgrade-core');
 	echo '<p>';
 	echo '<input id="upgrade" class="button" type="submit" value="' . $submit . '" name="upgrade" />&nbsp;';
@@ -49,18 +51,18 @@ function list_core_update( $update ) {
 			echo '<input id="undismiss" class="button" type="submit" value="' . attribute_escape(__('Bring back this update')) . '" name="undismiss" />';
 	echo '</p>';
 	echo '</form>';
-	
+
 }
 
 function dismissed_updates() {
 	$dismissed = get_core_updates( array( 'dismissed' => true, 'available' => false ) );
 	if ( $dismissed ) {
-		
+
 		$show_text = js_escape(__('Show hidden updates'));
 		$hide_text = js_escape(__('Hide hidden updates'));
 	?>
 	<script type="text/javascript">
-		
+
 		jQuery(function($) {
 			$('dismissed-updates').show();
 			$('#show-dismissed').toggle(function(){$(this).text('<?php echo $hide_text; ?>');}, function() {$(this).text('<?php echo $show_text; ?>')});
@@ -76,7 +78,7 @@ function dismissed_updates() {
 			echo '</li>';
 		}
 		echo '</ul>';
-	}	
+	}
 }
 
 /**
@@ -99,9 +101,9 @@ function core_upgrade_preamble() {
 		echo '</h3>';
 	} else {
 		echo '<div class="updated fade"><p>';
-		_e('<strong>Important:</strong> before upgrading, please <a href="http://codex.wordpress.org/WordPress_Backups">backup your database and files</a>.');  
+		_e('<strong>Important:</strong> before upgrading, please <a href="http://codex.wordpress.org/WordPress_Backups">backup your database and files</a>.');
 		echo '</p></div>';
-	
+
 		echo '<h3 class="response">';
 		_e( 'There is a new version of WordPress available for upgrade' );
 		echo '</h3>';
@@ -129,19 +131,19 @@ function core_upgrade_preamble() {
  *
  * @return null
  */
-function do_core_upgrade() {
+function do_core_upgrade( $reinstall = false ) {
 	global $wp_filesystem;
-	
+
 	$url = wp_nonce_url('update-core.php?action=do-core-upgrade', 'upgrade-core');
 	if ( false === ($credentials = request_filesystem_credentials($url)) )
 		return;
-		
+
 	$version = isset( $_POST['version'] )? $_POST['version'] : false;
 	$locale = isset( $_POST['locale'] )? $_POST['locale'] : 'en_US';
 	$update = find_core_update( $version, $locale );
 	if ( !$update )
 		return;
-		
+
 
 	if ( ! WP_Filesystem($credentials) ) {
 		request_filesystem_credentials($url, '', true); //Failed to connect, Error and request again
@@ -158,6 +160,9 @@ function do_core_upgrade() {
 		echo '</div>';
 		return;
 	}
+
+	if ( $reinstall )
+		$update->response = 'reinstall';
 
 	$result = wp_update_core($update, 'show_message');
 
@@ -192,14 +197,14 @@ function do_undismiss_core_update() {
 }
 
 $action = isset($_GET['action']) ? $_GET['action'] : 'upgrade-core';
-	
+
 if ( 'upgrade-core' == $action ) {
 	$title = __('Upgrade WordPress');
 	$parent_file = 'tools.php';
 	require_once('admin-header.php');
 	core_upgrade_preamble();
 	include('admin-footer.php');
-} elseif ( 'do-core-upgrade' == $action ) {
+} elseif ( 'do-core-upgrade' == $action || 'do-core-reinstall' == $action ) {
 	check_admin_referer('upgrade-core');
 	$title = __('Upgrade WordPress');
 	$parent_file = 'tools.php';
@@ -210,7 +215,12 @@ if ( 'upgrade-core' == $action ) {
 	elseif ( isset( $_POST['undismiss'] ) )
 	do_undismiss_core_update();
 	require_once('admin-header.php');
+	if ( 'do-core-reinstall' == $action )
+		$reinstall = true;
+	else
+		$reinstall = false;
 	if ( isset( $_POST['upgrade'] ) )
-		do_core_upgrade();
+		do_core_upgrade($reinstall);
 	include('admin-footer.php');
+
 }?>

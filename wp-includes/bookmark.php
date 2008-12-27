@@ -33,7 +33,7 @@ function get_bookmark($bookmark, $output = OBJECT, $filter = 'raw') {
 			$_bookmark = & $GLOBALS['link'];
 		} elseif ( ! $_bookmark = wp_cache_get($bookmark, 'bookmark') ) {
 			$_bookmark = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->links WHERE link_id = %d LIMIT 1", $bookmark));
-			$_bookmark->link_category = array_unique( wp_get_object_terms($_bookmark->link_id, 'link_category', 'fields=ids') );			
+			$_bookmark->link_category = array_unique( wp_get_object_terms($_bookmark->link_id, 'link_category', 'fields=ids') );
 			wp_cache_add($_bookmark->link_id, $_bookmark, 'bookmark');
 		}
 	}
@@ -142,10 +142,15 @@ function get_bookmarks($args = '') {
 	$r = wp_parse_args( $args, $defaults );
 	extract( $r, EXTR_SKIP );
 
+	$cache = array();
 	$key = md5( serialize( $r ) );
-	if ( $cache = wp_cache_get( 'get_bookmarks', 'bookmark' ) )
-		if ( isset( $cache[ $key ] ) )
+	if ( $cache = wp_cache_get( 'get_bookmarks', 'bookmark' ) ) {
+		if ( is_array($cache) && isset( $cache[ $key ] ) )
 			return apply_filters('get_bookmarks', $cache[ $key ], $r );
+	}
+
+	if ( !is_array($cache) )
+		$cache = array();
 
 	$inclusions = '';
 	if ( !empty($include) ) {

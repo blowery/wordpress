@@ -662,13 +662,18 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 	$credentials['hostname'] = defined('FTP_HOST') ? FTP_HOST : (!empty($_POST['hostname']) ? $_POST['hostname'] : $credentials['hostname']);
 	$credentials['username'] = defined('FTP_USER') ? FTP_USER : (!empty($_POST['username']) ? $_POST['username'] : $credentials['username']);
 	$credentials['password'] = defined('FTP_PASS') ? FTP_PASS : (!empty($_POST['password']) ? $_POST['password'] : $credentials['password']);
-	
+
 	// Check to see if we are setting the public/private keys for ssh
 	$credentials['public_key'] = defined('FTP_PUBKEY') ? FTP_PUBKEY : (!empty($_POST['public_key']) ? $_POST['public_key'] : $credentials['public_key']);
-	$credentials['private_key'] = defined('FTP_PRIKEY') ? FTP_PRIKEY : (!empty($_POST['private_key']) ? $_POST['private_key'] : $credentials['private_key']);		
-	
+	$credentials['private_key'] = defined('FTP_PRIKEY') ? FTP_PRIKEY : (!empty($_POST['private_key']) ? $_POST['private_key'] : $credentials['private_key']);
+
+	//sanitize the hostname, Some people might pass in odd-data:
+	$credentials['hostname'] = preg_replace('|\w+://|', '', $credentials['hostname']); //Strip any schemes off
+
 	if ( strpos($credentials['hostname'], ':') )
 		list( $credentials['hostname'], $credentials['port'] ) = explode(':', $credentials['hostname'], 2);
+	else
+		unset($credentials['port']);
 
 	if ( defined('FTP_SSH') || (isset($_POST['connection_type']) && 'ssh' == $_POST['connection_type']) )
 		$credentials['connection_type'] = 'ssh';
@@ -679,7 +684,10 @@ function request_filesystem_credentials($form_post, $type = '', $error = false) 
 
 	if ( ! $error && !empty($credentials['password']) && !empty($credentials['username']) && !empty($credentials['hostname']) ) {
 		$stored_credentials = $credentials;
-		unset($stored_credentials['password'], $stored_credentials['private_key'], $stored_credentials['public_key']);
+		if ( !empty($stored_credentials['port']) ) //save port as part of hostname to simplify above code.
+			$stored_credentials['hostname'] .= ':' . $stored_credentials['port'];
+
+		unset($stored_credentials['password'], $stored_credentials['port'], $stored_credentials['private_key'], $stored_credentials['public_key']);
 		update_option('ftp_credentials', $stored_credentials);
 		return $credentials;
 	}
@@ -704,7 +712,7 @@ jQuery(function($){
 	});
 	jQuery("#ftp, #ftps").click(function () {
 		jQuery("#ssh_keys").hide();
-	});	
+	});
 });
 -->
 </script>

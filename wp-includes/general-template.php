@@ -111,7 +111,7 @@ function get_search_form() {
 	$form = '<form method="get" id="searchform" action="' . get_option('home') . '/" >
 	<label class="hidden" for="s">' . __('Search for:') . '</label>
 	<div><input type="text" value="' . attribute_escape(apply_filters('the_search_query', get_search_query())) . '" name="s" id="s" />
-	<input type="submit" id="searchsubmit" value="'.attribute_escape(__('Search')).'" /> 
+	<input type="submit" id="searchsubmit" value="'.attribute_escape(__('Search')).'" />
 	</div>
 	</form>';
 
@@ -144,13 +144,13 @@ function wp_loginout() {
  * @since 2.7
  * @uses wp_nonce_url() To protect against CSRF
  * @uses site_url() To generate the log in URL
- * 
+ *
  * @param string $redirect Path to redirect to on logout.
  */
 function wp_logout_url($redirect = '') {
 	if ( strlen($redirect) )
 		$redirect = "&redirect_to=$redirect";
-	
+
 	return wp_nonce_url( site_url("wp-login.php?action=logout$redirect", 'login'), 'log-out' );
 }
 
@@ -161,13 +161,13 @@ function wp_logout_url($redirect = '') {
  *
  * @since 2.7
  * @uses site_url() To generate the log in URL
- * 
+ *
  * @param string $redirect Path to redirect to on login.
  */
 function wp_login_url($redirect = '') {
 	if ( strlen($redirect) )
 		$redirect = "?redirect_to=$redirect";
-	
+
 	return site_url("wp-login.php$redirect", 'login');
 }
 
@@ -176,7 +176,7 @@ function wp_login_url($redirect = '') {
  *
  * Display a link which allows the user to navigate to the registration page if
  * not logged in and registration is enabled or to the dashboard if logged in.
- * 
+ *
  * @since 1.5.0
  * @uses apply_filters() Calls 'register' hook on register / admin link content.
  *
@@ -448,9 +448,9 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 	}
 
 	if ( is_404() ) {
-		$title = __('Page not found');	
+		$title = __('Page not found');
 	}
-	
+
 	$prefix = '';
 	if ( !empty($title) )
 		$prefix = " $sep ";
@@ -872,7 +872,7 @@ function wp_get_archives($args = '') {
 	if ( $echo )
 		echo $output;
 	else
-		return $output; 
+		return $output;
 }
 
 /**
@@ -902,13 +902,17 @@ function calendar_week_mod($num) {
 function get_calendar($initial = true) {
 	global $wpdb, $m, $monthnum, $year, $wp_locale, $posts;
 
+	$cache = array();
 	$key = md5( $m . $monthnum . $year );
 	if ( $cache = wp_cache_get( 'get_calendar', 'calendar' ) ) {
-		if ( isset( $cache[ $key ] ) ) {
+		if ( is_array($cache) && isset( $cache[ $key ] ) ) {
 			echo $cache[ $key ];
 			return;
 		}
 	}
+
+	if ( !is_array($cache) )
+		$cache = array();
 
 	ob_start();
 	// Quick check. If we have no posts at all, abort!
@@ -1093,7 +1097,7 @@ function get_calendar($initial = true) {
 
 /**
  * Purge the cached results of get_calendar.
- * 
+ *
  * @see get_calendar
  * @since 2.1.0
  */
@@ -1169,12 +1173,13 @@ function the_date($d='', $before='', $after='', $echo = true) {
 			$the_date .= mysql2date($d, $post->post_date);
 		$the_date .= $after;
 		$previousday = $day;
-	}
+
 	$the_date = apply_filters('the_date', $the_date, $d, $before, $after);
 	if ( $echo )
 		echo $the_date;
 	else
 		return $the_date;
+	}
 }
 
 /**
@@ -1488,7 +1493,7 @@ function the_editor($content, $id = 'content', $prev_id = 'title', $media_button
 
 	$richedit =  user_can_richedit();
 	$rows = "rows='$rows'";
-	
+
 	if ( $richedit || $media_buttons ) { ?>
 	<div id="editor-toolbar">
 	<?php if ( $richedit ) {
@@ -1563,7 +1568,7 @@ function get_search_query() {
 
 /**
  * Display the contents of the search query variable.
- * 
+ *
  * The search query string is passed through {@link attribute_escape()}
  * to ensure that it is safe for placing in an html attribute.
  *
@@ -1822,8 +1827,8 @@ function wp_admin_css( $file = 'wp-admin', $force_echo = false ) {
 }
 
 /**
- * Enqueues the default ThickBox js and css. 
- * 
+ * Enqueues the default ThickBox js and css.
+ *
  * If any of the settings need to be changed, this can be done with another js
  * file similar to media-upload.js and theme-preview.js. That file should
  * require array('thickbox') to ensure it is loaded after.

@@ -153,7 +153,7 @@ class WP_Http {
 			foreach ( array('streams', 'fsockopen', 'exthttp') as $transport ) {
 				if ( isset($working_transport[$transport]) )
 					$nonblocking_transport[] = &$working_transport[$transport];
-			}			
+			}
 		}
 
 		if ( isset($args['blocking']) && !$args['blocking'] )
@@ -222,7 +222,7 @@ class WP_Http {
 
 		$r = wp_parse_args( $args, $defaults );
 		$r = apply_filters( 'http_request_args', $r );
-		
+
 		if ( is_null( $r['headers'] ) )
 			$r['headers'] = array();
 
@@ -242,6 +242,7 @@ class WP_Http {
 		}
 
 		if ( is_null($r['body']) ) {
+			$r['headers']['Content-Length'] = 0;
 			$transports = WP_Http::_getTransport($r);
 		} else {
 			if ( is_array( $r['body'] ) || is_object( $r['body'] ) ) {
@@ -1062,7 +1063,7 @@ class WP_Http_Curl {
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
 	function test() {
-		if ( function_exists('curl_init') )
+		if ( function_exists('curl_init') && function_exists('curl_exec') )
 			return true;
 
 		return false;

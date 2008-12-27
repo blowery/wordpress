@@ -26,7 +26,7 @@
  *		of the bookmark.
  * 'show_images' - Default is 1 (integer). Whether to show link image if
  *		available.
- * 'show_name' - Default is 1 (integer). Whether to show link name if
+ * 'show_name' - Default is 0 (integer). Whether to show link name if
  *		available.
  * 'before' - Default is '<li>' (string). The html or text to prepend to each
  *		bookmarks.
@@ -97,7 +97,7 @@ function _walk_bookmarks($bookmarks, $args = '' ) {
 			$target = ' target="' . $target . '"';
 
 		$output .= '<a href="' . $the_link . '"' . $rel . $title . $target. '>';
-		
+
 		$output .= $link_before;
 
 		if ( $bookmark->link_image != null && $show_images ) {
@@ -107,12 +107,12 @@ function _walk_bookmarks($bookmarks, $args = '' ) {
 				$output .= "<img src=\"" . get_option('siteurl') . "$bookmark->link_image\" $alt $title />";
 
 			if ($show_name) $output .= $name;
-		} else { 
-			$output .= $name; 
+		} else {
+			$output .= $name;
 		}
 
 		$output .= $link_after;
-		
+
 		$output .= '</a>';
 
 		if ( $show_updated && $bookmark->recently_updated )

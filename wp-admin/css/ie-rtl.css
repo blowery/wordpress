@@ -44,13 +44,13 @@ div#dashboard-widgets {
 	padding-right: 0;
 	padding-left: 1px;
 }
-#tagchecklist span a {
+.tagchecklist span a {
 	margin: 4px -9px 0 0;
 }
 .widefat th input {
 	margin: 0 5px 0 0;
 }
-/* ---------- add by navid */ 
+/* ---------- add by navid */
 #TB_window {
 	width: 670px;
 	position: absolute;

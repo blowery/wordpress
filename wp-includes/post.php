@@ -203,7 +203,7 @@ function get_extended($post) {
  *
  * @param int|object $post Post ID or post object.
  * @param string $output Optional, default is Object. Either OBJECT, ARRAY_A, or ARRAY_N.
- * @param string $filter Optional, default is raw. 
+ * @param string $filter Optional, default is raw.
  * @return mixed Post data
  */
 function &get_post(&$post, $output = OBJECT, $filter = 'raw') {
@@ -215,11 +215,13 @@ function &get_post(&$post, $output = OBJECT, $filter = 'raw') {
 			$_post = & $GLOBALS['post'];
 		else
 			return $null;
-	} elseif ( is_object($post) ) {
+	} elseif ( is_object($post) && empty($post->filter) ) {
 		_get_post_ancestors($post);
 		wp_cache_add($post->ID, $post, 'posts');
 		$_post = &$post;
 	} else {
+		if ( is_object($post) )
+			$post = $post->ID;
 		$post = (int) $post;
 		if ( ! $_post = wp_cache_get($post, 'posts') ) {
 			$_post = $wpdb->get_row($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID = %d LIMIT 1", $post));
@@ -739,7 +741,7 @@ function get_post_custom_keys( $post_id = 0 ) {
 function get_post_custom_values( $key = '', $post_id = 0 ) {
 	$custom = get_post_custom($post_id);
 
-	return $custom[$key];
+	return isset($custom[$key]) ? $custom[$key] : null;
 }
 
 /**
@@ -792,12 +794,15 @@ function sanitize_post($post, $context = 'display') {
 			$post->ID = 0;
 		foreach ( array_keys(get_object_vars($post)) as $field )
 			$post->$field = sanitize_post_field($field, $post->$field, $post->ID, $context);
+		$post->filter = $context;
 	} else {
 		if ( !isset($post['ID']) )
 			$post['ID'] = 0;
 		foreach ( array_keys($post) as $field )
 			$post[$field] = sanitize_post_field($field, $post[$field], $post['ID'], $context);
+		$post['filter'] = $context;
 	}
+
 	return $post;
 }
 
@@ -1201,12 +1206,34 @@ function wp_get_post_categories( $post_id = 0, $args = array() ) {
  * @return array List of post tags.
  */
 function wp_get_post_tags( $post_id = 0, $args = array() ) {
+	return wp_get_post_terms( $post_id, 'post_tag', $args);
+}
+
+/**
+ * Retrieve the terms for a post.
+ *
+ * There is only one default for this function, called 'fields' and by default
+ * is set to 'all'. There are other defaults that can be override in
+ * {@link wp_get_object_terms()}.
+ *
+ * @package WordPress
+ * @subpackage Post
+ * @since 2.8.0
+ *
+ * @uses wp_get_object_terms() Gets the tags for returning. Args can be found here
+ *
+ * @param int $post_id Optional. The Post ID
+ * @param string $taxonomy The taxonomy for which to retrieve terms. Defaults to post_tag.
+ * @param array $args Optional. Overwrite the defaults
+ * @return array List of post tags.
+ */
+function wp_get_post_terms( $post_id = 0, $taxonomy = 'post_tag', $args = array() ) {
 	$post_id = (int) $post_id;
 
 	$defaults = array('fields' => 'all');
 	$args = wp_parse_args( $args, $defaults );
 
-	$tags = wp_get_object_terms($post_id, 'post_tag', $args);
+	$tags = wp_get_object_terms($post_id, $taxonomy, $args);
 
 	return $tags;
 }
@@ -1493,7 +1520,15 @@ function wp_insert_post($postarr = array(), $wp_error = false) {
 	}
 
 	wp_set_post_categories( $post_ID, $post_category );
-	wp_set_post_tags( $post_ID, $tags_input );
+	// old-style tags_input
+	if ( !empty($tags_input) )
+		wp_set_post_tags( $post_ID, $tags_input );
+	// new-style support for all tag-like taxonomies
+	if ( !empty($tax_input) ) {
+		foreach ( $tax_input as $taxonomy => $tags ) {
+			wp_set_post_terms( $post_ID, $tags, $taxonomy );			
+		}
+	}
 
 	$current_guid = get_post_field( 'guid', $post_ID );
 
@@ -1680,7 +1715,21 @@ function wp_add_post_tags($post_id = 0, $tags = '') {
  * @return bool|null Will return false if $post_id is not an integer or is 0. Will return null otherwise
  */
 function wp_set_post_tags( $post_id = 0, $tags = '', $append = false ) {
+	return wp_set_post_terms( $post_id, $tags, 'post_tag', $append);
+}
 
+/**
+ * Set the terms for a post.
+ *
+ * @since 2.8.0
+ * @uses wp_set_object_terms() Sets the tags for the post.
+ *
+ * @param int $post_id Post ID.
+ * @param string $tags The tags to set for the post, separated by commas.
+ * @param bool $append If true, don't delete existing tags, just add on. If false, replace the tags with the new tags.
+ * @return bool|null Will return false if $post_id is not an integer or is 0. Will return null otherwise
+ */
+function wp_set_post_terms( $post_id = 0, $tags = '', $taxonomy = 'post_tag', $append = false ) {
 	$post_id = (int) $post_id;
 
 	if ( !$post_id )
@@ -1688,8 +1737,9 @@ function wp_set_post_tags( $post_id = 0, $tags = '', $append = false ) {
 
 	if ( empty($tags) )
 		$tags = array();
-	$tags = (is_array($tags)) ? $tags : explode( ',', trim($tags, " \n\t\r\0\x0B,") );
-	wp_set_object_terms($post_id, $tags, 'post_tag', $append);
+
+	$tags = is_array($tags) ? $tags : explode( ',', trim($tags, " \n\t\r\0\x0B,") );
+	wp_set_object_terms($post_id, $tags, $taxonomy, $append);
 }
 
 /**
@@ -2077,13 +2127,17 @@ function &get_pages($args = '') {
 	$r = wp_parse_args( $args, $defaults );
 	extract( $r, EXTR_SKIP );
 
+	$cache = array();
 	$key = md5( serialize( compact(array_keys($defaults)) ) );
 	if ( $cache = wp_cache_get( 'get_pages', 'posts' ) ) {
-		if ( isset( $cache[ $key ] ) ) {
+		if ( is_array($cache) && isset( $cache[ $key ] ) ) {
 			$pages = apply_filters('get_pages', $cache[ $key ], $r );
 			return $pages;
 		}
 	}
+
+	if ( !is_array($cache) )
+		$cache = array();
 
 	$inclusions = '';
 	if ( !empty($include) ) {
@@ -2161,10 +2215,10 @@ function &get_pages($args = '') {
 			$where .= $wpdb->prepare(" AND $wpdb->postmeta.meta_value = %s", $meta_value);
 
 	}
-	
-	if ( $parent >= 0 ) 
-		$where .= $wpdb->prepare(' AND post_parent = %d ', $parent); 
-	
+
+	if ( $parent >= 0 )
+		$where .= $wpdb->prepare(' AND post_parent = %d ', $parent);
+
 	$query = "SELECT * FROM $wpdb->posts $join WHERE (post_type = 'page' AND post_status = 'publish') $where ";
 	$query .= $author_query;
 	$query .= " ORDER BY " . $sort_column . " " . $sort_order ;
@@ -2184,7 +2238,7 @@ function &get_pages($args = '') {
 
 	if ( !empty($exclude_tree) ) {
 		$exclude = array();
-		
+
 		$exclude = (int) $exclude_tree;
 		$children = get_page_children($exclude, $pages);
 		$excludes = array();
@@ -2379,12 +2433,12 @@ function wp_insert_attachment($object, $file = false, $parent = 0) {
 		$wpdb->update( $wpdb->posts, $data, array( 'ID' => $post_ID ) );
 	} else {
 		// If there is a suggested ID, use it if not already present
-		if ( !empty($import_id) ) { 
-			$import_id = (int) $import_id; 
-			if ( ! $wpdb->get_var( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE ID = %d", $import_id) ) ) { 
-				$data['ID'] = $import_id; 
-			} 
-		} 
+		if ( !empty($import_id) ) {
+			$import_id = (int) $import_id;
+			if ( ! $wpdb->get_var( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE ID = %d", $import_id) ) ) {
+				$data['ID'] = $import_id;
+			}
+		}
 
 		$wpdb->insert( $wpdb->posts, $data );
 		$post_ID = (int) $wpdb->insert_id;
@@ -2535,6 +2589,10 @@ function wp_get_attachment_url( $post_id = 0 ) {
 		if ( ($uploads = wp_upload_dir()) && false === $uploads['error'] ) { //Get upload directory
 			if ( 0 === strpos($file, $uploads['basedir']) ) //Check that the upload base exists in the file location
 				$url = str_replace($uploads['basedir'], $uploads['baseurl'], $file); //replace file location with url location
+			elseif ( false !== strpos($file, 'wp-content/uploads') )
+				$url = $uploads['baseurl'] . substr( $file, strpos($file, 'wp-content/uploads') + 18 );
+			else
+				$url = $uploads['baseurl'] . "/$file"; //Its a newly uploaded file, therefor $file is relative to the basedir.
 		}
 	}
 

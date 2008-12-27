@@ -15,7 +15,8 @@ $title = __('Import Blogroll');
 
 class OPML_Import {
 
-	function dispatch() { 
+	function dispatch() {
+		global $wpdb, $user_ID;
 $step = $_POST['step'];
 if (!$step) $step = 0;
 ?>
@@ -32,7 +33,7 @@ switch ($step) {
 <div class="wrap">
 <?php screen_icon(); ?>
 <h2><?php _e('Import your blogroll from another system') ?> </h2>
-<form enctype="multipart/form-data" action="link-import.php" method="post" name="blogroll">
+<form enctype="multipart/form-data" action="admin.php?import=opml" method="post" name="blogroll">
 <?php wp_nonce_field('import-bookmarks') ?>
 
 <p><?php _e('If a program or website you use allows you to export your links or subscriptions as OPML you may import them here.'); ?></p>
@@ -101,6 +102,7 @@ foreach ($categories as $category) {
 			$blogrolling = false;
 		}
 
+		global $opml, $updated_timestamp, $all_links, $map, $names, $urls, $targets, $descriptions, $feeds;
 		if ( isset($opml_url) && $opml_url != '' ) {
 			if ( $blogrolling === true ) {
 				$opml = wp_remote_fopen($opml_url);

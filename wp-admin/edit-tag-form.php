@@ -21,6 +21,7 @@ do_action('edit_tag_form_pre', $tag); ?>
 <form name="edittag" id="edittag" method="post" action="edit-tags.php" class="validate">
 <input type="hidden" name="action" value="editedtag" />
 <input type="hidden" name="tag_ID" value="<?php echo $tag->term_id ?>" />
+<input type="hidden" name="taxonomy" value="<?php echo attribute_escape($taxonomy) ?>" />
 <?php wp_original_referer_field(true, 'previous'); wp_nonce_field('update-tag_' . $tag_ID); ?>
 	<table class="form-table">
 		<tr class="form-field form-required">
@@ -34,7 +35,7 @@ do_action('edit_tag_form_pre', $tag); ?>
             <p><?php _e('The &#8220;slug&#8221; is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens.'); ?></p></td>
 		</tr>
 	</table>
-<p class="submit"><input type="submit" class="button" name="submit" value="<?php _e('Edit Tag'); ?>" /></p>
+<p class="submit"><input type="submit" class="button-primary" name="submit" value="<?php _e('Update Tag'); ?>" /></p>
 <?php do_action('edit_tag_form', $tag); ?>
 </form>
 </div>

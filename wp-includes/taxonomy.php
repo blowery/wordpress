@@ -17,8 +17,8 @@
  * @global array $wp_taxonomies
  */
 $wp_taxonomies = array();
-$wp_taxonomies['category'] = (object) array('name' => 'category', 'object_type' => 'post', 'hierarchical' => true, 'update_count_callback' => '_update_post_term_count');
-$wp_taxonomies['post_tag'] = (object) array('name' => 'post_tag', 'object_type' => 'post', 'hierarchical' => false, 'update_count_callback' => '_update_post_term_count');
+$wp_taxonomies['category'] = (object) array('name' => 'category', 'object_type' => 'post', 'hierarchical' => true, 'update_count_callback' => '_update_post_term_count', 'label' => __('Categories'));
+$wp_taxonomies['post_tag'] = (object) array('name' => 'post_tag', 'object_type' => 'post', 'hierarchical' => false, 'update_count_callback' => '_update_post_term_count', 'label' => __('Post Tags'));
 $wp_taxonomies['link_category'] = (object) array('name' => 'link_category', 'object_type' => 'link', 'hierarchical' => false);
 
 /**
@@ -529,27 +529,27 @@ function get_term_to_edit( $id, $taxonomy ) {
  *
  * hide_empty - Default is true. Will not return empty terms, which means
  * terms whose count is 0 according to the given taxonomy.
- * 
+ *
  * exclude - Default is an empty string.  A comma- or space-delimited string
- * of term ids to exclude from the return array.  If 'include' is non-empty, 
+ * of term ids to exclude from the return array.  If 'include' is non-empty,
  * 'exclude' is ignored.
  *
  * include - Default is an empty string.  A comma- or space-delimited string
  * of term ids to include in the return array.
- * 
+ *
  * number - The maximum number of terms to return.  Default is empty.
- * 
+ *
  * offset - The number by which to offset the terms query.
  *
- * fields - Default is 'all', which returns an array of term objects. 
+ * fields - Default is 'all', which returns an array of term objects.
  * If 'fields' is 'ids' or 'names', returns an array of
  * integers or strings, respectively.
  *
  * slug - Returns terms whose "slug" matches this value. Default is empty string.
- * 
+ *
  * hierarchical - Whether to include terms that have non-empty descendants
  * (even if 'hide_empty' is set to true).
- * 
+ *
  * search - Returned terms' names will contain the value of 'search',
  * case-insensitive.  Default is an empty string.
  *
@@ -563,14 +563,14 @@ function get_term_to_edit( $id, $taxonomy ) {
  * returns terms regardless of ancestry or whether the terms are empty.
  *
  * The 'child_of' argument, when used, should be set to the integer of a term ID.  Its default
- * is 0.  If set to a non-zero value, all returned terms will be descendants 
- * of that term according to the given taxonomy.  Hence 'child_of' is set to 0 
- * if more than one taxonomy is passed in $taxonomies, because multiple taxonomies 
+ * is 0.  If set to a non-zero value, all returned terms will be descendants
+ * of that term according to the given taxonomy.  Hence 'child_of' is set to 0
+ * if more than one taxonomy is passed in $taxonomies, because multiple taxonomies
  * make term ancestry ambiguous.
  *
  * The 'parent' argument, when used, should be set to the integer of a term ID.  Its default is
  * the empty string '', which has a different meaning from the integer 0.
- * If set to an integer value, all returned terms will have as an immediate 
+ * If set to an integer value, all returned terms will have as an immediate
  * ancestor the term whose ID is specified by that integer according to the given taxonomy.
  * The 'parent' argument is different from 'child_of' in that a term X is considered a 'parent'
  * of term Y only if term X is the father of term Y, not its grandfather or great-grandfather, etc.
@@ -781,7 +781,7 @@ function &get_terms($taxonomies, $args = '') {
 		}
 	}
 	reset ( $terms );
-	
+
 	$_terms = array();
 	if ( 'ids' == $fields ) {
 		while ( $term = array_shift($terms) )
@@ -1952,7 +1952,7 @@ function _get_term_hierarchy($taxonomy) {
  * @param int $term_id The ancestor term: all returned terms should be descendants of $term_id.
  * @param array $terms The set of terms---either an array of term objects or term IDs---from which those that are descendants of $term_id will be chosen.
  * @param string $taxonomy The taxonomy which determines the hierarchy of the terms.
- * @return array The subset of $terms that are descendants of $term_id. 
+ * @return array The subset of $terms that are descendants of $term_id.
  */
 function &_get_term_children($term_id, $terms, $taxonomy) {
 	$empty_array = array();
@@ -2036,7 +2036,7 @@ function _pad_term_counts(&$terms, $taxonomy) {
 		$id = $term_ids[$row->term_taxonomy_id];
 		$term_items[$id][$row->object_id] = isset($term_items[$id][$row->object_id]) ? ++$term_items[$id][$row->object_id] : 1;
 	}
-	
+
 	// Touch every ancestor's lookup row for each post in each term
 	foreach ( $term_ids as $term_id ) {
 		$child = $term_id;
@@ -2222,6 +2222,56 @@ function get_post_taxonomies($post = 0) {
 	$post =& get_post($post);
 
 	return get_object_taxonomies($post);
+}
+
+/**
+ * Determine if the given object is associated with any of the given terms.
+ *
+ * The given terms are checked against the object's terms' term_ids, names and slugs.
+ * Terms given as integers will only be checked against the object's terms' term_ids.
+ * If no terms are given, determines if object is associated with any terms in the given taxonomy.
+ *
+ * @since 2.7.0
+ * @uses get_object_term_cache()
+ * @uses wp_get_object_terms()
+ *
+ * @param int $object_id.  ID of the object (post ID, link ID, ...)
+ * @param string $taxonomy.  Single taxonomy name
+ * @param int|string|array $terms Optional.  Term term_id, name, slug or array of said
+ * @return bool|WP_Error. WP_Error on input error.
+ */
+function is_object_in_term( $object_id, $taxonomy, $terms = null ) {
+	if ( !$object_id = (int) $object_id )
+		return new WP_Error( 'invalid_object', __( 'Invalid object ID' ) );
+
+	$object_terms = get_object_term_cache( $object_id, $taxonomy );
+	if ( empty( $object_terms ) )
+		 $object_terms = wp_get_object_terms( $object_id, $taxonomy );
+
+	if ( is_wp_error( $object_terms ) )
+		return $object_terms;
+	if ( empty( $object_terms ) )
+		return false;
+	if ( empty( $terms ) )
+		return ( !empty( $object_terms ) );
+
+	$terms = (array) $terms;
+
+	if ( $ints = array_filter( $terms, 'is_int' ) )
+		$strs = array_diff( $terms, $ints );
+	else
+		$strs =& $terms;
+
+	foreach ( $object_terms as $object_term ) {
+		if ( $ints && in_array( $object_term->term_id, $ints ) ) return true; // If int, check against term_id
+		if ( $strs ) {
+			if ( in_array( $object_term->term_id, $strs ) ) return true;
+			if ( in_array( $object_term->name, $strs ) )    return true;
+			if ( in_array( $object_term->slug, $strs ) )    return true;
+		}
+	}
+
+	return false;
 }
 
 ?>

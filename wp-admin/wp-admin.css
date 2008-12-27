@@ -207,7 +207,6 @@ form p.submit a.cancel:hover {
 
 .preview {
 	float: right;
-	padding: 2px 8px !important;
 }
 
 #major-publishing-actions {
@@ -307,9 +306,9 @@ form p.submit a.cancel:hover {
 a.button,
 a.button-primary,
 a.button-secondary {
-	line-height: 1.4em;
+	line-height: 1.2em;
 	-webkit-border-radius: 10px;
-	padding: 3px 10px;
+	padding: 4px 10px;
 }
 
 #doaction,
@@ -671,7 +670,8 @@ p.pagenav {
 	font-size: 11px;
 }
 
-.tablenav .tablenav-pages a, .tablenav-pages span.current  {
+.tablenav .tablenav-pages a,
+.tablenav-pages span.current  {
 	text-decoration: none;
 	border: none;
 	padding: 3px 6px;
@@ -705,7 +705,8 @@ td.media-icon img {
 	max-height: 60px;
 }
 
-#update-nag, .plugin-update {
+#update-nag,
+.plugin-update {
 	line-height: 29px;
 	font-size: 12px;
 	text-align: center;
@@ -715,7 +716,8 @@ td.media-icon img {
 	border-top-style: solid;
 }
 
-#update-nag a, .plugin-update a {
+#update-nag a,
+.plugin-update a {
 	font-size: 1.1em;
 }
 
@@ -788,6 +790,10 @@ div.comment-item:hover .row-actions {
 	padding: 12px 10px 5px;
 }
 
+#wphead h1 span {
+	font-size: 50%;
+}
+
 /* side admin menu */
 #adminmenu * {
 	-webkit-user-select: none;
@@ -816,7 +822,7 @@ div.comment-item:hover .row-actions {
 #adminmenu .wp-submenu li.current a:hover {
 	font-weight: bold;
 }
-	
+
 #adminmenu a.menu-top,
 #adminmenu .wp-submenu-head {
 	font: normal 13px/18px Georgia, "Times New Roman", "Bitstream Charter", Times, serif;
@@ -962,9 +968,9 @@ div.comment-item:hover .row-actions {
 	cursor: w-resize;
 }
 
-.folded #adminmenu li.wp-menu-separator { 
- 	cursor: e-resize; 
-} 
+.folded #adminmenu li.wp-menu-separator {
+ 	cursor: e-resize;
+}
 
 #adminmenu .wp-menu-separator-last {
 	height: 10px;
@@ -1277,7 +1283,7 @@ table.form-table td .updated {
 
 .setting-description, .form-wrap p {
 	font-style: italic;
-	font-family: "Lucida Sans", "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
+	font-family: "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
 }
 
 .form-wrap .form-field {
@@ -1352,7 +1358,7 @@ table.form-table td .updated {
 	display: none;
 }
 
-#post-body #tagsdiv #newtag {
+#post-body .tagsdiv #newtag {
 	margin-right: 5px;
 	width: 16em;
 }
@@ -1361,7 +1367,7 @@ table.form-table td .updated {
 	width: 94%
 }
 
-#side-info-column #tagsdiv #newtag {
+#side-info-column .tagsdiv #newtag {
 	width: 68%;
 }
 
@@ -1418,18 +1424,18 @@ table.form-table td .updated {
 	padding: 5px 0;
 }
 
-#tagchecklist {
+.tagchecklist {
 	margin-left: 10px;
 	font-size: 12px;
 	overflow: auto;
 }
 
-#tagchecklist strong {
+.tagchecklist strong {
 	margin-left: -8px;
 	position: absolute;
 }
 
-#tagchecklist span {
+.tagchecklist span {
 	margin-right: 25px;
 	display: block;
 	float: left;
@@ -1439,7 +1445,7 @@ table.form-table td .updated {
 	cursor: default;
 }
 
-#tagchecklist span a {
+.tagchecklist span a {
 	margin: 6px 0pt 0pt -9px;
 	cursor: pointer;
 	width: 10px;
@@ -1454,7 +1460,7 @@ table.form-table td .updated {
 .howto {
 	font-style: italic;
 	display: block;
-	font-family: "Lucida Grande", "Bitstream Vera Sans", "Lucida Sans", Verdana, Arial, sans-serif;
+	font-family: "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
 }
 
 .ac_results {
@@ -1604,7 +1610,7 @@ table.form-table td .updated {
 #poststuff #titlewrap {
 	border: 0;
 	padding: 0;
-	
+
 }
 
 #titlediv #title {
@@ -1668,9 +1674,6 @@ input#link_url {
 }
 
 .wp_themeSkin tr.mceFirst td.mceToolbar {
-	background-image: url("images/ed-bg.gif");
-	background-position: left top;
-	background-repeat: repeat-x;
 	border-width: 0 0 1px;
 	border-style: none none solid;
 }
@@ -1710,14 +1713,6 @@ input#link_url {
 
 #media-buttons img {
 	vertical-align: middle;
-}
-
-.metabox-holder .closed .inside, #poststuff .closed .inside {
-	display: none;
-}
-
-.metabox-holder .closed h3, #poststuff .closed h3 {
-	margin: 0;
 }
 
 .submitbox .submit {
@@ -1980,10 +1975,6 @@ td.action-links, th.action-links {
 	text-align: right;
 }
 
-.hide-if-no-js {
-	display: none;
-}
-
 /* Diff */
 
 table.diff {
@@ -2071,7 +2062,7 @@ fieldset {
 	height: 20px;
 	line-height: 20px;
 	padding: 0;
-} 
+}
 
 #jj, #hh, #mn {
 	width: 2em;
@@ -2829,7 +2820,7 @@ abbr.required {
 #utc-time, #local-time {
 	padding-left: 25px;
 	font-style: italic;
-	font-family: "Lucida Sans", "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
+	font-family: "Lucida Grande", Verdana, Arial, "Bitstream Vera Sans", sans-serif;
 }
 
 ul#dismissed-updates {
@@ -2839,8 +2830,8 @@ form.upgrade {
 	margin-top: 8px;
 }
 
-#tagsdiv #the-tagcloud {
-	margin: 5px 5px 10px;
+#poststuff .inside .the-tagcloud {
+	margin: 5px 0 10px;
 	padding: 8px;
 	border-width: 1px;
 	border-style: solid;

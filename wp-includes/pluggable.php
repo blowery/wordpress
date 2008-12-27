@@ -659,7 +659,7 @@ function wp_set_auth_cookie($user_id, $remember = false, $secure = '') {
 		setcookie($auth_cookie_name, $auth_cookie, $expire, ADMIN_COOKIE_PATH, $cookie_domain, $secure);
 		setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, COOKIEPATH, $cookie_domain);
 		if ( COOKIEPATH != SITECOOKIEPATH )
-			setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, SITECOOKIEPATH, $cookie_domain);	
+			setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, SITECOOKIEPATH, $cookie_domain);
 	}
 }
 endif;
@@ -1210,7 +1210,7 @@ if ( !function_exists('wp_salt') ) :
  * Below is an example of how the SECRET_KEY constant is defined with a value.
  * You must not copy the below example and paste into your wp-config.php. If you
  * need an example, then you can have a
- * {@link http://api.wordpress.org/secret-key/1.0/ secret key created} for you.
+ * {@link https://api.wordpress.org/secret-key/1.1/ secret key created} for you.
  *
  * <code>
  * define('SECRET_KEY', 'mAry1HadA15|\/|b17w55w1t3asSn09w');
@@ -1221,7 +1221,7 @@ if ( !function_exists('wp_salt') ) :
  * salt string is not weak.
  *
  * @since 2.5
- * @link http://api.wordpress.org/secret-key/1.0/ Create a Secret Key for wp-config.php
+ * @link https://api.wordpress.org/secret-key/1.1/ Create a Secret Key for wp-config.php
  *
  * @return string Salt value from either 'SECRET_KEY' or 'secret' option
  */
@@ -1446,7 +1446,7 @@ function wp_rand( $min = 0, $max = 0 ) {
 	if ( $max != 0 )
 		$value = $min + (($max - $min + 1) * ($value / (4294967295 + 1)));
 
-	return abs(intval($value)); 
+	return abs(intval($value));
 }
 endif;
 

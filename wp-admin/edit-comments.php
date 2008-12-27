@@ -20,7 +20,7 @@ if ( ( isset( $_REQUEST['delete_all_spam'] ) || isset( $_REQUEST['delete_all_spa
 	$delete_time = $wpdb->escape( $_REQUEST['pagegen_timestamp'] );
 	$deleted_spam = $wpdb->query( "DELETE FROM $wpdb->comments WHERE comment_approved = 'spam' AND '$delete_time' > comment_date_gmt" );
 
-	$redirect_to = 'edit-comments.php?comment_status=spam&deleted=' . (int) $deleted_spam; 
+	$redirect_to = 'edit-comments.php?comment_status=spam&deleted=' . (int) $deleted_spam;
 	if ( $post_id )
 		$redirect_to = add_query_arg( 'p', absint( $post_id ), $redirect_to );
 	wp_redirect( $redirect_to );
@@ -227,14 +227,17 @@ $page_links = paginate_links( array(
 <div class="tablenav-pages"><?php $page_links_text = sprintf( '<span class="displaying-num">' . __( 'Displaying %s&#8211;%s of %s' ) . '</span>%s',
 	number_format_i18n( $start + 1 ),
 	number_format_i18n( min( $page * $comments_per_page, $total ) ),
-	number_format_i18n( $total ),
+	'<span class="total-type-count">' . number_format_i18n( $total ) . '</span>',
 	$page_links
 ); echo $page_links_text; ?></div>
+<input type="hidden" name="_total" value="<?php echo $total; ?>" />
+<input type="hidden" name="_per_page" value="<?php echo $comments_per_page; ?>" />
+<input type="hidden" name="_page" value="<?php echo $page; ?>" />
 <?php endif; ?>
 
 <div class="alignleft actions">
 <select name="action">
-<option value="-1" selected="selected"><?php _e('Actions') ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions') ?></option>
 <?php if ( empty($comment_status) || 'approved' == $comment_status ): ?>
 <option value="unapprove"><?php _e('Unapprove'); ?></option>
 <?php endif; ?>
@@ -320,7 +323,7 @@ if ( $page_links )
 
 <div class="alignleft actions">
 <select name="action2">
-<option value="-1" selected="selected"><?php _e('Actions') ?></option>
+<option value="-1" selected="selected"><?php _e('Bulk Actions') ?></option>
 <?php if ( empty($comment_status) || 'approved' == $comment_status ): ?>
 <option value="unapprove"><?php _e('Unapprove'); ?></option>
 <?php endif; ?>

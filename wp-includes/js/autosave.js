@@ -33,7 +33,7 @@ function autosave_parse_response(response) {
 
 		// if no errors: add slug UI
 		if ( !res.errors ) {
-			var postID = parseInt( res.responses[0].id );
+			var postID = parseInt( res.responses[0].id, 10 );
 			if ( !isNaN(postID) && postID > 0 ) {
 				autosave_update_slug(postID);
 			}
@@ -56,7 +56,7 @@ function autosave_saved_new(response) {
 	// if no errors: update post_ID from the temporary value, grab new save-nonce for that new ID
 	if ( res && res.responses.length && !res.errors ) {
 		var tempID = jQuery('#post_ID').val();
-		var postID = parseInt( res.responses[0].id );
+		var postID = parseInt( res.responses[0].id, 10 );
 		autosave_update_post_ID( postID ); // disabled form buttons are re-enabled here
 		if ( tempID < 0 && postID > 0 ) // update media buttons
 			jQuery('#media-buttons a').each(function(){
@@ -73,7 +73,7 @@ function autosave_saved_new(response) {
 
 function autosave_update_post_ID( postID ) {
 	if ( !isNaN(postID) && postID > 0 ) {
-		if ( postID == parseInt(jQuery('#post_ID').val()) ) { return; } // no need to do this more than once
+		if ( postID == parseInt(jQuery('#post_ID').val(), 10) ) { return; } // no need to do this more than once
 		jQuery('#post_ID').attr({name: "post_ID"});
 		jQuery('#post_ID').val(postID);
 		// We need new nonces
@@ -114,11 +114,11 @@ function autosave_loading() {
 }
 
 function autosave_enable_buttons() {
-	jQuery("#submitpost :button:disabled, #submitpost :submit:disabled").attr('disabled', '');
+	jQuery(".submitbox :button:disabled, .submitbox :submit:disabled").attr('disabled', '');
 }
 
 function autosave_disable_buttons() {
-	jQuery("#submitpost :button:enabled, #submitpost :submit:enabled").attr('disabled', 'disabled');
+	jQuery(".submitbox :button:enabled, .submitbox :submit:enabled").attr('disabled', 'disabled');
 	setTimeout(autosave_enable_buttons, 5000); // Re-enable 5 sec later.  Just gives autosave a head start to avoid collisions.
 }
 
@@ -130,10 +130,14 @@ var autosave = function() {
 		post_ID:  jQuery("#post_ID").val() || 0,
 		post_title: jQuery("#title").val() || "",
 		autosavenonce: jQuery('#autosavenonce').val(),
-		tags_input: jQuery("#tags-input").val() || "",
+		//tags_input: jQuery("#tags-input").val() || "",
 		post_type: jQuery('#post_type').val() || "",
 		autosave: 1
 	};
+	
+	jQuery('.tags-input').each( function() {
+		post_data[this.name] = this.value;
+	} );
 
 	// We always send the ajax request in order to keep the post lock fresh.
 	// This (bool) tells whether or not to write the post to the DB during the ajax request.
@@ -186,7 +190,7 @@ var autosave = function() {
 		doAutoSave = false;
 	}
 
-	if(parseInt(post_data["post_ID"]) < 1) {
+	if ( parseInt(post_data["post_ID"], 10) < 1 ) {
 		post_data["temp_ID"] = post_data["post_ID"];
 		var successCallback = autosave_saved_new; // new post
 	} else {

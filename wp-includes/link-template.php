@@ -92,7 +92,10 @@ function get_permalink($id = 0, $leavename = false) {
 		$leavename? '' : '%pagename%',
 	);
 
-	$post = &get_post($id);
+	if ( is_object($id) && isset($id->filter) && 'sample' == $id->filter )
+		$post = $id;
+	else
+		$post = &get_post($id);
 
 	if ( empty($post->ID) ) return false;
 
@@ -566,13 +569,13 @@ function get_tag_feed_link($tag_id, $feed = '') {
  * @param int $tag_id Tag ID
  * @return string
  */
-function get_edit_tag_link( $tag_id = 0 ) {
+function get_edit_tag_link( $tag_id = 0, $taxonomy = 'post_tag' ) {
 	$tag = get_term($tag_id, 'post_tag');
 
 	if ( !current_user_can('manage_categories') )
 		return;
 
-	$location = admin_url('edit-tags.php?action=edit&amp;tag_ID=') . $tag->term_id;
+	$location = admin_url('edit-tags.php?action=edit&amp;taxonomy=' . $taxonomy . '&amp;tag_ID=' . $tag->term_id);
 	return apply_filters( 'get_edit_tag_link', $location );
 }
 
@@ -957,7 +960,7 @@ function adjacent_post_link($format, $link, $in_same_cat = false, $excluded_cate
 
 	$title = apply_filters('the_title', $title, $post);
 	$date = mysql2date(get_option('date_format'), $post->post_date);
-	
+
 	$string = '<a href="'.get_permalink($post).'">';
 	$link = str_replace('%title', $title, $link);
 	$link = str_replace('%date', $date, $link);
@@ -1242,14 +1245,15 @@ function get_comments_pagenum_link( $pagenum = 1, $max_page = 0 ) {
 }
 
 /**
- * Display link to next comments pages.
+ * Return the link to next comments pages.
  *
- * @since 2.7.0
+ * @since 2.7.1
  *
  * @param string $label Optional. Label for link text.
  * @param int $max_page Optional. Max page.
+ * @return string|null
  */
-function next_comments_link($label='', $max_page = 0) {
+function get_next_comments_link( $label = '', $max_page = 0 ) {
 	global $wp_query;
 
 	if ( !is_singular() )
@@ -1274,20 +1278,30 @@ function next_comments_link($label='', $max_page = 0) {
 	if ( empty($label) )
 		$label = __('Newer Comments &raquo;');
 
-	echo '<a href="' . clean_url( get_comments_pagenum_link( $nextpage, $max_page ) );
-	$attr = apply_filters( 'next_comments_link_attributes', '' );
-	echo "\" $attr>". preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
+	return '<a href="' . clean_url( get_comments_pagenum_link( $nextpage, $max_page ) ) . '" ' . apply_filters( 'next_comments_link_attributes', '' ) . '>'. preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
 }
 
 /**
- * Display the previous comments page link.
+ * Display the link to next comments pages.
  *
  * @since 2.7.0
  *
- * @param string $label Optional. Label for comments link text.
+ * @param string $label Optional. Label for link text.
+ * @param int $max_page Optional. Max page.
  */
-function previous_comments_link($label='') {
+function next_comments_link( $label = '', $max_page = 0 ) {
+	echo get_next_comments_link( $label, $max_page );
+}
 
+/**
+ * Return the previous comments page link.
+ *
+ * @since 2.7.1
+ *
+ * @param string $label Optional. Label for comments link text.
+ * @return string|null
+ */
+function get_previous_comments_link( $label = '' ) {
 	if ( !is_singular() )
 		return;
 
@@ -1304,9 +1318,18 @@ function previous_comments_link($label='') {
 	if ( empty($label) )
 		$label = __('&laquo; Older Comments');
 
-	echo '<a href="' . clean_url(get_comments_pagenum_link($prevpage));
-	$attr = apply_filters( 'previous_comments_link_attributes', '' );
-	echo "\" $attr>". preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
+	return '<a href="' . clean_url( get_comments_pagenum_link( $prevpage ) ) . '" ' . apply_filters( 'previous_comments_link_attributes', '' ) . '>' . preg_replace('/&([^#])(?![a-z]{1,8};)/', '&#038;$1', $label) .'</a>';
+}
+
+/**
+ * Display the previous comments page link.
+ *
+ * @since 2.7.0
+ *
+ * @param string $label Optional. Label for comments link text.
+ */
+function previous_comments_link( $label = '' ) {
+	echo get_previous_comments_link( $label );
 }
 
 /**

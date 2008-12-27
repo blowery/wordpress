@@ -96,11 +96,11 @@ default:
 <?php endif;
 
 $description = get_file_description($file);
-$desc_header = ( $description != $file_show ) ? "$description</strong> (%s)" : "%s";
+$desc_header = ( $description != $file_show ) ? "<strong>$description</strong> (%s)" : "%s";
 ?>
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2> 
+<h2><?php echo wp_specialchars( $title ); ?></h2>
 <div class="bordertitle">
 	<form id="themeselector" action="theme-editor.php" method="post">
 		<strong><label for="theme"><?php _e('Select theme to edit:'); ?> </label></strong>
@@ -120,7 +120,7 @@ $desc_header = ( $description != $file_show ) ? "$description</strong> (%s)" : "
 </div>
 <div class="tablenav">
 <div class="alignleft">
-<big><strong><?php echo sprintf($desc_header, $file_show); ?></big>
+<big><?php echo sprintf($desc_header, $file_show); ?></big>
 </div>
 <br class="clear" />
 </div>
@@ -141,11 +141,11 @@ if ($allowed_files) :
 		$template_show = basename($template_file);
 		$filedesc = ( $description != $template_file ) ? "$description <span class='nonessential'>($template_show)</span>" : "$description";
 		$filedesc = ( $template_file == $file ) ? "<span class='highlight'>$description <span class='nonessential'>($template_show)</span></span>" : $filedesc;
-		
+
 		// If we have two files of the same name prefer the one in the Template Directory
 		// This means that we display the correct files for child themes which overload Templates as well as Styles
 		if( array_key_exists($description, $template_mapping ) ) {
-			if ( false !== strpos( $template_file, $template_dir ) )  { 
+			if ( false !== strpos( $template_file, $template_dir ) )  {
 				$template_mapping[ $description ] = array( $template_file, $filedesc );
 			}
 		} else {
@@ -192,7 +192,7 @@ if ($allowed_files) :
 <?php if ( is_writeable($real_file) ) : ?>
 			<p class="submit">
 <?php
-	echo "<input type='submit' name='submit' class='button' value='" . __('Update File') . "' tabindex='2' />";
+	echo "<input type='submit' name='submit' class='button-primary' value='" . __('Update File') . "' tabindex='2' />";
 ?>
 </p>
 <?php else : ?>

@@ -1,5 +1,5 @@
 
-wpCookies = {
+var wpCookies = {
 // The following functions are from Cookie.js class in TinyMCE, Moxiecode, used under LGPL.
 
 	each : function(o, cb, s) {
@@ -133,16 +133,12 @@ jQuery(document).ready( function($) {
 	// pulse
 	$('.fade').animate( { backgroundColor: '#ffffe0' }, 300).animate( { backgroundColor: '#fffbcc' }, 300).animate( { backgroundColor: '#ffffe0' }, 300).animate( { backgroundColor: '#fffbcc' }, 300);
 
-	// show things that should be visible, hide what should be hidden
-	$('.hide-if-no-js').removeClass('hide-if-no-js');
-	$('.hide-if-js').hide();
-
 	// Basic form validation
 	if ( ( 'undefined' != typeof wpAjax ) && $.isFunction( wpAjax.validateForm ) ) {
 		$('form.validate').submit( function() { return wpAjax.validateForm( $(this) ); } );
 	}
 
-	// Move .updated and .error alert boxes 
+	// Move .updated and .error alert boxes
 	$('div.wrap h2 ~ div.updated, div.wrap h2 ~ div.error').addClass('below-h2');
 	$('div.updated, div.error').not('.below-h2').insertAfter('div.wrap h2:first');
 
@@ -156,7 +152,7 @@ jQuery(document).ready( function($) {
 				$('#show-settings-link').css({'backgroundImage':'url("images/screen-options-right.gif")'});
 				$('#contextual-help-link-wrap').removeClass('invisible');
 				$(this).removeClass('screen-options-open');
-				
+
 			} else {
 				$('#show-settings-link').css({'backgroundImage':'url("images/screen-options-right-up.gif")'});
 				$(this).addClass('screen-options-open');
@@ -164,7 +160,7 @@ jQuery(document).ready( function($) {
 		});
 		return false;
 	});
-	
+
 	// help tab
 	$('#contextual-help-link').click(function () {
 		if ( ! $('#contextual-help-wrap').hasClass('contextual-help-open') ) {
@@ -239,7 +235,7 @@ showNotice = {
 
 		return false;
 	},
-	
+
 	note : function(text) {
 		alert(text);
 	}
@@ -248,10 +244,10 @@ showNotice = {
 (function($){
 // sidebar admin menu
 adminMenu = {
-		
+
 	init : function() {
 		$('#adminmenu div.wp-menu-toggle').each( function() {
-			if ( $(this).siblings('.wp-submenu').length ) 
+			if ( $(this).siblings('.wp-submenu').length )
 				$(this).click(function(){ adminMenu.toggle( $(this).siblings('.wp-submenu') ); });
 			else
 				$(this).hide();
@@ -282,7 +278,7 @@ adminMenu = {
 			if ( $(e).hasClass('wp-has-current-submenu') ) return true; // leave the current parent open
 
 			if ( 'o' == v ) $(e).addClass('wp-menu-open');
-			else if ( 'c' == v ) $(e).removeClass('wp-menu-open');	
+			else if ( 'c' == v ) $(e).removeClass('wp-menu-open');
 		});
 	},
 
@@ -297,7 +293,7 @@ adminMenu = {
 
 		return false;
 	},
-	
+
 	fold : function(off) {
 		if (off) {
 			$('#wpcontent').removeClass('folded');
@@ -321,14 +317,14 @@ adminMenu = {
 				sensitivity: 8,
 				interval: 100
 			});
-			
+
 		}
 	},
-	
+
 	favorites : function() {
 		$('#favorite-inside').width($('#favorite-actions').width()-4);
 		$('#favorite-toggle, #favorite-inside').bind( 'mouseenter', function(){$('#favorite-inside').removeClass('slideUp').addClass('slideDown'); setTimeout(function(){if ( $('#favorite-inside').hasClass('slideDown') ) { $('#favorite-inside').slideDown(100); $('#favorite-first').addClass('slide-down'); }}, 200) } );
-	
+
 		$('#favorite-toggle, #favorite-inside').bind( 'mouseleave', function(){$('#favorite-inside').removeClass('slideDown').addClass('slideUp'); setTimeout(function(){if ( $('#favorite-inside').hasClass('slideUp') ) { $('#favorite-inside').slideUp(100, function(){ $('#favorite-first').removeClass('slide-down'); } ); }}, 300) } );
 	}
 };
@@ -368,7 +364,7 @@ columns = {
 
 jQuery(document).ready(function($){
 	if ( 'undefined' != typeof google && google.gears ) return;
-	
+
 	var gf = false;
 	if ( 'undefined' != typeof GearsFactory ) {
 		gf = new GearsFactory();
@@ -390,6 +386,6 @@ jQuery(document).ready(function($){
 	}
 	if ( gf && gf.hasPermission )
 		return;
-		
+
 	$('.turbo-nag').show();
 });
