@@ -507,7 +507,7 @@ function get_category_feed_link($cat_id, $feed = '') {
 	$permalink_structure = get_option('permalink_structure');
 
 	if ( '' == $permalink_structure ) {
-		$link = get_option('home') . "?feed=$feed&amp;cat=" . $cat_id;
+		$link = trailingslashit( get_option('home') ) . "?feed=$feed&amp;cat=" . $cat_id;
 	} else {
 		$link = get_category_link($cat_id);
 		if( $feed == get_default_feed() )
@@ -725,7 +725,7 @@ function edit_post_link( $link = 'Edit This', $before = '', $after = '' ) {
 			return;
 	}
 
-	$link = '<a href="' . get_edit_post_link( $post->ID ) . '" title="' . attribute_escape( __( 'Edit post' ) ) . '">' . $link . '</a>';
+	$link = '<a class="post-edit-link" href="' . get_edit_post_link( $post->ID ) . '" title="' . attribute_escape( __( 'Edit post' ) ) . '">' . $link . '</a>';
 	echo $before . apply_filters( 'edit_post_link', $link, $post->ID ) . $after;
 }
 
@@ -775,7 +775,7 @@ function edit_comment_link( $link = 'Edit This', $before = '', $after = '' ) {
 			return;
 	}
 
-	$link = '<a href="' . get_edit_comment_link( $comment->comment_ID ) . '" title="' . __( 'Edit comment' ) . '">' . $link . '</a>';
+	$link = '<a class="comment-edit-link" href="' . get_edit_comment_link( $comment->comment_ID ) . '" title="' . __( 'Edit comment' ) . '">' . $link . '</a>';
 	echo $before . apply_filters( 'edit_comment_link', $link, $comment->comment_ID ) . $after;
 }
 
@@ -1256,13 +1256,10 @@ function get_comments_pagenum_link( $pagenum = 1, $max_page = 0 ) {
 function get_next_comments_link( $label = '', $max_page = 0 ) {
 	global $wp_query;
 
-	if ( !is_singular() )
+	if ( !is_singular() || !get_option('page_comments') )
 		return;
 
 	$page = get_query_var('cpage');
-
-	if ( !$page )
-		$page = 1;
 
 	$nextpage = intval($page) + 1;
 
@@ -1302,15 +1299,12 @@ function next_comments_link( $label = '', $max_page = 0 ) {
  * @return string|null
  */
 function get_previous_comments_link( $label = '' ) {
-	if ( !is_singular() )
+	if ( !is_singular() || !get_option('page_comments') )
 		return;
 
 	$page = get_query_var('cpage');
 
-	if ( !$page )
-		$page = 1;
-
-	if ( $page <= 1 )
+	if ( intval($page) <= 1 )
 		return;
 
 	$prevpage = intval($page) - 1;
@@ -1344,7 +1338,7 @@ function previous_comments_link( $label = '' ) {
 function paginate_comments_links($args = array()) {
 	global $wp_query, $wp_rewrite;
 
-	if ( !is_singular() )
+	if ( !is_singular() || !get_option('page_comments') )
 		return;
 
 	$page = get_query_var('cpage');
@@ -1360,7 +1354,7 @@ function paginate_comments_links($args = array()) {
 		'add_fragment' => '#comments'
 	);
 	if ( $wp_rewrite->using_permalinks() )
-		$defaults['base'] = user_trailingslashit(get_permalink() . 'comment-page-%#%', 'commentpaged');
+		$defaults['base'] = user_trailingslashit(trailingslashit(get_permalink()) . 'comment-page-%#%', 'commentpaged');
 
 	$args = wp_parse_args( $args, $defaults );
 	$page_links = paginate_links( $args );

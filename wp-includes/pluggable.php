@@ -34,7 +34,7 @@ if ( !function_exists('wp_set_current_user') ) :
  * the signed in user. Therefore, it opens the ability to edit and perform
  * actions on users who aren't signed in.
  *
- * @since 2.0.4
+ * @since 2.0.3
  * @global object $current_user The current user object which holds the user data.
  * @uses do_action() Calls 'set_current_user' hook after setting the current user.
  *
@@ -62,7 +62,7 @@ if ( !function_exists('wp_get_current_user') ) :
 /**
  * Retrieve the current user object.
  *
- * @since 2.0.4
+ * @since 2.0.3
  *
  * @return WP_User Current user WP_User object
  */
@@ -136,21 +136,6 @@ function get_userdata( $user_id ) {
 	_fill_user($user);
 
 	return $user;
-}
-endif;
-
-if ( !function_exists('update_user_cache') ) :
-/**
- * Updates a users cache when overridden by a plugin.
- *
- * Core function does nothing.
- *
- * @since 1.5
- *
- * @return bool Only returns true
- */
-function update_user_cache() {
-	return true;
 }
 endif;
 
@@ -437,32 +422,21 @@ if ( !function_exists('wp_authenticate') ) :
  */
 function wp_authenticate($username, $password) {
 	$username = sanitize_user($username);
+	$password = trim($password);
 
-	if ( '' == $username )
-		return new WP_Error('empty_username', __('<strong>ERROR</strong>: The username field is empty.'));
+	$user = apply_filters('authenticate', null, $username, $password);
 
-	if ( '' == $password )
-		return new WP_Error('empty_password', __('<strong>ERROR</strong>: The password field is empty.'));
-
-	$user = get_userdatabylogin($username);
-
-	if ( !$user || ($user->user_login != $username) ) {
-		do_action( 'wp_login_failed', $username );
-		return new WP_Error('invalid_username', __('<strong>ERROR</strong>: Invalid username.'));
+	if ( $user == null ) {
+		// TODO what should the error message be? (Or would these even happen?)
+		// Only needed if all authentication handlers fail to return anything.
+		$user = new WP_Error('authentication_failed', __('<strong>ERROR</strong>: Invalid username or incorrect password.'));
 	}
 
-	$user = apply_filters('wp_authenticate_user', $user, $password);
-	if ( is_wp_error($user) ) {
-		do_action( 'wp_login_failed', $username );
-		return $user;
+	if (is_wp_error($user)) {
+		do_action('wp_login_failed', $username);
 	}
 
-	if ( !wp_check_password($password, $user->user_pass, $user->ID) ) {
-		do_action( 'wp_login_failed', $username );
-		return new WP_Error('incorrect_password', __('<strong>ERROR</strong>: Incorrect password.'));
-	}
-
-	return new WP_User($user->ID);
+	return $user;
 }
 endif;
 
@@ -797,7 +771,7 @@ if ( !function_exists('check_ajax_referer') ) :
 /**
  * Verifies the AJAX request to prevent processing requests external of the blog.
  *
- * @since 2.0.4
+ * @since 2.0.3
  *
  * @param string $action Action nonce
  * @param string $query_arg where to look for nonce in $_REQUEST (since 2.5)
@@ -1146,7 +1120,7 @@ if ( !function_exists('wp_verify_nonce') ) :
  * The user is given an amount of time to use the token, so therefore, since the
  * UID and $action remain the same, the independent variable is the time.
  *
- * @since 2.0.4
+ * @since 2.0.3
  *
  * @param string $nonce Nonce that was used in the form to verify
  * @param string|int $action Should give context to what is taking place and be the same when nonce was created.
@@ -1173,7 +1147,7 @@ if ( !function_exists('wp_create_nonce') ) :
 /**
  * Creates a random, one time use token.
  *
- * @since 2.0.4
+ * @since 2.0.3
  *
  * @param string|int $action Scalar value to add context to the nonce.
  * @return string The one use form token
@@ -1298,7 +1272,7 @@ if ( !function_exists('wp_hash') ) :
 /**
  * Get hash of given string.
  *
- * @since 2.0.4
+ * @since 2.0.3
  * @uses wp_salt() Get WordPress salt
  *
  * @param string $data Plain text to hash
@@ -1394,6 +1368,8 @@ if ( !function_exists('wp_generate_password') ) :
  *
  * @since 2.5
  *
+ * @param int $length The length of password to generate
+ * @param bool $special_chars Whether to include standard special characters 
  * @return string The random password
  **/
 function wp_generate_password($length = 12, $special_chars = true) {
@@ -1527,21 +1503,26 @@ function get_avatar( $id_or_email, $size = '96', $default = '', $alt = false ) {
 			$default = $avatar_default;
 	}
 
+ 	if ( is_ssl() )
+		$host = 'https://secure.gravatar.com'; 
+	else
+		$host = 'http://www.gravatar.com';
+
 	if ( 'mystery' == $default )
-		$default = "http://www.gravatar.com/avatar/ad516503a11cd5ca435acc9bb6523536?s={$size}"; // ad516503a11cd5ca435acc9bb6523536 == md5('unknown@gravatar.com')
+		$default = "$host/avatar/ad516503a11cd5ca435acc9bb6523536?s={$size}"; // ad516503a11cd5ca435acc9bb6523536 == md5('unknown@gravatar.com')
 	elseif ( 'blank' == $default )
 		$default = includes_url('images/blank.gif');
 	elseif ( !empty($email) && 'gravatar_default' == $default )
 		$default = '';
 	elseif ( 'gravatar_default' == $default )
-		$default = "http://www.gravatar.com/avatar/s={$size}";
+		$default = "$host/avatar/s={$size}";
 	elseif ( empty($email) )
-		$default = "http://www.gravatar.com/avatar/?d=$default&amp;s={$size}";
+		$default = "$host/avatar/?d=$default&amp;s={$size}";
 	elseif ( strpos($default, 'http://') === 0 )
 		$default = add_query_arg( 's', $size, $default );
 
 	if ( !empty($email) ) {
-		$out = 'http://www.gravatar.com/avatar/';
+		$out = "$host/avatar/";
 		$out .= md5( strtolower( $email ) );
 		$out .= '?s='.$size;
 		$out .= '&amp;d=' . urlencode( $default );
@@ -1602,7 +1583,7 @@ if ( !function_exists('wp_get_cookie_login') ):
  * This function is deprecated and should no longer be extended as it won't be
  * used anywhere in WordPress. Also, plugins shouldn't use it either.
  *
- * @since 2.0.4
+ * @since 2.0.3
  * @deprecated No alternative
  *
  * @return bool Always returns false

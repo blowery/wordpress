@@ -88,9 +88,16 @@ function post_submit_meta_box($post) {
 </div>
 
 <div id="preview-action">
-<?php $preview_link = 'publish' == $post->post_status ? clean_url(get_permalink($post->ID)) : clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID)))); ?>
-
-<a class="preview button" href="<?php echo $preview_link; ?>" target="wp-preview" id="post-preview" tabindex="4"><?php _e('Preview'); ?></a>
+<?php
+if ( 'publish' == $post->post_status ) {
+	$preview_link = clean_url(get_permalink($post->ID));
+	$preview_button = __('Preview Changes');
+} else {
+	$preview_link = clean_url(apply_filters('preview_post_link', add_query_arg('preview', 'true', get_permalink($post->ID))));
+	$preview_button = __('Preview');
+}
+?>
+<a class="preview button" href="<?php echo $preview_link; ?>" target="wp-preview" id="post-preview" tabindex="4"><?php echo $preview_button; ?></a>
 <input type="hidden" name="wp-preview" id="wp-preview" value="" />
 </div>
 
@@ -266,22 +273,18 @@ add_meta_box('submitdiv', __('Publish'), 'post_submit_meta_box', 'post', 'side',
 function post_tags_meta_box($post, $box) {
 	$tax_name = substr($box['id'], 8); 
 	$taxonomy = get_taxonomy($tax_name);
-	if ( isset($taxonomy->helps) )
-		$helps = attribute_escape($taxonomy->helps);
-	else
-		$helps = '';
+	$helps = isset($taxonomy->helps) ? attribute_escape($taxonomy->helps) : __('Separate tags with commas.');
 ?>
 <div class="tagsdiv" id="<?php echo $tax_name; ?>"> 
 	<p class="jaxtag">
 		<label class="hidden" for="newtag"><?php _e( $box['title'] ); ?></label>
 		<input type="hidden" name="<?php echo "tax_input[$tax_name]"; ?>" class="the-tags" id="tax-input[<?php echo $tax_name; ?>]" value="<?php echo get_terms_to_edit( $post->ID, $tax_name ); ?>" /> 
 	 
-	<span class="ajaxtag" style="display:none;">
+	<span class="ajaxtag">
 		<input type="text" name="newtag[<?php echo $tax_name; ?>]" class="newtag form-input-tip" size="16" autocomplete="off" value="<?php _e('Add new tag'); ?>" />
 		<input type="button" class="button tagadd" value="<?php _e('Add'); ?>" tabindex="3" />
-	</span>
-	<?php echo $helps ? "<div class='howto'>$helps</div>" : ''; ?>
-	</p> 
+	</span></p>
+	<p class="howto"><?php echo $helps; ?></p>
 	<div class="tagchecklist"></div> 
 </div> 
 <p class="tagcloud-link hide-if-no-js"><a href="#titlediv" class="tagcloud-link" id="link-<?php echo $tax_name; ?>"><?php printf( __('Choose from the most used tags in %s'), $box['title'] ); ?></a></p>
@@ -464,7 +467,7 @@ wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 <?php
 	$hidden = get_hidden_meta_boxes('post');
 	if ( ! in_array('commentstatusdiv', $hidden) ) { ?>
-		<script type="text/javascript">commentsBox.get(<?php echo $total; ?>, 10);</script>
+		<script type="text/javascript">jQuery(document).ready(function(){commentsBox.get(<?php echo $total; ?>, 10);});</script>
 <?php
 	}
 }

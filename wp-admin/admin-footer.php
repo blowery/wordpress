@@ -22,7 +22,15 @@ echo '<span id="footer-thankyou">' . __('Thank you for creating with <a href="ht
 <p id="footer-upgrade" class="alignright"><?php echo $upgrade; ?></p>
 <div class="clear"></div>
 </div>
-<?php do_action('admin_footer', ''); ?>
+<?php
+do_action('admin_footer', '');
+do_action('admin_print_footer_scripts');
+do_action("admin_footer-$hook_suffix");
+
+if ( false === get_option('can_compress_scripts') )
+	compression_test();
+?>
+
 <script type="text/javascript">if(typeof wpOnload=='function')wpOnload();</script>
 </body>
 </html>

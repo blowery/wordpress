@@ -8,6 +8,7 @@
 
 /** WordPress Administration Bootstrap */
 require_once('admin.php');
+header('Content-Type: ' . get_option('html_type') . '; charset=' . get_option('blog_charset'));
 
 if ( ! current_user_can('publish_posts') ) wp_die( __( 'Cheatin&#8217; uh?' ) );
 
@@ -55,7 +56,7 @@ function press_it() {
 	// define some basic variables
 	$quick['post_status'] = 'draft'; // set as draft first
 	$quick['post_category'] = $_REQUEST['post_category'];
-	$quick['tags_input'] = $_REQUEST['tags_input'];
+	$quick['tax_input'] = $_REQUEST['tax_input'];
 	$quick['post_title'] = $_REQUEST['title'];
 	$quick['post_content'] = '';
 
@@ -338,7 +339,16 @@ die;
 	wp_enqueue_style( 'colors' );
 	wp_enqueue_script( 'post' );
 	wp_enqueue_script('editor');
+?>
+<script type="text/javascript">
+//<![CDATA[
+addLoadEvent = function(func){if(typeof jQuery!="undefined")jQuery(document).ready(func);else if(typeof wpOnload!='function'){wpOnload=func;}else{var oldonload=wpOnload;wpOnload=function(){oldonload();func();}}};
+var userSettings = {'url':'<?php echo SITECOOKIEPATH; ?>','uid':'<?php if ( ! isset($current_user) ) $current_user = wp_get_current_user(); echo $current_user->ID; ?>','time':'<?php echo time() ?>'};
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+//]]>
+</script>
 
+<?php
 	do_action('admin_print_styles');
 	do_action('admin_print_scripts');
 	do_action('admin_head');
@@ -453,7 +463,7 @@ die;
 			<div class="photolist"></div>
 
 			<div id="categorydiv" class="stuffbox">
-				<h2><?php _e('Categories') ?></h2>
+				<h3><?php _e('Categories') ?></h3>
 				<div class="inside">
 
 					<div id="categories-all" class="ui-tabs-panel">
@@ -475,7 +485,7 @@ die;
 				</div>
 			</div>
 
-			<div id="tagsdiv-post_tag" class="postbox" >
+			<div id="tagsdiv-post_tag" class="stuffbox" >
 				<h3><span><?php _e('Post Tags'); ?></span></h3>
 				<div class="inside">
 					<div class="tagsdiv" id="post_tag"> 
@@ -492,8 +502,8 @@ die;
 					<p class="tagcloud-link"><a href="#titlediv" class="tagcloud-link" id="link-post_tag"><?php _e('Choose from the most used tags in Post Tags'); ?></a></p>
 				</div>
 			</div>
-			<div id="submitdiv" class="postbox">
-				<h2><?php _e('Publish') ?></h2>
+			<div id="submitdiv" class="stuffbox">
+				<h3><?php _e('Publish') ?></h3>
 				<div class="inside">
 					<p>
 						<input class="button" type="submit" name="draft" value="<?php _e('Save Draft') ?>" id="save" />
@@ -549,5 +559,6 @@ die;
 </div>
 </form>
 <?php do_action('admin_print_footer_scripts'); ?>
+<script type="text/javascript">if(typeof wpOnload=='function')wpOnload();</script>
 </body>
 </html>

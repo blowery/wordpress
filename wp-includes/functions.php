@@ -29,48 +29,15 @@ function mysql2date( $dateformatstring, $mysqlstring, $translate = true ) {
 		return false;
 
 	if( 'G' == $dateformatstring ) {
-		return gmmktime(
-			(int) substr( $m, 11, 2 ), (int) substr( $m, 14, 2 ), (int) substr( $m, 17, 2 ),
-			(int) substr( $m, 5, 2 ), (int) substr( $m, 8, 2 ), (int) substr( $m, 0, 4 )
-		);
+		return strtotime( $m . ' +0000' );
 	}
 
-	$i = mktime(
-		(int) substr( $m, 11, 2 ), (int) substr( $m, 14, 2 ), (int) substr( $m, 17, 2 ),
-		(int) substr( $m, 5, 2 ), (int) substr( $m, 8, 2 ), (int) substr( $m, 0, 4 )
-	);
+	$i = strtotime( $m );
 
 	if( 'U' == $dateformatstring )
 		return $i;
 
-	if ( -1 == $i || false == $i )
-		$i = 0;
-
-	if ( !empty( $wp_locale->month ) && !empty( $wp_locale->weekday ) && $translate ) {
-		$datemonth = $wp_locale->get_month( date( 'm', $i ) );
-		$datemonth_abbrev = $wp_locale->get_month_abbrev( $datemonth );
-		$dateweekday = $wp_locale->get_weekday( date( 'w', $i ) );
-		$dateweekday_abbrev = $wp_locale->get_weekday_abbrev( $dateweekday );
-		$datemeridiem = $wp_locale->get_meridiem( date( 'a', $i ) );
-		$datemeridiem_capital = $wp_locale->get_meridiem( date( 'A', $i ) );
-		$dateformatstring = ' ' . $dateformatstring;
-		$dateformatstring = preg_replace( "/([^\\\])D/", "\\1" . backslashit( $dateweekday_abbrev ), $dateformatstring );
-		$dateformatstring = preg_replace( "/([^\\\])F/", "\\1" . backslashit( $datemonth ), $dateformatstring );
-		$dateformatstring = preg_replace( "/([^\\\])l/", "\\1" . backslashit( $dateweekday ), $dateformatstring );
-		$dateformatstring = preg_replace( "/([^\\\])M/", "\\1" . backslashit( $datemonth_abbrev ), $dateformatstring );
-		$dateformatstring = preg_replace( "/([^\\\])a/", "\\1" . backslashit( $datemeridiem ), $dateformatstring );
-		$dateformatstring = preg_replace( "/([^\\\])A/", "\\1" . backslashit( $datemeridiem_capital ), $dateformatstring );
-
-		$dateformatstring = substr( $dateformatstring, 1, strlen( $dateformatstring ) -1 );
-	}
-	$j = @date( $dateformatstring, $i );
-
-	/*
-	if ( !$j ) // for debug purposes
-		echo $i." ".$mysqlstring;
-	*/
-
-	return $j;
+	return date_i18n( $dateformatstring, $i );
 }
 
 /**
@@ -108,8 +75,9 @@ function current_time( $type, $gmt = 0 ) {
  *
  * @since 0.71
  *
- * @param string $dateformatstring Format to display the date
- * @param int $unixtimestamp Unix timestamp
+ * @param string $dateformatstring Format to display the date.
+ * @param int $unixtimestamp Optional. Unix timestamp.
+ * @param bool $gmt Optional, default is false. Whether to convert to GMT for time.
  * @return string The date, translated if locale specifies it.
  */
 function date_i18n( $dateformatstring, $unixtimestamp = false, $gmt = false ) {
@@ -2366,6 +2334,7 @@ function _mce_set_direction( $input ) {
 	return $input;
 }
 
+
 /**
  * Convert smiley code to the icon graphic file equivalent.
  *
@@ -2376,25 +2345,19 @@ function _mce_set_direction( $input ) {
  * to an array, with the key the code the blogger types in and the value the
  * image file.
  *
- * The $wp_smiliessearch global is for the regular expression array and is
- * set each time the function is called. The $wp_smiliesreplace is the full
- * replacement. Supposely, the $wp_smiliessearch array is looped over using
- * preg_replace() or just setting the array of $wp_smiliessearch along with the
- * array of $wp_smiliesreplace in the search and replace parameters of
- * preg_replace(), which would be faster and less overhead. Either way, both are
- * used with preg_replace() and can be defined after the function is called.
+ * The $wp_smiliessearch global is for the regular expression and is set each
+ * time the function is called.
  *
  * The full list of smilies can be found in the function and won't be listed in
  * the description. Probably should create a Codex page for it, so that it is
  * available.
  *
  * @global array $wpsmiliestrans
- * @global array $wp_smiliesreplace
  * @global array $wp_smiliessearch
  * @since 2.2.0
  */
 function smilies_init() {
-	global $wpsmiliestrans, $wp_smiliessearch, $wp_smiliesreplace;
+	global $wpsmiliestrans, $wp_smiliessearch;
 
 	// don't bother setting up smilies if they are disabled
 	if ( !get_option( 'use_smilies' ) )
@@ -2449,12 +2412,38 @@ function smilies_init() {
 		);
 	}
 
-	$siteurl = get_option( 'siteurl' );
-	foreach ( (array) $wpsmiliestrans as $smiley => $img ) {
-		$wp_smiliessearch[] = '/(\s|^)' . preg_quote( $smiley, '/' ) . '(\s|$)/';
-		$smiley_masked = attribute_escape( trim( $smiley ) );
-		$wp_smiliesreplace[] = " <img src='$siteurl/wp-includes/images/smilies/$img' alt='$smiley_masked' class='wp-smiley' /> ";
+	if (count($wpsmiliestrans) == 0) {
+		return;
 	}
+
+	/*
+	 * NOTE: we sort the smilies in reverse key order. This is to make sure
+	 * we match the longest possible smilie (:???: vs :?) as the regular
+	 * expression used below is first-match
+	 */
+	krsort($wpsmiliestrans);
+
+	$wp_smiliessearch = '/(?:\s|^)';
+
+	$subchar = '';
+	foreach ( (array) $wpsmiliestrans as $smiley => $img ) {
+		$firstchar = substr($smiley, 0, 1);
+		$rest = substr($smiley, 1);
+
+		// new subpattern?
+		if ($firstchar != $subchar) {
+			if ($subchar != '') {
+				$wp_smiliessearch .= ')|';
+			}
+			$subchar = $firstchar;
+			$wp_smiliessearch .= preg_quote($firstchar, '/') . '(?:';
+		} else {
+			$wp_smiliessearch .= '|';
+		}
+		$wp_smiliessearch .= preg_quote($rest);
+	}
+
+	$wp_smiliessearch .= ')(?:\s|$)/';
 }
 
 /**
@@ -2905,8 +2894,12 @@ function wp_suspend_cache_invalidation($suspend = true) {
  * @param object $object The object to clone
  * @return object The cloned object
  */
-function wp_clone($object) {
-	return version_compare(phpversion(), '5.0') < 0 ? $object : clone($object);
+function wp_clone( $object ) {
+	static $can_clone;
+	if ( !isset( $can_clone ) ) {
+		$can_clone = version_compare( phpversion(), '5.0', '>=' );
+	}
+	return $can_clone ? clone( $object ) : $object;
 }
 
 

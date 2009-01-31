@@ -445,6 +445,7 @@ function wp_dropdown_categories( $args = '' ) {
  *     'feed_image' - See {@link get_categories()}.
  *     'child_of' (int) default is 0 - See {@link get_categories()}.
  *     'exclude' (string) - See {@link get_categories()}.
+ *     'exclude_tree' (string) - See {@link get_categories()}.
  *     'echo' (bool|int) default is 1 - Whether to display or retrieve content.
  *     'current_category' (int) - See {@link get_categories()}.
  *     'hierarchical' (bool) - See {@link get_categories()}.
@@ -463,7 +464,7 @@ function wp_list_categories( $args = '' ) {
 		'style' => 'list', 'show_count' => 0,
 		'hide_empty' => 1, 'use_desc_for_title' => 1,
 		'child_of' => 0, 'feed' => '', 'feed_type' => '',
-		'feed_image' => '', 'exclude' => '', 'current_category' => 0,
+		'feed_image' => '', 'exclude' => '', 'exclude_tree' => '', 'current_category' => 0,
 		'hierarchical' => true, 'title_li' => __( 'Categories' ),
 		'echo' => 1, 'depth' => 0
 	);
@@ -476,6 +477,11 @@ function wp_list_categories( $args = '' ) {
 
 	if ( isset( $r['show_date'] ) ) {
 		$r['include_last_update_time'] = $r['show_date'];
+	}
+
+	if ( true == $r['hierarchical'] ) {
+		$r['exclude_tree'] = $r['exclude'];
+		$r['exclude'] = '';
 	}
 
 	extract( $r );
@@ -648,7 +654,7 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 	if ( 'name' == $orderby )
 		uasort( $tags, create_function('$a, $b', 'return strnatcasecmp($a->name, $b->name);') );
 	else
-		uasort( $tags, create_function('$a, $b', 'return ($a->count < $b->count);') );
+		uasort( $tags, create_function('$a, $b', 'return ($a->count > $b->count);') );
 
 	if ( 'DESC' == $order )
 		$tags = array_reverse( $tags, true );

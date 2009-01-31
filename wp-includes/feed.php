@@ -223,9 +223,11 @@ function the_permalink_rss() {
  * @package WordPress
  * @subpackage Feed
  * @since unknown
+ *
+ * @param int|object $comment_id Optional comment object or id. Defaults to global comment object.
  */
-function comment_guid() {
-	echo get_comment_guid();
+function comment_guid($comment_id = null) {
+	echo get_comment_guid($comment_id);
 }
 
 /**
@@ -235,10 +237,11 @@ function comment_guid() {
  * @subpackage Feed
  * @since unknown
  *
+ * @param int|object $comment_id Optional comment object or id. Defaults to global comment object.
  * @return bool|string false on failure or guid for comment on success.
  */
-function get_comment_guid() {
-	global $comment;
+function get_comment_guid($comment_id = null) {
+	$comment = get_comment($comment_id);
 
 	if ( !is_object($comment) )
 		return false;
@@ -252,7 +255,7 @@ function get_comment_guid() {
  * @since 1.5.0
  */
 function comment_link() {
-	echo get_comment_link();
+	echo clean_url( get_comment_link() );
 }
 
 /**
@@ -506,6 +509,29 @@ function self_link() {
 		. $host
 		. stripslashes($_SERVER['REQUEST_URI'])
 		);
+}
+
+/**
+ * Return the content type for specified feed type.
+ *
+ * @package WordPress
+ * @subpackage Feed
+ * @since 2.8.0
+ */
+function feed_content_type( $type = '' ) {
+	if ( empty($type) )
+		$type = get_default_feed();
+
+	$types = array(
+		'rss'  => 'application/rss+xml',
+		'rss2' => 'application/rss+xml',
+		'atom' => 'application/atom+xml',
+		'rdf'  => 'application/rdf+xml',
+	);
+
+	$content_type = ( !empty($types[$type]) ) ? $types[$type] : 'application/octet-stream';
+
+	return apply_filters( 'feed_content_type', $content_type, $type );
 }
 
 ?>

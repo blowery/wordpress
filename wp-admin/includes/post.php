@@ -946,9 +946,21 @@ function get_sample_permalink($id, $title=null, $name = null) {
 function get_sample_permalink_html($id, $new_title=null, $new_slug=null) {
 	$post = &get_post($id);
 	list($permalink, $post_name) = get_sample_permalink($post->ID, $new_title, $new_slug);
-	if (false === strpos($permalink, '%postname%') && false === strpos($permalink, '%pagename%')) {
-		return '';
+	if ( 'publish' == $post->post_status )
+		$view_post = 'post' == $post->post_type ? __('View Post') : __('View Page');
+	
+	if ( false === strpos($permalink, '%postname%') && false === strpos($permalink, '%pagename%') ) {
+		if ( 'page' == $post->post_type )
+			return '';
+		
+		$return = '<strong>' . __('Permalink:') . "</strong>\n" . '<span id="sample-permalink">' . $permalink . "</span>\n";
+		$return .= '<span id="change-permalinks"><a href="options-permalink.php" class="button" target="_blank">' . __('Change Permalinks') . "</a></span>\n";
+		if ( isset($view_post) )
+			$return .= "<span id='view-post-btn'><a href='$permalink' class='button' target='_blank'>$view_post</a></span>\n";
+
+		return $return;
 	}
+
 	$title = __('Click to edit this part of the permalink');
 	if (function_exists('mb_strlen')) {
 		if (mb_strlen($post_name) > 30) {
@@ -963,10 +975,15 @@ function get_sample_permalink_html($id, $new_title=null, $new_slug=null) {
 			$post_name_abridged = $post_name;
 		}
 	}
+
 	$post_name_html = '<span id="editable-post-name" title="'.$title.'">'.$post_name_abridged.'</span><span id="editable-post-name-full">'.$post_name.'</span>';
 	$display_link = str_replace(array('%pagename%','%postname%'), $post_name_html, $permalink);
+	$view_link = str_replace(array('%pagename%','%postname%'), $post_name, $permalink);
 	$return = '<strong>' . __('Permalink:') . "</strong>\n" . '<span id="sample-permalink">' . $display_link . "</span>\n";
 	$return .= '<span id="edit-slug-buttons"><a href="#post_name" class="edit-slug button" onclick="edit_permalink(' . $id . '); return false;">' . __('Edit') . "</a></span>\n";
+	if ( isset($view_post) )
+		$return .= "<span id='view-post-btn'><a href='$view_link' class='button' target='_blank'>$view_post</a></span>\n";
+
 	return $return;
 }
 
@@ -1113,13 +1130,12 @@ function post_preview() {
  * @since 2.7
  */
 function wp_tiny_mce( $teeny = false ) {
+	global $concatenate_scripts, $compress_scripts;
+	
 	if ( ! user_can_richedit() )
 		return;
 
 	$baseurl = includes_url('js/tinymce');
-
-	$mce_css = $baseurl . '/wordpress.css';
-	$mce_css = apply_filters('mce_css', $mce_css);
 
 	$mce_locale = ( '' == get_locale() ) ? 'en' : strtolower( substr(get_locale(), 0, 2) ); // only ISO 639-1
 
@@ -1146,7 +1162,7 @@ function wp_tiny_mce( $teeny = false ) {
 		*/
 		$mce_external_plugins = apply_filters('mce_external_plugins', array());
 
-		$ext_plugins = "\n";
+		$ext_plugins = '';
 		if ( ! empty($mce_external_plugins) ) {
 
 			/*
@@ -1268,11 +1284,15 @@ function wp_tiny_mce( $teeny = false ) {
 		'entities' => '38,amp,60,lt,62,gt',
 		'accessibility_focus' => true,
 		'tab_focus' => ':prev,:next',
-		'content_css' => "$mce_css",
 		'save_callback' => 'switchEditors.saveCallback',
 		'wpeditimage_disable_captions' => $no_captions,
 		'plugins' => "$plugins"
 	);
+
+	$mce_css = apply_filters('mce_css', '');
+
+	if ( ! empty($mce_css) )
+		$initArray['content_css'] = "$mce_css";
 
 	// For people who really REALLY know what they're doing with TinyMCE
 	// You can modify initArray to add, remove, change elements of the config before tinyMCE.init
@@ -1284,9 +1304,12 @@ function wp_tiny_mce( $teeny = false ) {
 		$initArray = apply_filters('tiny_mce_before_init', $initArray);
 	}
 
-	$language = $initArray['language'];
+	if ( ! isset($concatenate_scripts) )
+		script_concat_settings();
 
-	$ver = apply_filters('tiny_mce_version', '3101');
+	$language = $initArray['language'];
+	$zip = $compress_scripts ? 1 : 0;
+	$ver = apply_filters('tiny_mce_version', '3211');
 
 	if ( 'en' != $language )
 		include_once(ABSPATH . WPINC . '/js/tinymce/langs/wp-langs.php');
@@ -1304,50 +1327,31 @@ tinyMCEPreInit = {
 	suffix : "",
 	query : "ver=<?php echo $ver; ?>",
 	mceInit : {<?php echo $mce_options; ?>},
-
-	go : function() {
-		var t = this, sl = tinymce.ScriptLoader, ln = t.mceInit.language, th = t.mceInit.theme, pl = t.mceInit.plugins;
-
-		sl.markDone(t.base + '/langs/' + ln + '.js');
-
-		sl.markDone(t.base + '/themes/' + th + '/langs/' + ln + '.js');
-		sl.markDone(t.base + '/themes/' + th + '/langs/' + ln + '_dlg.js');
-
-		tinymce.each(pl.split(','), function(n) {
-			if (n && n.charAt(0) != '-') {
-				sl.markDone(t.base + '/plugins/' + n + '/langs/' + ln + '.js');
-				sl.markDone(t.base + '/plugins/' + n + '/langs/' + ln + '_dlg.js');
-			}
-		});
-	},
-
-	load_ext : function(url,lang) {
-		var sl = tinymce.ScriptLoader;
-
-		sl.markDone(url + '/langs/' + lang + '.js');
-		sl.markDone(url + '/langs/' + lang + '_dlg.js');
-	}
+	load_ext : function(url,lang){var sl=tinymce.ScriptLoader;sl.markDone(url+'/langs/'+lang+'.js');sl.markDone(url+'/langs/'+lang+'_dlg.js');}
 };
 /* ]]> */
 </script>
-<script type="text/javascript" src="<?php echo $baseurl; ?>/tiny_mce.js?ver=<?php echo $ver; ?>"></script>
-<?php if ( 'en' != $language && isset($lang) ) { ?>
-<script type="text/javascript">
-<?php echo $lang; ?>
-</script>
-<?php } else { ?>
-<script type="text/javascript" src="<?php echo $baseurl; ?>/langs/wp-langs-en.js?ver=<?php echo $ver; ?>"></script>
-<?php } ?>
-<script type="text/javascript">
-<?php if ( $ext_plugins ) echo $ext_plugins; ?>
-
-// Mark translations as done
-tinyMCEPreInit.go();
-
-// Init
-tinyMCE.init(tinyMCEPreInit.mceInit);
-</script>
 
 <?php
-}
+	if ( $concatenate_scripts )
+		echo "<script type='text/javascript' src='$baseurl/wp-tinymce.php?c=$zip&ver=$ver'></script>\n";
+	else
+		echo "<script type='text/javascript' src='$baseurl/tiny_mce.js?ver=$ver'></script>\n";
+
+	if ( 'en' != $language && isset($lang) )
+		echo "<script type='text/javascript'>\n$lang\n</script>\n";
+	else
+		echo "<script type='text/javascript' src='$baseurl/langs/wp-langs-en.js?ver=$ver'></script>\n";
 ?>
+
+<script type="text/javascript">
+<?php if ( $ext_plugins ) echo "$ext_plugins\n"; ?>
+<?php if ( $concatenate_scripts ) { ?>
+tinyMCEPreInit.go();
+<?php } else { ?>
+(function(){var t=tinyMCEPreInit,sl=tinymce.ScriptLoader,ln=t.mceInit.language,th=t.mceInit.theme,pl=t.mceInit.plugins;sl.markDone(t.base+'/langs/'+ln+'.js');sl.markDone(t.base+'/themes/'+th+'/langs/'+ln+'.js');sl.markDone(t.base+'/themes/'+th+'/langs/'+ln+'_dlg.js');tinymce.each(pl.split(','),function(n){if(n&&n.charAt(0)!='-'){sl.markDone(t.base+'/plugins/'+n+'/langs/'+ln+'.js');sl.markDone(t.base+'/plugins/'+n+'/langs/'+ln+'_dlg.js');}});})();
+<?php } ?>
+tinyMCE.init(tinyMCEPreInit.mceInit);
+</script>
+<?php
+}

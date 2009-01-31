@@ -16,6 +16,7 @@ define('WP_ADMIN', true);
 
 require_once('../wp-load.php');
 require_once('includes/admin.php');
+@header('Content-Type: text/html; charset=' . get_option('blog_charset'));
 
 if ( ! is_user_logged_in() ) {
 
@@ -62,6 +63,18 @@ case 'ajax-tag-search' :
 
 	echo join( $results, "\n" );
 	die;
+	break;
+case 'wp-compression-test' :
+	if ( !current_user_can( 'manage_options' ) )
+		die('-1');
+	
+	if ( isset($_GET['tested']) ) {
+		if ( 1 == $_GET['tested'] )
+			update_option('can_compress_scripts', 1);
+		elseif ( 0 == $_GET['tested'] )
+			update_option('can_compress_scripts', 0);
+	}
+	die('0');
 	break;
 default :
 	do_action( 'wp_ajax_' . $_GET['action'] );
@@ -507,6 +520,9 @@ case 'get-tagcloud' :
 	if ( empty( $tags ) )
 		die( __('No tags found!') );
 
+	if ( is_wp_error($tags) )
+		die($tags->get_error_message());
+
 	foreach ( $tags as $key => $tag ) {
 		$tags[ $key ]->link = '#';
 		$tags[ $key ]->id = $tag->term_id;
@@ -669,6 +685,7 @@ case 'edit-comment' :
 	$mode = ( isset($_POST['mode']) && 'single' == $_POST['mode'] ) ? 'single' : 'detail';
 	$position = ( isset($_POST['position']) && (int) $_POST['position']) ? (int) $_POST['position'] : '-1';
 	$checkbox = ( isset($_POST['checkbox']) && true == $_POST['checkbox'] ) ? 1 : 0;
+	$comments_listing = isset($_POST['comments_listing']) ? $_POST['comments_listing'] : '';
 
 	if ( get_option('show_avatars') && 'single' != $mode )
 		add_filter( 'comment_author', 'floated_admin_avatar' );
@@ -676,7 +693,7 @@ case 'edit-comment' :
 	$x = new WP_Ajax_Response();
 
 	ob_start();
-		_wp_comment_row( $comment_id, $mode, true, $checkbox );
+		_wp_comment_row( $comment_id, $mode, $comments_listing, $checkbox );
 		$comment_list_item = ob_get_contents();
 	ob_end_clean();
 
@@ -909,7 +926,7 @@ case 'hidden-columns' :
 	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
 	$hidden = explode( ',', $_POST['hidden'] );
 	$page = isset( $_POST['page'] )? $_POST['page'] : '';
-	if ( !preg_match( '/^[a-z-_]+$/', $page ) ) {
+	if ( !preg_match( '/^[a-z_-]+$/', $page ) ) {
 		die(-1);
 	}
 	$current_user = wp_get_current_user();

@@ -1131,6 +1131,8 @@ function wp_delete_post($postid = 0) {
 		$children = $wpdb->get_results($children_query);
 
 		$wpdb->update( $wpdb->posts, $parent_data, $parent_where + array( 'post_type' => 'page' ) );
+	} else {
+		unstick_post($postid);
 	}
 
 	// Do raw query.  wp_get_post_revisions() is filtered
@@ -2491,6 +2493,8 @@ function wp_delete_attachment($postid) {
 	$meta = wp_get_attachment_metadata( $postid );
 	$file = get_attached_file( $postid );
 
+	do_action('delete_attachment', $postid);
+
 	/** @todo Delete for pluggable post taxonomies too */
 	wp_delete_object_term_relationships($postid, array('category', 'post_tag'));
 
@@ -2526,8 +2530,6 @@ function wp_delete_attachment($postid) {
 		@ unlink($file);
 
 	clean_post_cache($postid);
-
-	do_action('delete_attachment', $postid);
 
 	return $post;
 }

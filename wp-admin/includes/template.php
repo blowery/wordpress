@@ -123,7 +123,7 @@ function _cat_row( $category, $level, $name_override = false ) {
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 		$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 		if ( $default_cat_id != $category->term_id )
-			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("categories.php?action=delete&amp;cat_ID=$category->term_id", 'delete-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+			$actions['delete'] = "<a class='delete:the-list:cat-$category->term_id submitdelete' href='" . wp_nonce_url("categories.php?action=delete&amp;cat_ID=$category->term_id", 'delete-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -181,6 +181,11 @@ function _cat_row( $category, $level, $name_override = false ) {
 			case 'posts':
 				$attributes = 'class="posts column-posts num"' . $style;
 				$output .= "<td $attributes>$posts_count</td>\n";
+				break;
+			default:
+				$output .= "<td $attributes>";
+				$output .= apply_filters('manage_categories_custom_column', $column_name, $category->term_id);
+				$output .= "</td>";
 		}
 	}
 	$output .= '</tr>';
@@ -288,7 +293,7 @@ function link_cat_row( $category, $name_override = false ) {
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 		$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 		if ( $default_cat_id != $category->term_id )
-			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("link-category.php?action=delete&amp;cat_ID=$category->term_id", 'delete-link-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+			$actions['delete'] = "<a class='delete:the-list:link-cat-$category->term_id submitdelete' href='" . wp_nonce_url("link-category.php?action=delete&amp;cat_ID=$category->term_id", 'delete-link-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -345,6 +350,11 @@ function link_cat_row( $category, $name_override = false ) {
 			case 'links':
 				$attributes = 'class="links column-links num"' . $style;
 				$output .= "<td $attributes>$count</td>";
+				break;
+			default:
+				$output .= "<td $attributes>";
+				$output .= apply_filters('manage_link_categories_custom_column', $column_name, $category->term_id);
+				$output .= "</td>";
 		}
 	}
 	$output .= '</tr>';
@@ -612,7 +622,7 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					$actions = array();
 					$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 					$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
-					$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this tag '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+					$actions['delete'] = "<a class='delete:the-list:tag-$tag->term_id submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this tag '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
 					$action_count = count($actions);
 					$i = 0;
 					$out .= '<div class="row-actions">';
@@ -633,6 +643,10 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					$attributes = 'class="posts column-posts num"' . $style;
 					$out .= "<td $attributes>$count</td>";
 					break;
+				default:
+					$out .= "<td $attributes>";
+					$out .= apply_filters("manage_${taxonomy}_custom_column", $column_name, $tag->term_id);
+					$out .= "</td>";
 			}
 		}
 
@@ -1332,6 +1346,7 @@ function _post_row($a_post, $pending_comments, $mode) {
 		case 'date':
 			if ( '0000-00-00 00:00:00' == $post->post_date && 'date' == $column_name ) {
 				$t_time = $h_time = __('Unpublished');
+				$time_diff = 0;
 			} else {
 				$t_time = get_the_time(__('Y/m/d g:i:s A'));
 				$m_time = $post->post_date;
@@ -1339,20 +1354,10 @@ function _post_row($a_post, $pending_comments, $mode) {
 
 				$time_diff = time() - $time;
 
-				if ( ( 'future' == $post->post_status) ) {
-					if ( $time_diff <= 0 ) {
-						$h_time = sprintf( __('%s from now'), human_time_diff( $time ) );
-					} else {
-						$h_time = $t_time;
-						$missed = true;
-					}
-				} else {
-
-					if ( $time_diff > 0 && $time_diff < 24*60*60 )
-						$h_time = sprintf( __('%s ago'), human_time_diff( $time ) );
-					else
-						$h_time = mysql2date(__('Y/m/d'), $m_time);
-				}
+				if ( $time_diff > 0 && $time_diff < 24*60*60 )
+					$h_time = sprintf( __('%s ago'), human_time_diff( $time ) );
+				else
+					$h_time = mysql2date(__('Y/m/d'), $m_time);
 			}
 
 			echo '<td ' . $attributes . '>';
@@ -1364,7 +1369,7 @@ function _post_row($a_post, $pending_comments, $mode) {
 			if ( 'publish' == $post->post_status ) {
 				_e('Published');
 			} elseif ( 'future' == $post->post_status ) {
-				if ( isset($missed) )
+				if ( $time_diff > 0 )
 					echo '<strong class="attention">' . __('Missed schedule') . '</strong>';
 				else
 					_e('Scheduled');
@@ -1543,27 +1548,32 @@ foreach ($posts_columns as $column_name=>$column_display_name) {
 	case 'date':
 		if ( '0000-00-00 00:00:00' == $page->post_date && 'date' == $column_name ) {
 			$t_time = $h_time = __('Unpublished');
+			$time_diff = 0;
 		} else {
 			$t_time = get_the_time(__('Y/m/d g:i:s A'));
 			$m_time = $page->post_date;
 			$time = get_post_time('G', true);
 
-			if ( ( abs(time() - $time) ) < 86400 ) {
-				if ( ( 'future' == $page->post_status) )
-					$h_time = sprintf( __('%s from now'), human_time_diff( $time ) );
-				else
-					$h_time = sprintf( __('%s ago'), human_time_diff( $time ) );
-			} else {
+			$time_diff = time() - $time;
+
+			if ( $time_diff > 0 && $time_diff < 24*60*60 )
+				$h_time = sprintf( __('%s ago'), human_time_diff( $time ) );
+			else
 				$h_time = mysql2date(__('Y/m/d'), $m_time);
-			}
 		}
 		echo '<td ' . $attributes . '>';
 		echo '<abbr title="' . $t_time . '">' . apply_filters('post_date_column_time', $h_time, $page, $column_name, '') . '</abbr>';
 		echo '<br />';
-		if ( 'publish' == $page->post_status || 'future' == $page->post_status )
+		if ( 'publish' == $page->post_status ) {
 			_e('Published');
-		else
+		} elseif ( 'future' == $page->post_status ) {
+			if ( $time_diff > 0 )
+				echo '<strong class="attention">' . __('Missed schedule') . '</strong>';
+			else
+				_e('Scheduled');
+		} else {
 			_e('Last Modified');
+		}
 		echo '</td>';
 		break;
 	case 'title':
@@ -1805,13 +1815,19 @@ function user_row( $user_object, $style = '', $role = '' ) {
 	if ( strlen( $short_url ) > 35 )
 		$short_url = substr( $short_url, 0, 32 ).'...';
 	$numposts = get_usernumposts( $user_object->ID );
+	$checkbox = '';
+	// Check if the user for this row is editable 
 	if ( current_user_can( 'edit_user', $user_object->ID ) ) {
+		// Set up the user editing link 
+		// TODO: make profile/user-edit determination a seperate function
 		if ($current_user->ID == $user_object->ID) {
 			$edit_link = 'profile.php';
 		} else {
 			$edit_link = clean_url( add_query_arg( 'wp_http_referer', urlencode( clean_url( stripslashes( $_SERVER['REQUEST_URI'] ) ) ), "user-edit.php?user_id=$user_object->ID" ) );
 		}
 		$edit = "<strong><a href=\"$edit_link\">$user_object->user_login</a></strong><br />";
+		
+		// Set up the hover actions for this user
 		$actions = array();
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 		if ( $current_user->ID != $user_object->ID )
@@ -1825,6 +1841,10 @@ function user_row( $user_object, $style = '', $role = '' ) {
 			$edit .= "<span class='$action'>$link$sep</span>";
 		}
 		$edit .= '</div>';
+		
+		// Set up the checkbox (because the user is editable, otherwise its empty)
+		$checkbox = "<input type='checkbox' name='users[]' id='user_{$user_object->ID}' class='$role' value='{$user_object->ID}' />";
+		
 	} else {
 		$edit = '<strong>' . $user_object->user_login . '</strong>';
 	}
@@ -1832,7 +1852,7 @@ function user_row( $user_object, $style = '', $role = '' ) {
 	$r = "<tr id='user-$user_object->ID'$style>";
 	$columns = get_column_headers('users');
 	$hidden = get_hidden_columns('users');
-	$avatar = get_avatar( $user_object->user_email, 32 );
+	$avatar = get_avatar( $user_object->ID, 32 );
 	foreach ( $columns as $column_name => $column_display_name ) {
 		$class = "class=\"$column_name column-$column_name\"";
 
@@ -1844,7 +1864,7 @@ function user_row( $user_object, $style = '', $role = '' ) {
 
 		switch ($column_name) {
 			case 'cb':
-				$r .= "<th scope='row' class='check-column'><input type='checkbox' name='users[]' id='user_{$user_object->ID}' class='$role' value='{$user_object->ID}' /></th>";
+				$r .= "<th scope='row' class='check-column'>$checkbox</th>";
 				break;
 			case 'username':
 				$r .= "<td $attributes>$avatar $edit</td>";
@@ -1868,6 +1888,11 @@ function user_row( $user_object, $style = '', $role = '' ) {
 				} else {
 					$r .= 0;
 				}
+				$r .= "</td>";
+				break;
+			default:
+				$r .= "<td $attributes>";
+				$r .= apply_filters('manage_users_custom_column', $column_name, $user_object->ID);
 				$r .= "</td>";
 		}
 	}
@@ -1895,17 +1920,26 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
 	$start = abs( (int) $start );
 	$num = (int) $num;
 	$post = (int) $post;
-
-	if ( 'moderated' == $status )
+	$count = wp_count_comments();
+	$index = '';
+	
+	if ( 'moderated' == $status ) {
 		$approved = "comment_approved = '0'";
-	elseif ( 'approved' == $status )
+		$total = $count->moderated;
+	} elseif ( 'approved' == $status ) {
 		$approved = "comment_approved = '1'";
-	elseif ( 'spam' == $status )
+		$total = $count->approved;
+	} elseif ( 'spam' == $status ) {
 		$approved = "comment_approved = 'spam'";
-	else
+		$total = $count->spam;
+	} else {
 		$approved = "( comment_approved = '0' OR comment_approved = '1' )";
+		$total = $count->moderated + $count->approved;
+		$index = 'USE INDEX (comment_date_gmt)';
+	}
 
 	if ( $post ) {
+		$total = '';
 		$post = " AND comment_post_ID = '$post'";
 		$orderby = "ORDER BY comment_date_gmt ASC LIMIT $start, $num";
 	} else {
@@ -1924,24 +1958,29 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
 	else
 		$typesql = '';
 
+	if ( !empty($type) )
+		$total = '';
+
 	if ( $s ) {
+		$total = '';
 		$s = $wpdb->escape($s);
-		$comments = $wpdb->get_results("SELECT SQL_CALC_FOUND_ROWS * FROM $wpdb->comments WHERE
+		$query = "FROM $wpdb->comments WHERE
 			(comment_author LIKE '%$s%' OR
 			comment_author_email LIKE '%$s%' OR
 			comment_author_url LIKE ('%$s%') OR
 			comment_author_IP LIKE ('%$s%') OR
 			comment_content LIKE ('%$s%') ) AND
 			$approved
-			$typesql
-			$orderby");
+			$typesql";
 	} else {
-		$comments = $wpdb->get_results( "SELECT SQL_CALC_FOUND_ROWS * FROM $wpdb->comments WHERE $approved $post $typesql $orderby" );
+		$query = "FROM $wpdb->comments $index WHERE $approved $post $typesql";
 	}
 
-	update_comment_cache($comments);
+	$comments = $wpdb->get_results("SELECT * $query $orderby");
+	if ( '' === $total )
+		$total = $wpdb->get_var("SELECT COUNT(comment_ID) $query");
 
-	$total = $wpdb->get_var( "SELECT FOUND_ROWS()" );
+	update_comment_cache($comments);
 
 	return array($comments, $total);
 }
@@ -2399,7 +2438,7 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 	global $wp_locale, $post, $comment;
 
 	if ( $for_post )
-		$edit = ( in_array($post->post_status, array('draft', 'pending') ) && (!$post->post_date || '0000-00-00 00:00:00' == $post->post_date ) ) ? false : true;
+		$edit = ( in_array($post->post_status, array('draft', 'pending') ) && (!$post->post_date_gmt || '0000-00-00 00:00:00' == $post->post_date_gmt ) ) ? false : true;
 
 	$tab_index_attribute = '';
 	if ( (int) $tab_index > 0 )
@@ -2576,20 +2615,27 @@ function the_attachment_links( $id = false ) {
 <?php
 }
 
+ 
 /**
- * {@internal Missing Short Description}}
+ * Print out <option> html elements for role selectors based on $wp_roles
  *
- * @since unknown
+ * @package WordPress
+ * @subpackage Administration
+ * @since 2.1
  *
- * @param unknown_type $default
+ * @uses $wp_roles
+ * @param string $default slug for the role that should be already selected
  */
-function wp_dropdown_roles( $default = false ) {
+function wp_dropdown_roles( $selected = false ) {
 	global $wp_roles;
 	$p = '';
 	$r = '';
-	foreach( $wp_roles->role_names as $role => $name ) {
-		$name = translate_with_context($name);
-		if ( $default == $role ) // Make default first in list
+	
+	$editable_roles = get_editable_roles();
+	
+	foreach( $editable_roles as $role => $details ) {
+		$name = translate_with_context($details['name']);
+		if ( $selected == $role ) // Make default first in list
 			$p = "\n\t<option selected='selected' value='$role'>$name</option>";
 		else
 			$r .= "\n\t<option value='$role'>$name</option>";
@@ -3040,104 +3086,6 @@ function find_posts_div($found_action = '') {
 			<input id="find-posts-submit" type="submit" class="button" value="<?php _e('Select'); ?>" />
 		</div>
 	</div>
-	<script type="text/javascript">
-	/* <![CDATA[ */
-	(function($){
-		findPosts = {
-			open : function(af_name, af_val) {
-				var st = document.documentElement.scrollTop || $(document).scrollTop();
-
-				if ( af_name && af_val )
-					$('#affected').attr('name', af_name).val(af_val);
-
-				$('#find-posts').show().draggable({
-					handle: '#find-posts-head'
-				}).resizable({
-					handles: 'all',
-					minHeight: 150,
-					minWidth: 280
-				}).css({'top':st+'px','left':'50%','marginLeft':'-200px'});
-
-				$('.ui-resizable-handle').css({
-					'backgroundColor': '#e5e5e5'
-				});
-
-				$('.ui-resizable-se').css({
-					'border': '0 none',
-					'width': '15px',
-					'height': '16px',
-					'background': 'transparent url(images/se.png) no-repeat scroll 0 0'
-				});
-
-				$('#find-posts-input').focus().keyup(function(e){
-					if (e.which == 27) findPosts.close(); // close on Escape
-				});
-
-				return false;
-			},
-
-			close : function() {
-				$('#find-posts-response').html('');
-				$('#find-posts').draggable('destroy').resizable('destroy').hide();
-			},
-
-			send : function() {
-				var post = {};
-
-				post['ps'] = $('#find-posts-input').val();
-				post['action'] = 'find_posts';
-				post['_ajax_nonce'] = $('#_ajax_nonce').val();
-
-				if ( $('#find-posts-pages:checked').val() )
-					post['pages'] = 1;
-				else
-					post['posts'] = 1;
-
-				$.ajax({
-					type : 'POST',
-					url : '<?php echo admin_url('admin-ajax.php'); ?>',
-					data : post,
-					success : function(x) { findPosts.show(x); },
-					error : function(r) { findPosts.error(r); }
-				});
-			},
-
-			show : function(x) {
-
-				if ( typeof(x) == 'string' ) {
-					this.error({'responseText': x});
-					return;
-				}
-
-				var r = wpAjax.parseAjaxResponse(x);
-
-				if ( r.errors )
-					this.error({'responseText': wpAjax.broken});
-
-				r = r.responses[0];
-				$('#find-posts-response').html(r.data);
-			},
-
-			error : function(r) {
-				var er = r.statusText;
-
-				if ( r.responseText )
-					er = r.responseText.replace( /<.[^<>]*?>/g, '' );
-
-				if ( er )
-					$('#find-posts-response').html(er);
-			}
-		};
-
-		$(document).ready(function(){
-			$('#find-posts-submit').click(function(e) {
-				if ( '' == $('#find-posts-response').html() )
-					e.preventDefault();
-			});
-		});
-	})(jQuery);
-	/* ]]> */
-	</script>
 <?php
 }
 
@@ -3443,9 +3391,41 @@ function screen_icon($name = '') {
 		else
 			$name = str_replace(array('.php', '-new', '-add'), '', $hook_suffix);
 	}
-	unset($hook_suffix);
 ?>
 	<div id="icon-<?php echo $name; ?>" class="icon32"><br /></div>
+<?php
+}
+
+/**
+ * Test support for compressing JavaScript from PHP
+ *
+ * Outputs JavaScript that tests if compression from PHP works as expected
+ * and sets an option with the result. Has no effect when the current user
+ * is not an administrator. To run the test again the option 'can_compress_scripts'
+ * has to be deleted. 
+ *
+ * @since 2.8.0
+ */
+function compression_test() {
+?>
+	<script type="text/javascript" src="load-scripts.php?test=1<?php echo ( defined('ENFORCE_GZIP') && ENFORCE_GZIP ) ? '&c=gzip' : ''; ?>"></script>
+	<script type="text/javascript">
+	/* <![CDATA[ */
+	(function() {
+		var x, test = typeof wpCompressionTest == 'undefined' ? 0 : 1;
+		if ( window.XMLHttpRequest ) {
+			x = new XMLHttpRequest();
+		} else {
+			try{x=new ActiveXObject('Msxml2.XMLHTTP');}catch(e){try{x=new ActiveXObject('Microsoft.XMLHTTP');}catch(e){};}
+		}
+	
+		if (x) {
+			x.open('GET', 'admin-ajax.php?action=wp-compression-test&tested='+test+'&'+(new Date()).getTime(), true);
+			x.send('');
+		}
+	})();
+	/* ]]> */
+	</script>
 <?php
 }
 

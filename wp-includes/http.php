@@ -8,9 +8,137 @@
  *
  * @package WordPress
  * @subpackage HTTP
- * @since 2.7
+ * @since 2.7.0
  * @author Jacob Santos <wordpress@santosj.name>
  */
+
+/**
+ * Implementation for deflate and gzip transfer encodings.
+ *
+ * Includes RFC 1950, RFC 1951, and RFC 1952.
+ *
+ * @since unknown
+ * @package WordPress
+ * @subpackage HTTP
+ */
+class WP_Http_Encoding {
+
+	/**
+	 * Compress raw string using the deflate format.
+	 *
+	 * Supports the RFC 1951 standard.
+	 *
+	 * @since unknown
+	 *
+	 * @param string $raw String to compress.
+	 * @param int $level Optional, default is 9. Compression level, 9 is highest.
+	 * @param string $supports Optional, not used. When implemented it will choose the right compression based on what the server supports.
+	 * @return string|bool False on failure.
+	 */
+	function compress( $raw, $level = 9, $supports = null ) {
+		return gzdeflate( $raw, $level );
+	}
+
+	/**
+	 * Decompression of deflated string.
+	 *
+	 * Will attempt to decompress using the RFC 1950 standard, and if that fails
+	 * then the RFC 1951 standard deflate will be attempted. Finally, the RFC
+	 * 1952 standard gzip decode will be attempted. If all fail, then the
+	 * original compressed string will be returned.
+	 *
+	 * @since unknown
+	 *
+	 * @param string $compressed String to decompress.
+	 * @param int $length The optional length of the compressed data.
+	 * @return string|bool False on failure.
+	 */
+	function decompress( $compressed, $length = null ) {
+		$decompressed = gzinflate( $compressed );
+
+		if( false !== $decompressed )
+			return $decompressed;
+
+		$decompressed = gzuncompress( $compressed );
+
+		if( false !== $decompressed )
+			return $decompressed;
+
+		$decompressed = gzdecode( $compressed );
+
+		if( false !== $decompressed )
+			return $decompressed;
+
+		return $compressed;
+	}
+
+	/**
+	 * What encoding types to accept and their priority values.
+	 *
+	 * @since unknown
+	 *
+	 * @return string Types of encoding to accept.
+	 */
+	function accept_encoding() {
+		$type = array();
+		if( function_exists( 'gzinflate' ) )
+			$type[] = 'deflate;q=1.0';
+
+		if( function_exists( 'gzuncompress' ) )
+			$type[] = 'compress;q=0.5';
+
+		if( function_exists( 'gzdecode' ) )
+			$type[] = 'gzip;q=0.5';
+
+		return implode(', ', $type);
+	}
+
+	/**
+	 * What enconding the content used when it was compressed to send in the headers.
+	 *
+	 * @since unknown
+	 *
+	 * @return string Content-Encoding string to send in the header.
+	 */
+	function content_encoding() {
+		return 'deflate';
+	}
+
+	/**
+	 * Whether the content be decoded based on the headers.
+	 *
+	 * @since unknown
+	 *
+	 * @param array|string $headers All of the available headers.
+	 * @return bool
+	 */
+	function should_decode($headers) {
+		if( is_array( $headers ) ) {
+			if( array_key_exists('content-encoding', $headers) && ! empty( $headers['content-encoding'] ) )
+				return true;
+		} else if( is_string( $headers ) ) {
+			return ( stripos($headers, 'content-encoding:') !== false );
+		}
+
+		return false;
+	}
+
+	/**
+	 * Whether decompression and compression are supported by the PHP version.
+	 *
+	 * Each function is tested instead of checking for the zlib extension, to
+	 * ensure that the functions all exist in the PHP version and aren't
+	 * disabled.
+	 *
+	 * @since unknown
+	 *
+	 * @return bool
+	 */
+	function is_available() {
+		return ( function_exists('gzuncompress') || function_exists('gzdeflate') ||
+				 function_exists('gzinflate') );
+	}
+}
 
 /**
  * WordPress HTTP Class for managing HTTP Transports and making HTTP requests.
@@ -30,16 +158,25 @@
  * requirement, it will be easy to add the static keyword to the code. It is not
  * as easy to convert a function to a method after enough code uses the old way.
  *
+ * Debugging includes several actions, which pass different variables for
+ * debugging the HTTP API.
+ *
+ * <strong>http_transport_get_debug</strong> - gives working, nonblocking, and
+ * blocking transports.
+ *
+ * <strong>http_transport_post_debug</strong> - gives working, nonblocking, and
+ * blocking transports.
+ *
  * @package WordPress
  * @subpackage HTTP
- * @since 2.7
+ * @since 2.7.0
  */
 class WP_Http {
 
 	/**
 	 * PHP4 style Constructor - Calls PHP5 Style Constructor
 	 *
-	 * @since 2.7
+	 * @since 2.7.0
 	 * @return WP_Http
 	 */
 	function WP_Http() {
@@ -55,7 +192,7 @@ class WP_Http {
 	 * The transport are setup to save time. This should only be called once, so
 	 * the overhead should be fine.
 	 *
-	 * @since 2.7
+	 * @since 2.7.0
 	 * @return WP_Http
 	 */
 	function __construct() {
@@ -81,7 +218,7 @@ class WP_Http {
 	 * period of time, or established connection failed because connected host
 	 * has failed to respond."
 	 *
-	 * @since 2.7
+	 * @since 2.7.0
 	 * @access private
 	 *
 	 * @param array $args Request args, default us an empty array
@@ -114,6 +251,9 @@ class WP_Http {
 			}
 		}
 
+		if( has_filter('http_transport_get_debug') )
+			do_action('http_transport_get_debug', $working_transport, $blocking_transport, $nonblocking_transport);
+
 		if ( isset($args['blocking']) && !$args['blocking'] )
 			return $nonblocking_transport;
 		else
@@ -129,7 +269,7 @@ class WP_Http {
 	 * to send content, but the streams transport can. This is a limitation that
 	 * is addressed here, by just not including that transport.
 	 *
-	 * @since 2.7
+	 * @since 2.7.0
 	 * @access private
 	 *
 	 * @param array $args Request args, default us an empty array
@@ -155,6 +295,9 @@ class WP_Http {
 					$nonblocking_transport[] = &$working_transport[$transport];
 			}
 		}
+
+		if( has_filter('http_transport_post_debug') )
+			do_action('http_transport_post_debug', $working_transport, $blocking_transport, $nonblocking_transport);
 
 		if ( isset($args['blocking']) && !$args['blocking'] )
 			return $nonblocking_transport;
@@ -201,7 +344,7 @@ class WP_Http {
 	 * continue going after making the request.
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
@@ -217,11 +360,14 @@ class WP_Http {
 			'httpversion' => apply_filters( 'http_request_version', '1.0'),
 			'user-agent' => apply_filters( 'http_headers_useragent', 'WordPress/' . $wp_version ),
 			'blocking' => true,
-			'headers' => array(), 'body' => null
+			'headers' => array(),
+			'body' => null,
+			'compress' => false,
+			'decompress' => true
 		);
 
 		$r = wp_parse_args( $args, $defaults );
-		$r = apply_filters( 'http_request_args', $r );
+		$r = apply_filters( 'http_request_args', $r, $url );
 
 		if ( is_null( $r['headers'] ) )
 			$r['headers'] = array();
@@ -241,7 +387,12 @@ class WP_Http {
 			unset($r['headers']['user-agent']);
 		}
 
+		if( WP_Http_Encoding::is_available() )
+			$r['headers']['Accept-Encoding'] = WP_Http_Encoding::accept_encoding();
+
 		if ( is_null($r['body']) ) {
+			// Some servers fail when sending content without the content-length
+			// header being set.
 			$r['headers']['Content-Length'] = 0;
 			$transports = WP_Http::_getTransport($r);
 		} else {
@@ -257,11 +408,17 @@ class WP_Http {
 			$transports = WP_Http::_postTransport($r);
 		}
 
+		if( has_action('http_api_debug') )
+			do_action('http_api_debug', $transports, 'transports_list');
+
 		$response = array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
 		foreach( (array) $transports as $transport ) {
 			$response = $transport->request($url, $r);
 
-			if( !is_wp_error($response) )
+			if( has_action('http_api_debug') )
+				do_action( 'http_api_debug', $response, 'response', get_class($transport) );
+
+			if( ! is_wp_error($response) )
 				return $response;
 		}
 
@@ -274,7 +431,7 @@ class WP_Http {
 	 * Used for sending data that is expected to be in the body.
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
@@ -292,7 +449,7 @@ class WP_Http {
 	 * Used for sending data that is expected to be in the body.
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
@@ -310,7 +467,7 @@ class WP_Http {
 	 * Used for sending data that is expected to be in the body.
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
@@ -327,7 +484,7 @@ class WP_Http {
 	 *
 	 * @access public
 	 * @static
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $strResponse The full response string
 	 * @return array Array with 'headers' and 'body' keys.
@@ -346,7 +503,7 @@ class WP_Http {
 	 *
 	 * @access public
 	 * @static
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string|array $headers
 	 * @return array Processed string headers
@@ -387,11 +544,11 @@ class WP_Http {
 	 *
 	 * @todo Add support for footer chunked headers.
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 * @static
 	 *
 	 * @param string $body Body content
-	 * @return bool|string|WP_Error False if not chunked encoded. WP_Error on failure. Chunked decoded body on success.
+	 * @return string Chunked decoded body on success or raw body on failure.
 	 */
 	function chunkTransferDecode($body) {
 		$body = str_replace(array("\r\n", "\r"), "\n", $body);
@@ -402,15 +559,12 @@ class WP_Http {
 		$parsedBody = '';
 		//$parsedHeaders = array(); Unsupported
 
-		$done = false;
-
-		do {
+		while ( true ) {
 			$hasChunk = (bool) preg_match( '/^([0-9a-f]+)(\s|\n)+/mi', $body, $match );
 
 			if ( $hasChunk ) {
-				if ( empty($match[1]) ) {
-					return new WP_Error('http_chunked_decode', __('Does not appear to be chunked encoded or body is malformed.') );
-				}
+				if ( empty( $match[1] ) )
+					return $body;
 
 				$length = hexdec( $match[1] );
 				$chunkLength = strlen( $match[0] );
@@ -420,15 +574,12 @@ class WP_Http {
 
 				$body = ltrim(str_replace(array($match[0], $strBody), '', $body), "\n");
 
-				if( "0" == trim($body) ) {
-					$done = true;
+				if( "0" == trim($body) )
 					return $parsedBody; // Ignore footer headers.
-					break;
-				}
 			} else {
-				return new WP_Error('http_chunked_decode', __('Does not appear to be chunked encoded or body is malformed.') );
+				return $body;
 			}
-		} while ( false === $done );
+		}
 	}
 }
 
@@ -440,7 +591,7 @@ class WP_Http {
  *
  * @package WordPress
  * @subpackage HTTP
- * @since 2.7
+ * @since 2.7.0
  */
 class WP_Http_Fsockopen {
 	/**
@@ -578,13 +729,16 @@ class WP_Http_Fsockopen {
 		if ( ! empty( $process['body'] ) && isset( $arrHeaders['headers']['transfer-encoding'] ) && 'chunked' == $arrHeaders['headers']['transfer-encoding'] )
 			$process['body'] = WP_Http::chunkTransferDecode($process['body']);
 
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($arrHeaders) )
+			$process['body'] = WP_Http_Encoding::decompress( $process['body'] );
+
 		return array('headers' => $arrHeaders['headers'], 'body' => $process['body'], 'response' => $arrHeaders['response']);
 	}
 
 	/**
 	 * Whether this class can be used for retrieving an URL.
 	 *
-	 * @since 2.7
+	 * @since 2.7.0
 	 * @static
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
@@ -608,7 +762,7 @@ class WP_Http_Fsockopen {
  *
  * @package WordPress
  * @subpackage HTTP
- * @since 2.7
+ * @since 2.7.0
  */
 class WP_Http_Fopen {
 	/**
@@ -622,7 +776,7 @@ class WP_Http_Fopen {
 	 * @see WP_Http::retrieve For default options descriptions.
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
@@ -645,7 +799,7 @@ class WP_Http_Fopen {
 		if ( false === $arrURL )
 			return new WP_Error('http_request_failed', sprintf(__('Malformed URL: %s'), $url));
 
-		if ( 'http' != $arrURL['scheme'] || 'https' != $arrURL['scheme'] )
+		if ( 'http' != $arrURL['scheme'] && 'https' != $arrURL['scheme'] )
 			$url = str_replace($arrURL['scheme'], 'http', $url);
 
 		if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) )
@@ -688,12 +842,16 @@ class WP_Http_Fopen {
 		if ( ! empty( $strResponse ) && isset( $processedHeaders['headers']['transfer-encoding'] ) && 'chunked' == $processedHeaders['headers']['transfer-encoding'] )
 			$strResponse = WP_Http::chunkTransferDecode($strResponse);
 
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders) )
+			$strResponse = WP_Http_Encoding::decompress( $strResponse );
+
 		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response']);
 	}
 
 	/**
 	 * Whether this class can be used for retrieving an URL.
 	 *
+	 * @since 2.7.0
 	 * @static
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
@@ -715,14 +873,14 @@ class WP_Http_Fopen {
  *
  * @package WordPress
  * @subpackage HTTP
- * @since 2.7
+ * @since 2.7.0
  */
 class WP_Http_Streams {
 	/**
 	 * Send a HTTP request to a URI using streams with fopen().
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url
 	 * @param str|array $args Optional. Override the defaults.
@@ -751,7 +909,7 @@ class WP_Http_Streams {
 		if ( false === $arrURL )
 			return new WP_Error('http_request_failed', sprintf(__('Malformed URL: %s'), $url));
 
-		if ( 'http' != $arrURL['scheme'] || 'https' != $arrURL['scheme'] )
+		if ( 'http' != $arrURL['scheme'] && 'https' != $arrURL['scheme'] )
 			$url = str_replace($arrURL['scheme'], 'http', $url);
 
 		// Convert Header array to string.
@@ -778,7 +936,7 @@ class WP_Http_Streams {
 
 		$context = stream_context_create($arrContext);
 
-		if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) )
+		if ( ! defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) )
 			$handle = @fopen($url, 'r', false, $context);
 		else
 			$handle = fopen($url, 'r', false, $context);
@@ -799,6 +957,8 @@ class WP_Http_Streams {
 		$strResponse = stream_get_contents($handle);
 		$meta = stream_get_meta_data($handle);
 
+		fclose($handle);
+
 		$processedHeaders = array();
 		if( isset( $meta['wrapper_data']['headers'] ) )
 			$processedHeaders = WP_Http::processHeaders($meta['wrapper_data']['headers']);
@@ -808,7 +968,8 @@ class WP_Http_Streams {
 		if ( ! empty( $strResponse ) && isset( $processedHeaders['headers']['transfer-encoding'] ) && 'chunked' == $processedHeaders['headers']['transfer-encoding'] )
 			$strResponse = WP_Http::chunkTransferDecode($strResponse);
 
-		fclose($handle);
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders) )
+			$strResponse = WP_Http_Encoding::decompress( $strResponse );
 
 		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response']);
 	}
@@ -818,7 +979,7 @@ class WP_Http_Streams {
 	 *
 	 * @static
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
@@ -843,7 +1004,7 @@ class WP_Http_Streams {
  *
  * @package WordPress
  * @subpackage HTTP
- * @since 2.7
+ * @since 2.7.0
  */
 class WP_Http_ExtHTTP {
 	/**
@@ -922,6 +1083,9 @@ class WP_Http_ExtHTTP {
 				$theBody = http_chunked_decode($theBody);
 		}
 
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders) )
+			$theBody = http_inflate( $theBody );
+
 		$theResponse = array();
 		$theResponse['code'] = $info['response_code'];
 		$theResponse['message'] = get_status_header_desc($info['response_code']);
@@ -933,7 +1097,7 @@ class WP_Http_ExtHTTP {
 	 * Whether this class can be used for retrieving an URL.
 	 *
 	 * @static
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
@@ -959,7 +1123,7 @@ class WP_Http_Curl {
 	 * Send a HTTP request to a URI using cURL extension.
 	 *
 	 * @access public
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @param string $url
 	 * @param str|array $args Optional. Override the defaults.
@@ -983,13 +1147,16 @@ class WP_Http_Curl {
 			unset($r['headers']['user-agent']);
 		}
 
-		// If timeout is a float less than 1, round it up to 1.
+		// cURL extension will sometimes fail when the timeout is less than 1 as
+		// it may round down to 0, which gives it unlimited timeout.
 		if ( $r['timeout'] > 0 && $r['timeout'] < 1 )
 			$r['timeout'] = 1;
 
 		$handle = curl_init();
 		curl_setopt( $handle, CURLOPT_URL, $url);
 
+		// The cURL extension requires that the option be set for the HEAD to
+		// work properly.
 		if ( 'HEAD' === $r['method'] ) {
 			curl_setopt( $handle, CURLOPT_NOBODY, true );
 		}
@@ -1008,6 +1175,7 @@ class WP_Http_Curl {
 		curl_setopt( $handle, CURLOPT_TIMEOUT, $r['timeout'] );
 		curl_setopt( $handle, CURLOPT_MAXREDIRS, $r['redirection'] );
 
+		// The option doesn't work with safe mode or when open_basedir is set.
 		if ( !ini_get('safe_mode') && !ini_get('open_basedir') )
 			curl_setopt( $handle, CURLOPT_FOLLOWLOCATION, true );
 
@@ -1019,6 +1187,13 @@ class WP_Http_Curl {
 		else
 			curl_setopt( $handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1 );
 
+		// Cookies are not handled by the HTTP API currently. Allow for plugin
+		// authors to handle it themselves... Although, it is somewhat pointless
+		// without some reference.
+		do_action_ref_array( 'http_api_curl', array(&$handle) );
+
+		// We don't need to return the body, so don't. Just execution request
+		// and return.
 		if ( ! $r['blocking'] ) {
 			curl_exec( $handle );
 			curl_close( $handle );
@@ -1045,11 +1220,15 @@ class WP_Http_Curl {
 			$theHeaders = array( 'headers' => array() );
 			$theBody = '';
 		}
+
 		$response = array();
 		$response['code'] = curl_getinfo( $handle, CURLINFO_HTTP_CODE );
 		$response['message'] = get_status_header_desc($response['code']);
 
 		curl_close( $handle );
+
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders) )
+			$theBody = WP_Http_Encoding::decompress( $theBody );
 
 		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $response);
 	}
@@ -1058,7 +1237,7 @@ class WP_Http_Curl {
 	 * Whether this class can be used for retrieving an URL.
 	 *
 	 * @static
-	 * @since 2.7
+	 * @since 2.7.0
 	 *
 	 * @return boolean False means this class can not be used, true means it can.
 	 */
@@ -1073,7 +1252,7 @@ class WP_Http_Curl {
 /**
  * Returns the initialized WP_Http Object
  *
- * @since 2.7
+ * @since 2.7.0
  * @access private
  *
  * @return WP_Http HTTP Transport object.
@@ -1112,7 +1291,7 @@ function &_wp_http_get_object() {
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return string The body of the response
+ * @return WP_Error|string The body of the response or WP_Error on failure.
  */
 function wp_remote_request($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1124,11 +1303,11 @@ function wp_remote_request($url, $args = array()) {
  *
  * @see wp_remote_request() For more information on the response array format.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return string The body of the response
+ * @return WP_Error|string The body of the response or WP_Error on failure.
  */
 function wp_remote_get($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1141,11 +1320,11 @@ function wp_remote_get($url, $args = array()) {
  *
  * @see wp_remote_request() For more information on the response array format.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return string The body of the response
+ * @return WP_Error|string The body of the response or WP_Error on failure.
  */
 function wp_remote_post($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1157,11 +1336,11 @@ function wp_remote_post($url, $args = array()) {
  *
  * @see wp_remote_request() For more information on the response array format.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return string The body of the response
+ * @return WP_Error|string The body of the response or WP_Error on failure.
  */
 function wp_remote_head($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1171,7 +1350,7 @@ function wp_remote_head($url, $args = array()) {
 /**
  * Retrieve only the headers from the raw response.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param array $response HTTP response.
  * @return array The headers of the response. Empty array if incorrect parameter given.
@@ -1186,7 +1365,7 @@ function wp_remote_retrieve_headers(&$response) {
 /**
  * Retrieve a single header by name from the raw response.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param array $response
  * @param string $header Header name to retrieve value from.
@@ -1207,7 +1386,7 @@ function wp_remote_retrieve_header(&$response, $header) {
  *
  * Will return an empty array if incorrect parameter value is given.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param array $response HTTP response.
  * @return array The keys 'code' and 'message' give information on the response.
@@ -1224,7 +1403,7 @@ function wp_remote_retrieve_response_code(&$response) {
  *
  * Will return an empty array if incorrect parameter value is given.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param array $response HTTP response.
  * @return array The keys 'code' and 'message' give information on the response.
@@ -1239,7 +1418,7 @@ function wp_remote_retrieve_response_message(&$response) {
 /**
  * Retrieve only the body from the raw response.
  *
- * @since 2.7
+ * @since 2.7.0
  *
  * @param array $response HTTP response.
  * @return string The body of the response. Empty string if no body or incorrect parameter given.
