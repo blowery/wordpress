@@ -4,7 +4,7 @@
 Plugin Name: All in One SEO Pack
 Plugin URI: http://semperfiwebdesign.com
 Description: Out-of-the-box SEO for your Wordpress blog.
-Version: 1.4.6.15
+Version: 1.4.6.16
 Author: Michael Torbert
 Author URI: http://semperfiwebdesign.com
 */

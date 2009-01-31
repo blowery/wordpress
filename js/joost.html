@@ -1,0 +1,36 @@
+<html>
+<head>
+<title>hi there</title>
+<script type="text/javascript">
+function joost_cb(u){
+  var jn = document.getElementById("jn");
+  if(u && u.joostName) jn.innerHTML = u.joostName;
+  else jn.innerHTML = "unknown user";
+  writeUser(u);
+}
+
+function writeUser(u){
+  var l = document.getElementById("list");
+  l.innerHTML = "";
+  var k,v,b=[];
+  for(k in u) {
+    v = u[k];
+    b.push("<dt>" + k + "</dt>");
+    b.push("<dd>" + v + "</dd>");
+  }
+  l.innerHTML = b.join("\n");
+}
+window.onload = function(){
+  var s = document.createElement("script");
+  s.type = "text/javascript";
+  s.src = "http://www.joost.com/auth/Userdata?json_function=joost_cb";
+  document.getElementsByTagName("head")[0].appendChild(s);
+}
+</script>
+</head>
+<body>
+<h1>Hi <span id="jn">there</span></h1>
+<dl id="list">
+</dl>
+</body>
+</html>

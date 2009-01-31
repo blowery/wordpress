@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <title>hi</title>
+    <script type="text/javascript">
+      function spit(s){
+        document.getElementById("spitter").innerHTML += ("<p>" + s + "</p>");
+      }
+    </script>
+  </head>
+  <body>
+    <div onclick="spit('outerdiv'); return false;">outer
+      <div onclick="spit('innerdiv'); return false;">inner</div>
+    </div>
+    <div id="spitter">
+      <h1>spits</h1>
+    </div>
+  </body>
+</html>

@@ -2,7 +2,7 @@
 
 /*
 Plugin Name: del.icio.us for Wordpress
-Version: 2.0
+Version: 2.0.1
 Plugin URI: http://rick.jinlabs.com/code/delicious
 Description: Displays your recently listened links. Based on <a href="http://cavemonkey50.com/code/pownce/">Pownce for Wordpress</a> by <a href="http://cavemonkey50.com/">Cavemonkey50</a>. 
 Author: Ricardo Gonz&aacute;lez
@@ -27,7 +27,8 @@ Author URI: http://rick.jinlabs.com/
 */
 
 
-define('MAGPIE_CACHE_AGE', 120);
+//define('MAGPIE_CACHE_AGE', 120);
+define('MAGPIE_CACHE_ON', 0); //2.7 Cache Bug
 define('MAGPIE_INPUT_ENCODING', 'UTF-8');
 
 $delicious_options['widget_fields']['title'] = array('label'=>'Title:', 'type'=>'text', 'default'=>'');

@@ -1,11 +1,12 @@
 <?php if (!defined ('ABSPATH')) die ('No direct access allowed'); ?><div class="wrap">
   <h2><?php _e ('Options', 'redirection') ?></h2>
 	<?php $this->submenu (true); ?>
-  <form method="post" action="<?php echo $this->url ($_SERVER['REQUEST_URI']) ?>">
 	
-	<fieldset style="clear: both">
-		<legend><?php _e ('General', 'redirection'); ?></legend>
-	  <table cellpadding="3" width="100%">
+  <form method="post" action="<?php echo $this->url ($_SERVER['REQUEST_URI']) ?>" style="clear: both">
+	
+	<?php wp_nonce_field ('redirection-update_options'); ?>
+	
+	  <table cellpadding="3" width="100%" class="form-table">
 			<tr>
 	      <th valign="top" align="right"><?php _e ('Auto-generate URL', 'redirection') ?>:</th>
 	      <td>
@@ -28,14 +29,26 @@
 					<label for="support"><span class="sub"><?php _e ('I\'m a nice person and I have helped support the author of this plugin', 'redirection'); ?></span></label>
 				</td>
 			</tr>
+			<tr>
+				<th align="right"><?php _e ('Expire Logs', 'redirection'); ?>:</th>
+				<td>
+					<input size="5" type="text" name="expire" value="<?php echo $options['expire'] ?>"/>
+					<?php _e ('days (enter 0 for no expiry)', 'redirection'); ?>
+				</td>
+			</tr>
+			<tr>
+				<th align="right"><?php _e ('RSS Token', 'redirection'); ?>:</th>
+				<td>
+					<input class="regular-text" size="5" type="text" name="token" value="<?php echo $options['token'] ?>"/><br/>
+					<?php _e ('A unique token allowing feed readers access to Redirection RSS (leave blank to auto-generate)', 'redirection'); ?>
+				</td>
+			</tr>
 		</table>
-	</fieldset>
-	
-	<fieldset>
-		<legend><?php _e ('URL Monitoring', 'redirection'); ?></legend>
+		
+		<h3><?php _e ('URL Monitoring', 'redirection'); ?></h3>
 		<p><?php _e ('You can have Redirection detect changes in URLs and have an automatic redirection created in a specific group.', 'redirection'); ?></p>
 
-		<table>
+		<table class="form-table">
 			<tr>
 				<th><?php _e ('Post &amp; Page URLs', 'redirection'); ?>:</th>
 				<td>
@@ -55,9 +68,8 @@
 				</td>
 			</tr>
 	  </table>
-	</fieldset>
 
-  <input type="submit" name="update" value="<?php _e ('Update', 'redirection') ?>"/>
+  <input class="button-primary" type="submit" name="update" value="<?php _e ('Update', 'redirection') ?>"/>
 
   </form>
 </div>
@@ -68,12 +80,14 @@
 	<p><?php _e ('Here you can import redirections from an existing .htaccess file, a CSV file, or a Redirection XML.', 'redirection'); ?></p>
 	
 	<form action="<?php echo $this->url ($_SERVER['REQUEST_URI']) ?>" method="post" accept-charset="utf-8" enctype="multipart/form-data">
+		<?php wp_nonce_field ('redirection-import'); ?>
+		
 		<input type="file" name="upload" value=""/>
 		
 		<?php _e ('Import into', 'redirection'); ?>: <select name="group">
 			<?php echo $this->select ($groups);?>
 		</select>
-		<input type="submit" name="import" value="<?php _e ('Upload', 'redirection'); ?>"/>
+		<input class="button-primary" type="submit" name="import" value="<?php _e ('Upload', 'redirection'); ?>"/>
 	</form>
 	
 	<p><?php _e ('Note that the group is ignored when uploading an XML file.', 'redirection'); ?></p>
@@ -84,6 +98,8 @@
 	<p><?php _e ('Selecting this option will delete all redirections, all logs, and any options associated with the Redirection plugin.  Make sure this is what you want to do.', 'redirection'); ?></p>
 
 	<form action="<?php echo $this->url ($_SERVER['REQUEST_URI']) ?>" method="post" accept-charset="utf-8">
-			<input type="submit" name="delete" value="<?php _e ('Delete', 'redirection') ?>"/>
+			<?php wp_nonce_field ('redirection-delete_plugin'); ?>
+			
+			<input class="button-primary" type="submit" name="delete" value="<?php _e ('Delete', 'redirection') ?>"/>
 	</form>
 </div>

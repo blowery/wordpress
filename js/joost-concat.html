@@ -1,0 +1,218 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+  <head>
+    <title>one-timey</title>
+  </head>
+  <body>
+
+    <script type="text/javascript">
+    
+var start = new Date();
+var User={ loggedIn: undefined, onlogin: [], overlay: null, callback:null, registerDiv: undefined, confirmed: undefined, overlayConfirm : undefined,
+           loggedInStr:"<div id='hasUser' class='userNavigationInfoDisplay'><ul><li class='first'>Hello, <span id='username'><a href='/users/%j/'>%u</a></span></li><li><span id='settings'><a href='/users/%j/general/'>Settings</a></span></li><li><span><a id='lnklogout' href='/logout'>Logout</a></span></li></ul></div>",
+           loggedInNavStr:"<ul><li class='first'><a href='/home'>Home</a></li><li><a href='/friends/'>Friends</a></li><li><a href='/groups/'>Groups</a></li></ul><ul><li class='first'><a href='/epg/shows/'>Shows</a></li><li><a href='/epg/music/'>Music</a></li><li><a href='/epg/film/'>Film</a></li></ul>",
+           notLoggedInStr:"<div id='notHasUser' class='userNavigationInfoDisplay'><ul><li class='first'>Hello, Stranger</li><li><span><a href='/login#login' onclick='User.loginTopBar();return false;'>Login</a></span></li><li><span><a href='/login#register' onclick='User.Register();return false;'>Sign up</a></span></li></ul></div>",
+           notLoggedInNavStr:"<ul>" +
+                              "<li class='first'><a href='/'>Home</a></li>" +
+                              "<li><a href='/groups/'>Groups</a></li>" +
+                            "</ul>" +
+                            "<ul>" +
+                              "<li class='first'><a href='/epg/shows/'>Shows</a></li>" +
+                              "<li><a href='/epg/music/'>Music</a></li>" +
+                              "<li><a href='/epg/film/'>Film</a></li>" +
+                            "</ul>",
+           loginBoxStr:'<div class="overlayClose">' +
+                        '<a title="close" class="miniButton miniButtonOverlayClose" onclick="User.hideLogin();return false;" href="#"><img alt="close" src="/static/transparent.gif"/></a>' +
+                      '</div> ' +
+                      '<div class="brick brickB4"> ' +
+                        '<div class="outerPadding">' +
+                          '<div class="outerBorder">' +
+                            '<div class="innerBorder">' +
+                              '<div class="innerPadding">' +
+                                '<div class="brickForm">' +
+                                  '<div class="content">' +
+                                    '<form action="/login" id="login_form" onsubmit="User.doLogin(); return false">' +
+                                      '<fieldset class="big">' +
+                                        '<div id="login_prompt_html" class="row">' +
+                                          '<h1>Login</h1>' +
+                                        '</div>' +
+                                        '<div class="row">' +
+                                          '<div class="label">' +
+                                            '<label for="username">Joost Name (or email)</label>' +
+                                          '</div>' +
+                                          '<div class="input"><input type="text" class="inputText" name="username" id="username" /></div>' +
+                                          '<div class="break"></div>' +
+                                        '</div>' +
+                                        '<div class="row">' +
+                                          '<div class="label"><label for="password">Password</label></div>' +
+                                          '<div class="input"><input type="password" class="inputText" name="password" id="password" /></div>' +
+                                          '<div class="break"></div>' +
+                                        '</div>' +
+                                        '<div class="row error" style="display:none" id="login_error_message_container">' +
+                                          '<div class="label"></div>' +
+                                          '<div class="warning"><p id="login_error_message"></p></div>' +
+                                          '<div class="break"></div>' +
+                                        '</div>' +
+                                        '<div class="row buttons">' +
+                                          '<div class="label"></div>' +
+                                          '<div class="input"><input type="submit" class="inputSubmit" value="Login" ></div>' +
+                                          '<div class="break"></div>' +
+                                        '</div>' +
+                                        '<div class="row buttons">' +
+                                          '<div class="label"></div>' +
+                                          '<div class="input">' +
+                                            '<a href="/login#register" onclick="User.Register();return false;">Don\'t have an account?</a>' +
+                                            '<br/><a href="/forgot/">Forgot your Joost Name or password?</a>' +
+                                            '<br/><br/><a href="#" onclick="startFBConnect(FacebookConnect.postConnect); return false;">' +
+                                              '<img width="169" height="21" id="fb_login_image" src="http://static.ak.fbcdn.net/images/fbconnect/login-buttons/connect_light_medium_long.gif" alt="Connect"/>' +
+                                            '</a>' +
+                                          '</div>' +
+                                          '<div class="break"></div>' +
+                                        '</div>' +
+                                      '</fieldset>' +
+                                    '</form>' +
+                                  '</div>' +
+                                '</div>' +
+                                '<div>' +
+                                  '<img src="/static/overlay-logo.gif" alt="Joost" class="overlayLogo" />' +
+                                  '<div class="break"></div>' +
+                                '</div>' +
+                              '</div>' +
+                            '</div>' +
+                          '</div>' +
+                        '</div>' +
+                      '</div>',
+           loginFbBoxStr:'<div class="overlayClose">' +
+                          '<a title="close" class="miniButton miniButtonOverlayClose" onclick="User.hideLogin();return false;" href="#"><img alt="close" src="/static/transparent.gif"/></a>' +
+                        '</div>' +
+                        '<div class="brick brickB4">' +
+                          '<div class="outerPadding">' +
+                            '<div class="outerBorder">' +
+                              '<div class="innerBorder">' +
+                                '<div class="innerPadding">' +
+                                  '<div class="brickForm">' +
+                                    '<div class="content">' +
+                                      '<form action="/login" id="regfb_form" onsubmit="User.doFbLogin(); return false">' +
+                                        '<fieldset class="big">' +
+                                          '<div id="login_prompt_html" class="row">' +
+                                            '<h1>Select a Joost Name</h1>' +
+                                          '</div>' +
+                                          '<div class="break"></div>' +
+                                          '<p>You have been sacessfully authenticated by Facebook ID.<br />' +
+                                            'Now choose or type your unique Joost name.</p>' +
+                                          '<div class="row">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="input"><input type="radio" name="usernamepro" id="usernamepro1" value="%f1" />%f1</div>' +
+                                            '<div class="break"></div>' +
+                                          '</div>' +
+                                          '<div class="row">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="input"><input type="radio" name="usernamepro" id="usernamepro2" value="%f2" />%f2</div>' +
+                                            '<div class="break"></div>' +
+                                          '</div>' +
+                                          '<div class="row">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="input"><input type="radio" name="usernamepro" id="usernamepro3" value="%f3" />%f3</div>' +
+                                            '<div class="break"></div>' +
+                                          '</div>' +
+                                          '<div class="row">' +
+                                            '<div class="label"><label for="password">Or select your own</label></div>' +
+                                            '<div class="input"><input type="text" class="inputText" name="usernamepro4" id="usernamepro4" /></div>' +
+                                            '<div class="break"></div>' +
+                                          '</div>' +
+                                          '<div class="row error" style="display:none" id="login_error_message_container">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="warning"><p id="login_error_message"></p></div>' +
+                                            '<div class="break"></div>' +
+                                          '</div>' +
+                                          '<div class="row buttons">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="input">' +
+                                              '<input type="hidden" name="fbemail" id="fbemail" value="%e" />' +
+                                              '<input type="submit" class="inputSubmit" value="Login" >' +
+                                            '</div>' +
+                                            '<div class="break"></div>' +
+                                          '</div>' +
+                                        '</fieldset>' +
+                                      '</form>' +
+                                    '</div>' +
+                                  '</div>' +
+                                  '<div><img src="/static/overlay-logo.gif" alt="Joost" class="overlayLogo" />' +
+                                    '<div class="break"></div>' +
+                                  '</div>' +
+                                '</div>' +
+                              '</div>' +
+                            '</div>' +
+                          '</div>' +
+                        '</div>',
+           confirmBoxStr:'<div class="overlayClose">' +
+                          '<a title="close" class="miniButton miniButtonOverlayClose" onclick="User.hideConfirm();return false;" href="#"><img alt="close" src="/static/transparent.gif"/></a>' +
+                        '</div> ' +
+                        '<div class="brick brickB4"> ' +
+                          '<div class="outerPadding">' +
+                            '<div class="outerBorder">' +
+                              '<div class="innerBorder">' +
+                                '<div class="innerPadding">' +
+                                  '<div class="brickForm">' +
+                                    '<div class="content">' +
+                                      '<form id="confirm_form" onsubmit="User.doConfirm(); return false">' +
+                                        '<fieldset class="big">' +
+                                          '<div id="confirm_prompt_html" class="row">' +
+                                            '<h1>Confirm</h1>' +
+                                          '</div>' +
+                                          '<div class="row">' +
+                                            '<div class="label"><label for="confirm">Enter PIN::</label></div>' +
+                                            '<div class="input"><input type="text" class="inputText" name="confirm" id="confirm" /></div>' +
+                                          '</div>' +
+                                          '<div class="row error" style="display:none" id="confirm_error_message_container">' +
+                                            '<div class="label"></label></div>' +
+                                            '<div class="warning"><p id="confirm_error_message"></p></div>' +
+                                          '</div>' +
+                                          '<div class="row">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="description">' +
+                                              '<p>To confirm your email address, please enter the code from the email we sent you, ' +
+                                                '<a href="#" id="confirmation_link" onclick="User.sendConfirmationEmail(this);return false;">Send email again</a>.</p>' +
+                                            '</div>' +
+                                          '</div>' +
+                                          '<div class="row buttons">' +
+                                            '<div class="label"></div>' +
+                                            '<div class="input">' +
+                                              '<input type="submit" class="inputSubmit" value="Submit" > ' +
+                                              '<input type="reset" class="inputReset" value="Cancel" onclick="User.hideConfirm()" >' +
+                                            '</div>' +
+                                          '</div>' +
+                                        '</fieldset>' +
+                                      '</form>' +
+                                    '</div>' +
+                                  '</div>' +
+                                  '<div>' +
+                                    '<img src="/static/overlay-logo.gif" alt="Joost" class="overlayLogo" />' +
+                                    '<div class="break"></div>' +
+                                  '</div>' +
+                                '</div>' +
+                              '</div>' +
+                            '</div>' +
+                          '</div>' +
+                        '</div>',
+           registrationStr:'<iframe id="registerFrame" style="background: none;" src="" width="750" height="440" frameborder="0"></iframe>',
+           registerFormStr:'<iframe id="registerAPIFrame" name="registerAPIFrame" style="display:block" src="about:blank"></iframe>' +
+                          '<form id="registerAPIForm" action="/api/registration" method="POST" target="registerAPIFrame">' +
+                            '<input type="hidden" name="json_function" value="parent.User.registerFlashResult">' +
+                            '<input type="hidden" name="iframe" value="true">' +
+                            '<input type="hidden" name="email" value="">' +
+                            '<input type="hidden" name="screenname" value="">' +
+                            '<input type="hidden" name="password" value="">' +
+                            '<input type="hidden" name="gender" value="">' +
+                            '<input type="hidden" name="year" value="">' +
+                            '<input type="hidden" name="type" value="">' +
+                            '<input type="hidden" name="cohort" value="0">' +
+                          '</form>'
+};
+       var end = new Date();
+                              document.write("[" + (end.getTime() - start.getTime()) + "]");
+
+        </script> 
+  </body>
+</html>
