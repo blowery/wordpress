@@ -4,7 +4,7 @@ Plugin Name: WordPress.com Stats
 Plugin URI: http://wordpress.org/extend/plugins/stats/
 Description: Tracks views, post/page views, referrers, and clicks. Requires a WordPress.com API key.
 Author: Andy Skelton
-Version: 1.3.5
+Version: 1.3.6
 
 Requires WordPress 2.1 or later. Not for use with WPMU.
 
@@ -12,6 +12,7 @@ Looking for a way to hide the gif? Put this in your stylesheet:
 img#wpstats{display:none}
 
 Recent changes:
+1.3.6 - fopen v wp_remote_fopen CSV fix from A. Piccinelli
 1.3.5 - Compatibility with WordPress 2.7
 1.3.4 - Compatibility with WordPress 2.7
 1.3.3 - wpStats.update_postinfo no longer triggered by revision saves (post_type test)
@@ -736,15 +737,14 @@ function stats_get_remote_csv( $url ) {
 	// Yay!
 	if ( ini_get('allow_url_fopen') ) {
 		$fp = @fopen($url, 'r');
-		if ( !$fp )
-			return false;
-
-		//stream_set_timeout($fp, $timeout); // Requires php 4.3
-		$data = array();
-		while ( $remote_read = fgetcsv($fp, 1000) )
-			$data[] = $remote_read;
-		fclose($fp);
-		return $data;
+		if ( $fp ) {
+			//stream_set_timeout($fp, $timeout); // Requires php 4.3
+			$data = array();
+			while ( $remote_read = fgetcsv($fp, 1000) )
+				$data[] = $remote_read;
+			fclose($fp);
+			return $data;
+		}
 	}
 
 	// Boo - we need to use wp_remote_fopen for maximium compatibility
