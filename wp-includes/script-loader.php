@@ -49,7 +49,7 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'utils', "/wp-admin/js/utils$suffix.js", false, '20090102' );
 
-	$scripts->add( 'common', "/wp-admin/js/common$suffix.js", array('jquery', 'hoverIntent', 'utils'), '20090106' );
+	$scripts->add( 'common', "/wp-admin/js/common$suffix.js", array('jquery', 'hoverIntent', 'utils'), '20090203' );
 	$scripts->add_data( 'common', 'group', 1 );
 	$scripts->localize( 'common', 'commonL10n', array(
 		'warnDelete' => __("You are about to delete the selected items.\n  'Cancel' to stop, 'OK' to delete."),
@@ -77,7 +77,7 @@ function wp_default_scripts( &$scripts ) {
 
 	// Modify this version when tinyMCE plugins are changed.
 	function mce_version() {
-		return '20090108';
+		return '20090208';
 	}
 	add_filter( 'tiny_mce_version', 'mce_version' );
 
@@ -205,10 +205,10 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(catL10n);}catch(e){};'
 		) );
 
-		$scripts->add( 'admin-categories', "/wp-admin/js/categories$suffix.js", array('wp-lists'), '20090102' );
+		$scripts->add( 'admin-categories', "/wp-admin/js/categories$suffix.js", array('wp-lists'), '20090207' );
 		$scripts->add_data( 'admin-categories', 'group', 1 );
 
-		$scripts->add( 'admin-tags', "/wp-admin/js/tags$suffix.js", array('wp-lists'), '20090102' );
+		$scripts->add( 'admin-tags', "/wp-admin/js/tags$suffix.js", array('wp-lists'), '20090211' );
 		$scripts->add_data( 'admin-tags', 'group', 1 );
 
 		$scripts->add( 'admin-custom-fields', "/wp-admin/js/custom-fields$suffix.js", array('wp-lists'), '20090106' );
@@ -225,7 +225,7 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(pwsL10n);}catch(e){};'
 		) );
 
-		$scripts->add( 'admin-comments', "/wp-admin/js/edit-comments$suffix.js", array('wp-lists', 'jquery-ui-resizable', 'quicktags'), '20090112' );
+		$scripts->add( 'admin-comments', "/wp-admin/js/edit-comments$suffix.js", array('wp-lists', 'jquery-ui-resizable', 'quicktags'), '20090209' );
 		$scripts->add_data( 'admin-comments', 'group', 1 );
 		$scripts->localize( 'admin-comments', 'adminCommentsL10n', array(
 			'hotkeys_highlight_first' => isset($_GET['hotkeys_highlight_first']),
@@ -240,7 +240,7 @@ function wp_default_scripts( &$scripts ) {
 			'requestFile' => admin_url('admin-ajax.php')
 		) );
 
-		$scripts->add( 'slug', "/wp-admin/js/slug$suffix.js", array('jquery'), '20090102' );
+		$scripts->add( 'slug', "/wp-admin/js/slug$suffix.js", array('jquery'), '20090207' );
 		$scripts->add_data( 'slug', 'group', 1 );
 		$scripts->localize( 'slug', 'slugL10n', array(
 			'requestFile' => admin_url('admin-ajax.php'),
@@ -249,7 +249,7 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(slugL10n);}catch(e){};'
 		) );
 
-		$scripts->add( 'post', "/wp-admin/js/post$suffix.js", array('suggest', 'jquery-ui-tabs', 'wp-lists', 'postbox', 'slug'), '20090117' );
+		$scripts->add( 'post', "/wp-admin/js/post$suffix.js", array('suggest', 'jquery-ui-tabs', 'wp-lists', 'postbox', 'slug'), '20090201' );
 		$scripts->add_data( 'post', 'group', 1 );
 		$scripts->localize( 'post', 'postL10n', array(
 			'tagsUsed' =>  __('Tags used on this post:'),
@@ -300,7 +300,7 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(postL10n);}catch(e){};'
 		) );
 
-		$scripts->add( 'link', "/wp-admin/js/link$suffix.js", array('jquery-ui-tabs', 'wp-lists', 'postbox'), '20090128' );
+		$scripts->add( 'link', "/wp-admin/js/link$suffix.js", array('jquery-ui-tabs', 'wp-lists', 'postbox'), '20090201' );
 		$scripts->add_data( 'link', 'group', 1 );
 
 		$scripts->add( 'comment', "/wp-admin/js/comment$suffix.js", array('jquery'), '20090102' );
@@ -353,7 +353,7 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(inlineEditL10n);}catch(e){};'
 		) );
 
-		$scripts->add( 'inline-edit-tax', "/wp-admin/js/inline-edit-tax$suffix.js", array( 'jquery-form' ), '20090109' );
+		$scripts->add( 'inline-edit-tax', "/wp-admin/js/inline-edit-tax$suffix.js", array( 'jquery-form' ), '20090211' );
 		$scripts->add_data( 'inline-edit-tax', 'group', 1 );
 		$scripts->localize( 'inline-edit-tax', 'inlineEditL10n', array(
 			'error' => __('Error while saving the changes.'),
@@ -368,9 +368,8 @@ function wp_default_scripts( &$scripts ) {
 		) );
 
 		$scripts->add( 'farbtastic', '/wp-admin/js/farbtastic.js', array('jquery'), '1.2' );
-		$scripts->add_data( 'farbtastic', 'group', 1 );
 
-		$scripts->add( 'dashboard', "/wp-admin/js/dashboard$suffix.js", array( 'jquery', 'admin-comments', 'postbox' ), '20090102' );
+		$scripts->add( 'dashboard', "/wp-admin/js/dashboard$suffix.js", array( 'jquery', 'admin-comments', 'postbox' ), '20090201' );
 		$scripts->add_data( 'dashboard', 'group', 1 );
 
 		$scripts->add( 'hoverIntent', "/wp-includes/js/hoverIntent$suffix.js", array('jquery'), '20090102' );
@@ -434,7 +433,6 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'login', '/wp-admin/css/login.css', array(), '20081210' );
 	$styles->add( 'plugin-install', '/wp-admin/css/plugin-install.css', array(), '20081210' );
 	$styles->add( 'farbtastic', '/wp-admin/css/farbtastic.css', array(), '1.2' );
-	$styles->add( 'no-js', '/wp-admin/css/no-js.css', array(), '20081225' );
 
 	foreach ( $rtl_styles as $rtl_style )
 		$styles->add_data( $rtl_style, 'rtl', true );
@@ -616,10 +614,10 @@ function wp_print_head_scripts() {
 		do_action('wp_print_scripts');
 
 	global $wp_scripts;
-	
+
 	if ( !is_a($wp_scripts, 'WP_Scripts') )
 		return array(); // no need to run if nothing is queued
-	
+
 	return print_head_scripts();
 }
 
@@ -634,7 +632,7 @@ function wp_print_footer_scripts() {
 
 /**
  * Wrapper for do_action('wp_enqueue_scripts')
- *  
+ *
  * Allows plugins to queue scripts for the front end using wp_enqueue_script().
  * Runs first in wp_head() where all is_home(), is_page(), etc. functions are available.
  *
@@ -678,6 +676,8 @@ function print_admin_styles() {
 function script_concat_settings() {
 	global $concatenate_scripts, $compress_scripts, $compress_css;
 
+	$compressed_output = ( ini_get('zlib.output_compression') || 'ob_gzhandler' == ini_get('output_handler') );
+
 	if ( ! isset($concatenate_scripts) ) {
 		$concatenate_scripts = defined('CONCATENATE_SCRIPTS') ? CONCATENATE_SCRIPTS : true;
 		if ( ! is_admin() || ( $concatenate_scripts && -1 == get_user_option('concatenate_scripts') ) )
@@ -686,13 +686,13 @@ function script_concat_settings() {
 
 	if ( ! isset($compress_scripts) ) {
 		$compress_scripts = defined('COMPRESS_SCRIPTS') ? COMPRESS_SCRIPTS : true;
-		if ( $compress_scripts && ! get_option('can_compress_scripts') )
+		if ( $compress_scripts && ( ! get_option('can_compress_scripts') || $compressed_output ) )
 			$compress_scripts = false;
 	}
 
 	if ( ! isset($compress_css) ) {
 		$compress_css = defined('COMPRESS_CSS') ? COMPRESS_CSS : true;
-		if ( $compress_css && ! get_option('can_compress_scripts') )
+		if ( $compress_css && ( ! get_option('can_compress_scripts') || $compressed_output ) )
 			$compress_css = false;
 	}
 }

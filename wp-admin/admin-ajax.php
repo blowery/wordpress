@@ -45,7 +45,7 @@ case 'ajax-tag-search' :
 		die('-1');
 
 	$s = $_GET['q']; // is this slashed already?
-	
+
 	if ( isset($_GET['tax']) )
 		$taxonomy = sanitize_title($_GET['tax']);
 	else
@@ -67,13 +67,43 @@ case 'ajax-tag-search' :
 case 'wp-compression-test' :
 	if ( !current_user_can( 'manage_options' ) )
 		die('-1');
-	
-	if ( isset($_GET['tested']) ) {
-		if ( 1 == $_GET['tested'] )
-			update_option('can_compress_scripts', 1);
-		elseif ( 0 == $_GET['tested'] )
-			update_option('can_compress_scripts', 0);
+
+	if ( ini_get('zlib.output_compression') || 'ob_gzhandler' == ini_get('output_handler') ) {
+		update_option('can_compress_scripts', 0);
+		die('0');
 	}
+
+	if ( isset($_GET['test']) ) {
+		header( 'Expires: Wed, 11 Jan 1984 05:00:00 GMT' );
+		header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
+		header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
+		header( 'Pragma: no-cache' );
+		header('Content-Type: application/x-javascript; charset=UTF-8');
+		$force_gzip = ( defined('ENFORCE_GZIP') && ENFORCE_GZIP );
+		$test_str = '"wpCompressionTest Lorem ipsum dolor sit amet consectetuer mollis sapien urna ut a. Eu nonummy condimentum fringilla tempor pretium platea vel nibh netus Maecenas. Hac molestie amet justo quis pellentesque est ultrices interdum nibh Morbi. Cras mattis pretium Phasellus ante ipsum ipsum ut sociis Suspendisse Lorem. Ante et non molestie. Porta urna Vestibulum egestas id congue nibh eu risus gravida sit. Ac augue auctor Ut et non a elit massa id sodales. Elit eu Nulla at nibh adipiscing mattis lacus mauris at tempus. Netus nibh quis suscipit nec feugiat eget sed lorem et urna. Pellentesque lacus at ut massa consectetuer ligula ut auctor semper Pellentesque. Ut metus massa nibh quam Curabitur molestie nec mauris congue. Volutpat molestie elit justo facilisis neque ac risus Ut nascetur tristique. Vitae sit lorem tellus et quis Phasellus lacus tincidunt nunc Fusce. Pharetra wisi Suspendisse mus sagittis libero lacinia Integer consequat ac Phasellus. Et urna ac cursus tortor aliquam Aliquam amet tellus volutpat Vestibulum. Justo interdum condimentum In augue congue tellus sollicitudin Quisque quis nibh."';
+
+		 if ( 1 == $_GET['test'] ) {
+		 	echo $test_str;
+		 	die;
+		 } elseif ( 2 == $_GET['test'] ) {
+			if ( false !== strpos( strtolower($_SERVER['HTTP_ACCEPT_ENCODING']), 'deflate') && function_exists('gzdeflate') && ! $force_gzip ) {
+				header('Content-Encoding: deflate');
+				$out = gzdeflate( $test_str, 1 );
+			} elseif ( false !== strpos( strtolower($_SERVER['HTTP_ACCEPT_ENCODING']), 'gzip') && function_exists('gzencode') ) {
+				header('Content-Encoding: gzip');
+				$out = gzencode( $test_str, 1 );
+			} else {
+				die('-1');
+			}
+			echo $out;
+			die;
+		} elseif ( 'no' == $_GET['test'] ) {
+			update_option('can_compress_scripts', 0);
+		} elseif ( 'yes' == $_GET['test'] ) {
+			update_option('can_compress_scripts', 1);
+		}
+	}
+
 	die('0');
 	break;
 default :
@@ -182,11 +212,16 @@ case 'delete-tag' :
 	if ( !current_user_can( 'manage_categories' ) )
 		die('-1');
 
-	$tag = get_term( $id, 'post_tag' );
+	if ( !empty($_POST['taxonomy']) )
+		$taxonomy = $_POST['taxonomy'];
+	else
+		$taxonomy = 'post_tag';
+
+	$tag = get_term( $id, $taxonomy );
 	if ( !$tag || is_wp_error( $tag ) )
 		die('1');
 
-	if ( wp_delete_term($id, 'post_tag'))
+	if ( wp_delete_term($id, $taxonomy))
 		die('1');
 	else
 		die('0');
@@ -481,7 +516,12 @@ case 'add-tag' : // From Manage->Tags
 		$x->send();
 	}
 
-	$tag = wp_insert_term($_POST['name'], 'post_tag', $_POST );
+	if ( !empty($_POST['taxonomy']) )
+		$taxonomy = $_POST['taxonomy'];
+	else
+		$taxonomy = 'post_tag';
+
+	$tag = wp_insert_term($_POST['name'], $taxonomy, $_POST );
 
 	if ( is_wp_error($tag) ) {
 		$x = new WP_Ajax_Response( array(
@@ -491,7 +531,7 @@ case 'add-tag' : // From Manage->Tags
 		$x->send();
 	}
 
-	if ( !$tag || (!$tag = get_term( $tag['term_id'], 'post_tag' )) )
+	if ( !$tag || (!$tag = get_term( $tag['term_id'], $taxonomy )) )
 		die('0');
 
 	$tag_full_name = $tag->name;
@@ -514,7 +554,7 @@ case 'get-tagcloud' :
 		$taxonomy = sanitize_title($_POST['tax']);
 	else
 		die('0');
-	
+
 	$tags = get_terms( $taxonomy, array( 'number' => 45, 'orderby' => 'count', 'order' => 'DESC' ) );
 
 	if ( empty( $tags ) )
@@ -812,7 +852,7 @@ case 'autosave' : // The name of this action is hardcoded in edit_post()
 	$do_lock = true;
 
 	$data = '';
-	$message = sprintf( __('Draft Saved at %s.'), date( __('g:i:s a'), current_time( 'timestamp', true ) ) );
+	$message = sprintf( __('Draft Saved at %s.'), date_i18n( __('g:i:s a') ) );
 
 	$supplemental = array();
 
@@ -1043,9 +1083,14 @@ case 'inline-save-tax':
 
 			break;
 		case 'tag' :
-			$updated = wp_update_term($id, 'post_tag', $_POST);
+			if ( !empty($_POST['taxonomy']) )
+				$taxonomy = $_POST['taxonomy'];
+			else
+				$taxonomy = 'post_tag';
+
+			$updated = wp_update_term($id, $taxonomy, $_POST);
 			if ( $updated && !is_wp_error($updated) ) {
-				$tag = get_term( $updated['term_id'], 'post_tag' );
+				$tag = get_term( $updated['term_id'], $taxonomy );
 				if ( !$tag || is_wp_error( $tag ) )
 					die( __('Tag not updated.') );
 
@@ -1127,6 +1172,19 @@ case 'find_posts':
 	));
 	$x->send();
 
+	break;
+case 'lj-importer' :
+	check_ajax_referer( 'lj-api-import' );
+	if ( !current_user_can( 'publish_posts' ) )
+		die('-1');
+	if ( empty( $_POST['step'] ) )
+		die( '-1' );
+
+	include( ABSPATH . 'wp-admin/import/livejournal.php' );
+	$result = $lj_api_import->{ 'step' . ( (int) $_POST['step'] ) }();
+	if ( is_wp_error( $result ) )
+		echo $result->get_error_message();
+	die;
 	break;
 default :
 	do_action( 'wp_ajax_' . $_POST['action'] );

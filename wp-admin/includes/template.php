@@ -123,7 +123,7 @@ function _cat_row( $category, $level, $name_override = false ) {
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 		$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 		if ( $default_cat_id != $category->term_id )
-			$actions['delete'] = "<a class='delete:the-list:cat-$category->term_id submitdelete' href='" . wp_nonce_url("categories.php?action=delete&amp;cat_ID=$category->term_id", 'delete-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+			$actions['delete'] = "<a class='delete:the-list:cat-$category->term_id submitdelete' href='" . wp_nonce_url("categories.php?action=delete&amp;cat_ID=$category->term_id", 'delete-category_' . $category->term_id) . "'>" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -184,7 +184,7 @@ function _cat_row( $category, $level, $name_override = false ) {
 				break;
 			default:
 				$output .= "<td $attributes>";
-				$output .= apply_filters('manage_categories_custom_column', $column_name, $category->term_id);
+				$output .= apply_filters('manage_categories_custom_column', '', $column_name, $category->term_id);
 				$output .= "</td>";
 		}
 	}
@@ -293,7 +293,7 @@ function link_cat_row( $category, $name_override = false ) {
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 		$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 		if ( $default_cat_id != $category->term_id )
-			$actions['delete'] = "<a class='delete:the-list:link-cat-$category->term_id submitdelete' href='" . wp_nonce_url("link-category.php?action=delete&amp;cat_ID=$category->term_id", 'delete-link-category_' . $category->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this category '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+			$actions['delete'] = "<a class='delete:the-list:link-cat-$category->term_id submitdelete' href='" . wp_nonce_url("link-category.php?action=delete&amp;cat_ID=$category->term_id", 'delete-link-category_' . $category->term_id) . "'>" . __('Delete') . "</a>";
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -353,7 +353,7 @@ function link_cat_row( $category, $name_override = false ) {
 				break;
 			default:
 				$output .= "<td $attributes>";
-				$output .= apply_filters('manage_link_categories_custom_column', $column_name, $category->term_id);
+				$output .= apply_filters('manage_link_categories_custom_column', '', $column_name, $category->term_id);
 				$output .= "</td>";
 		}
 	}
@@ -622,7 +622,7 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					$actions = array();
 					$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 					$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
-					$actions['delete'] = "<a class='delete:the-list:tag-$tag->term_id submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "' onclick=\"if ( confirm('" . js_escape(sprintf(__("You are about to delete this tag '%s'\n 'Cancel' to stop, 'OK' to delete."), $name )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
+					$actions['delete'] = "<a class='delete:the-list:tag-$tag->term_id submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "'>" . __('Delete') . "</a>";
 					$action_count = count($actions);
 					$i = 0;
 					$out .= '<div class="row-actions">';
@@ -645,7 +645,7 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					break;
 				default:
 					$out .= "<td $attributes>";
-					$out .= apply_filters("manage_${taxonomy}_custom_column", $column_name, $tag->term_id);
+					$out .= apply_filters("manage_${taxonomy}_custom_column", '', $column_name, $tag->term_id);
 					$out .= "</td>";
 			}
 		}
@@ -1816,9 +1816,9 @@ function user_row( $user_object, $style = '', $role = '' ) {
 		$short_url = substr( $short_url, 0, 32 ).'...';
 	$numposts = get_usernumposts( $user_object->ID );
 	$checkbox = '';
-	// Check if the user for this row is editable 
+	// Check if the user for this row is editable
 	if ( current_user_can( 'edit_user', $user_object->ID ) ) {
-		// Set up the user editing link 
+		// Set up the user editing link
 		// TODO: make profile/user-edit determination a seperate function
 		if ($current_user->ID == $user_object->ID) {
 			$edit_link = 'profile.php';
@@ -1826,7 +1826,7 @@ function user_row( $user_object, $style = '', $role = '' ) {
 			$edit_link = clean_url( add_query_arg( 'wp_http_referer', urlencode( clean_url( stripslashes( $_SERVER['REQUEST_URI'] ) ) ), "user-edit.php?user_id=$user_object->ID" ) );
 		}
 		$edit = "<strong><a href=\"$edit_link\">$user_object->user_login</a></strong><br />";
-		
+
 		// Set up the hover actions for this user
 		$actions = array();
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
@@ -1841,10 +1841,10 @@ function user_row( $user_object, $style = '', $role = '' ) {
 			$edit .= "<span class='$action'>$link$sep</span>";
 		}
 		$edit .= '</div>';
-		
+
 		// Set up the checkbox (because the user is editable, otherwise its empty)
 		$checkbox = "<input type='checkbox' name='users[]' id='user_{$user_object->ID}' class='$role' value='{$user_object->ID}' />";
-		
+
 	} else {
 		$edit = '<strong>' . $user_object->user_login . '</strong>';
 	}
@@ -1892,7 +1892,7 @@ function user_row( $user_object, $style = '', $role = '' ) {
 				break;
 			default:
 				$r .= "<td $attributes>";
-				$r .= apply_filters('manage_users_custom_column', $column_name, $user_object->ID);
+				$r .= apply_filters('manage_users_custom_column', '', $column_name, $user_object->ID);
 				$r .= "</td>";
 		}
 	}
@@ -1922,7 +1922,7 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
 	$post = (int) $post;
 	$count = wp_count_comments();
 	$index = '';
-	
+
 	if ( 'moderated' == $status ) {
 		$approved = "comment_approved = '0'";
 		$total = $count->moderated;
@@ -2615,7 +2615,7 @@ function the_attachment_links( $id = false ) {
 <?php
 }
 
- 
+
 /**
  * Print out <option> html elements for role selectors based on $wp_roles
  *
@@ -2630,9 +2630,9 @@ function wp_dropdown_roles( $selected = false ) {
 	global $wp_roles;
 	$p = '';
 	$r = '';
-	
+
 	$editable_roles = get_editable_roles();
-	
+
 	foreach( $editable_roles as $role => $details ) {
 		$name = translate_with_context($details['name']);
 		if ( $selected == $role ) // Make default first in list
@@ -3237,7 +3237,9 @@ function _post_states($post) {
 	if ( 'draft' == $post->post_status && 'draft' != $post_status )
 		$post_states[] = __('Draft');
 	if ( 'pending' == $post->post_status && 'pending' != $post_status )
-		$post_states[] = __('Pending');
+		$post_states[] = _c('Pending|post state');
+
+	$post_states = apply_filters( 'display_post_states', $post_states );
 
 	if ( ! empty($post_states) ) {
 		$state_count = count($post_states);
@@ -3402,28 +3404,60 @@ function screen_icon($name = '') {
  * Outputs JavaScript that tests if compression from PHP works as expected
  * and sets an option with the result. Has no effect when the current user
  * is not an administrator. To run the test again the option 'can_compress_scripts'
- * has to be deleted. 
+ * has to be deleted.
  *
  * @since 2.8.0
  */
 function compression_test() {
 ?>
-	<script type="text/javascript" src="load-scripts.php?test=1<?php echo ( defined('ENFORCE_GZIP') && ENFORCE_GZIP ) ? '&c=gzip' : ''; ?>"></script>
 	<script type="text/javascript">
 	/* <![CDATA[ */
-	(function() {
-		var x, test = typeof wpCompressionTest == 'undefined' ? 0 : 1;
-		if ( window.XMLHttpRequest ) {
-			x = new XMLHttpRequest();
-		} else {
-			try{x=new ActiveXObject('Msxml2.XMLHTTP');}catch(e){try{x=new ActiveXObject('Microsoft.XMLHTTP');}catch(e){};}
+	var testCompression = {
+		get : function(test) {
+			var x;
+			if ( window.XMLHttpRequest ) {
+				x = new XMLHttpRequest();
+			} else {
+				try{x=new ActiveXObject('Msxml2.XMLHTTP');}catch(e){try{x=new ActiveXObject('Microsoft.XMLHTTP');}catch(e){};}
+			}
+
+			if (x) {
+				x.onreadystatechange = function() {
+					var r, h;
+					if ( x.readyState == 4 ) {
+						r = x.responseText.substr(0, 18);
+						h = x.getResponseHeader('Content-Encoding');
+						testCompression.check(r, h, test);
+					}
+				}
+
+				x.open('GET', 'admin-ajax.php?action=wp-compression-test&test='+test+'&'+(new Date()).getTime(), true);
+				x.send('');
+			}
+		},
+
+		check : function(r, h, test) {
+			if ( ! r && ! test )
+				this.get(1);
+
+			if ( 1 == test ) {
+				if ( h && ( h.match(/deflate/i) || h.match(/gzip/i) ) )
+					this.get('no');
+				else
+					this.get(2);
+
+				return;
+			}
+
+			if ( 2 == test ) {
+				if ( '"wpCompressionTest' == r )
+					this.get('yes');
+				else
+					this.get('no');
+			}
 		}
-	
-		if (x) {
-			x.open('GET', 'admin-ajax.php?action=wp-compression-test&tested='+test+'&'+(new Date()).getTime(), true);
-			x.send('');
-		}
-	})();
+	};
+	testCompression.check();
 	/* ]]> */
 	</script>
 <?php

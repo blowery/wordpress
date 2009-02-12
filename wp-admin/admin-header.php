@@ -57,13 +57,18 @@ do_action("admin_print_scripts-$hook_suffix");
 do_action('admin_print_scripts');
 do_action("admin_head-$hook_suffix");
 do_action('admin_head');
-
-wp_print_styles('no-js');
 ?>
+
+<noscript>
+<style type="text/css">
+.hide-if-no-js{display:none}
+.hide-if-js,.closed .inside{display:block}
+</style>
+</noscript>
 <script type="text/javascript">
 (function(){
-	var nojs = document.getElementById('no-js');
-	nojs.parentNode.removeChild(nojs);
+	var ns = document.getElementsByTagName('noscript');
+	if ( ns && (ns = ns[0]) ) ns.parentNode.removeChild(ns);
 })();
 </script>
 

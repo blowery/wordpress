@@ -237,10 +237,10 @@ class WP_Http {
 			} else if ( true === WP_Http_Streams::test() && apply_filters('use_streams_transport', true) ) {
 				$working_transport['streams'] = new WP_Http_Streams();
 				$blocking_transport[] = &$working_transport['streams'];
-			} else if ( true === WP_Http_Fopen::test() && apply_filters('use_fopen_transport', true) ) {
+			} else if ( true === WP_Http_Fopen::test() && apply_filters('use_fopen_transport', true) && ( isset($args['ssl']) && !$args['ssl'] ) ) {
 				$working_transport['fopen'] = new WP_Http_Fopen();
 				$blocking_transport[] = &$working_transport['fopen'];
-			} else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) ) {
+			} else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) && ( isset($args['ssl']) && !$args['ssl'] ) ) {
 				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
 				$blocking_transport[] = &$working_transport['fsockopen'];
 			}
@@ -282,15 +282,18 @@ class WP_Http {
 			if ( true === WP_Http_ExtHttp::test() && apply_filters('use_http_extension_transport', true) ) {
 				$working_transport['exthttp'] = new WP_Http_ExtHttp();
 				$blocking_transport[] = &$working_transport['exthttp'];
+			} else if ( true === WP_Http_Curl::test() && apply_filters('use_curl_transport', true) ) {
+				$working_transport['curl'] = new WP_Http_Curl();
+				$blocking_transport[] = &$working_transport['curl'];
 			} else if ( true === WP_Http_Streams::test() && apply_filters('use_streams_transport', true) ) {
 				$working_transport['streams'] = new WP_Http_Streams();
 				$blocking_transport[] = &$working_transport['streams'];
-			} else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) ) {
+			} else if ( true === WP_Http_Fsockopen::test() && apply_filters('use_fsockopen_transport', true) && ( isset($args['ssl']) && !$args['ssl'] ) ) {
 				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
 				$blocking_transport[] = &$working_transport['fsockopen'];
 			}
 
-			foreach ( array('streams', 'fsockopen', 'exthttp') as $transport ) {
+			foreach ( array('curl', 'streams', 'fsockopen', 'exthttp') as $transport ) {
 				if ( isset($working_transport[$transport]) )
 					$nonblocking_transport[] = &$working_transport[$transport];
 			}
@@ -348,7 +351,7 @@ class WP_Http {
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
-	 * @return boolean
+	 * @return array containing 'headers', 'body', 'response', 'cookies'
 	 */
 	function request( $url, $args = array() ) {
 		global $wp_version;
@@ -358,16 +361,26 @@ class WP_Http {
 			'timeout' => apply_filters( 'http_request_timeout', 5),
 			'redirection' => apply_filters( 'http_request_redirection_count', 5),
 			'httpversion' => apply_filters( 'http_request_version', '1.0'),
-			'user-agent' => apply_filters( 'http_headers_useragent', 'WordPress/' . $wp_version ),
+			'user-agent' => apply_filters( 'http_headers_useragent', 'WordPress/' . $wp_version . '; ' . get_bloginfo( 'url' )  ),
 			'blocking' => true,
 			'headers' => array(),
 			'body' => null,
 			'compress' => false,
-			'decompress' => true
+			'decompress' => true,
+			'sslverify' => true
 		);
 
 		$r = wp_parse_args( $args, $defaults );
 		$r = apply_filters( 'http_request_args', $r, $url );
+
+		$arrURL = parse_url($url);
+
+		// Determine if this is a https call and pass that on to the transport functions
+		// so that we can blacklist the transports that do not support ssl verification
+		if ( $arrURL['scheme'] == 'https' || $arrURL['scheme'] == 'ssl' )
+			$r['ssl'] = true;
+		else
+			$r['ssl'] = false;
 
 		if ( is_null( $r['headers'] ) )
 			$r['headers'] = array();
@@ -386,6 +399,9 @@ class WP_Http {
 			$r['user-agent'] = $r['headers']['user-agent'];
 			unset($r['headers']['user-agent']);
 		}
+		
+		// Construct Cookie: header if any cookies are set
+		WP_Http::buildCookieHeader( $r );
 
 		if( WP_Http_Encoding::is_available() )
 			$r['headers']['Accept-Encoding'] = WP_Http_Encoding::accept_encoding();
@@ -411,10 +427,10 @@ class WP_Http {
 		if( has_action('http_api_debug') )
 			do_action('http_api_debug', $transports, 'transports_list');
 
-		$response = array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
+		$response = array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
 		foreach( (array) $transports as $transport ) {
 			$response = $transport->request($url, $r);
-
+			
 			if( has_action('http_api_debug') )
 				do_action( 'http_api_debug', $response, 'response', get_class($transport) );
 
@@ -506,7 +522,8 @@ class WP_Http {
 	 * @since 2.7.0
 	 *
 	 * @param string|array $headers
-	 * @return array Processed string headers
+	 * @return array Processed string headers. If duplicate headers are encountered,
+	 * 					Then a numbered array is returned as the value of that header-key.
 	 */
 	function processHeaders($headers) {
 		if ( is_string($headers) )
@@ -514,6 +531,7 @@ class WP_Http {
 
 		$response = array('code' => 0, 'message' => '');
 
+		$cookies = array();
 		$newheaders = array();
 		foreach ( $headers as $tempheader ) {
 			if ( empty($tempheader) )
@@ -528,13 +546,43 @@ class WP_Http {
 
 			list($key, $value) = explode(':', $tempheader, 2);
 
-			if ( ! empty($value) )
-				$newheaders[strtolower($key)] = trim($value);
+			if ( !empty( $value ) ) {
+				$key = strtolower( $key );
+				if ( isset( $newheaders[$key] ) ) {
+					$newheaders[$key] = array( $newheaders[$key], trim( $value ) );
+				} else {
+					$newheaders[$key] = trim( $value );
+				}
+				if ( 'set-cookie' == strtolower( $key ) )
+					$cookies[] = new WP_Http_Cookie( $value );
+			}
 		}
 
-		return array('response' => $response, 'headers' => $newheaders);
+		return array('response' => $response, 'headers' => $newheaders, 'cookies' => $cookies);
 	}
-
+	
+	/**
+	 * Takes the arguments for a ::request() and checks for the cookie array.
+	 * If it's found, then it's assumed to contain WP_Http_Cookie objects, which
+	 * are each parsed into strings and added to the Cookie: header (within the
+	 * arguments array). Edits the array by reference.
+	 *
+	 * @access public
+	 * @static
+	 *
+	 * @param array $r Full array of args passed into ::request()
+	 */
+	function buildCookieHeader( &$r ) {
+		if ( count( $r['cookies'] ) ) {
+			$cookies_header = '';
+			foreach ( $r['cookies'] as $cookie ) {
+				$cookies_header .= $cookie->getHeaderValue() . '; ';
+			}
+			$cookies_header = substr( $cookies_header, 0, -2 );
+			$r['headers']['cookie'] = $cookies_header;
+		}
+	}
+	
 	/**
 	 * Decodes chunk transfer-encoding, based off the HTTP 1.1 specification.
 	 *
@@ -605,7 +653,7 @@ class WP_Http_Fsockopen {
 	 * @access public
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
-	 * @return array 'headers', 'body', and 'response' keys.
+	 * @return array 'headers', 'body', 'cookies' and 'response' keys.
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
@@ -624,6 +672,9 @@ class WP_Http_Fsockopen {
 			$r['user-agent'] = $r['headers']['user-agent'];
 			unset($r['headers']['user-agent']);
 		}
+
+		// Construct Cookie: header if any cookies are set
+		WP_Http::buildCookieHeader( $r );
 
 		$iError = null; // Store error number
 		$strError = null; // Store error string
@@ -697,7 +748,7 @@ class WP_Http_Fsockopen {
 
 		if ( ! $r['blocking'] ) {
 			fclose($handle);
-			return array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
+			return array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
 		}
 
 		$strResponse = '';
@@ -732,7 +783,7 @@ class WP_Http_Fsockopen {
 		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($arrHeaders) )
 			$process['body'] = WP_Http_Encoding::decompress( $process['body'] );
 
-		return array('headers' => $arrHeaders['headers'], 'body' => $process['body'], 'response' => $arrHeaders['response']);
+		return array('headers' => $arrHeaders['headers'], 'body' => $process['body'], 'response' => $arrHeaders['response'], 'cookies' => $arrHeaders['cookies']);
 	}
 
 	/**
@@ -780,7 +831,7 @@ class WP_Http_Fopen {
 	 *
 	 * @param string $url URI resource.
 	 * @param str|array $args Optional. Override the defaults.
-	 * @return array 'headers', 'body', and 'response' keys.
+	 * @return array 'headers', 'body', 'cookies' and 'response' keys.
 	 */
 	function request($url, $args = array()) {
 		global $http_response_header;
@@ -789,7 +840,7 @@ class WP_Http_Fopen {
 			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
-			'headers' => array(), 'body' => null
+			'headers' => array(), 'body' => null, 'cookies' => array()
 		);
 
 		$r = wp_parse_args( $args, $defaults );
@@ -816,7 +867,7 @@ class WP_Http_Fopen {
 
 		if ( ! $r['blocking'] ) {
 			fclose($handle);
-			return array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
+			return array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
 		}
 
 		$strResponse = '';
@@ -845,7 +896,7 @@ class WP_Http_Fopen {
 		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders) )
 			$strResponse = WP_Http_Encoding::decompress( $strResponse );
 
-		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response']);
+		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response'], 'cookies' => $processedHeaders['cookies']);
 	}
 
 	/**
@@ -884,14 +935,14 @@ class WP_Http_Streams {
 	 *
 	 * @param string $url
 	 * @param str|array $args Optional. Override the defaults.
-	 * @return array 'headers', 'body', and 'response' keys.
+	 * @return array 'headers', 'body', 'cookies' and 'response' keys.
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
 			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
-			'headers' => array(), 'body' => null
+			'headers' => array(), 'body' => null, 'cookies' => array()
 		);
 
 		$r = wp_parse_args( $args, $defaults );
@@ -903,6 +954,9 @@ class WP_Http_Streams {
 			$r['user-agent'] = $r['headers']['user-agent'];
 			unset($r['headers']['user-agent']);
 		}
+		
+		// Construct Cookie: header if any cookies are set
+		WP_Http::buildCookieHeader( $r );
 
 		$arrURL = parse_url($url);
 
@@ -927,7 +981,11 @@ class WP_Http_Streams {
 				'max_redirects' => $r['redirection'],
 				'protocol_version' => (float) $r['httpversion'],
 				'header' => $strHeaders,
-				'timeout' => $r['timeout']
+				'timeout' => $r['timeout'],
+				'ssl' => array(
+                                	'verify_peer' => apply_filters('https_ssl_verify', $r['sslverify']),
+	                                'verify_host' => apply_filters('https_ssl_verify', $r['sslverify'])
+	                        )
 			)
 		);
 
@@ -951,7 +1009,7 @@ class WP_Http_Streams {
 		if ( ! $r['blocking'] ) {
 			stream_set_blocking($handle, 0);
 			fclose($handle);
-			return array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
+			return array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
 		}
 
 		$strResponse = stream_get_contents($handle);
@@ -971,7 +1029,7 @@ class WP_Http_Streams {
 		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders) )
 			$strResponse = WP_Http_Encoding::decompress( $strResponse );
 
-		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response']);
+		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response'], 'cookies' => $processedHeaders['cookies']);
 	}
 
 	/**
@@ -1017,14 +1075,14 @@ class WP_Http_ExtHTTP {
 	 *
 	 * @param string $url
 	 * @param str|array $args Optional. Override the defaults.
-	 * @return array 'headers', 'body', and 'response' keys.
+	 * @return array 'headers', 'body', 'cookies' and 'response' keys.
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
 			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
-			'headers' => array(), 'body' => null
+			'headers' => array(), 'body' => null, 'cookies' => array()
 		);
 
 		$r = wp_parse_args( $args, $defaults );
@@ -1036,6 +1094,9 @@ class WP_Http_ExtHTTP {
 			$r['user-agent'] = $r['headers']['user-agent'];
 			unset($r['headers']['user-agent']);
 		}
+		
+		// Construct Cookie: header if any cookies are set
+		WP_Http::buildCookieHeader( $r );
 
 		switch ( $r['method'] ) {
 			case 'POST':
@@ -1060,6 +1121,10 @@ class WP_Http_ExtHTTP {
 			'redirect' => $r['redirection'],
 			'useragent' => $r['user-agent'],
 			'headers' => $r['headers'],
+			'ssl' => array( 
+				'verifypeer' => apply_filters('https_ssl_verify', $r['sslverify']),
+				'verifyhost' => apply_filters('https_ssl_verify', $r['sslverify'])
+			)
 		);
 
 		if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) ) //Emits warning level notices for max redirects and timeouts
@@ -1071,7 +1136,7 @@ class WP_Http_ExtHTTP {
 			return new WP_Error('http_request_failed', $info['response_code'] . ': ' . $info['error']);
 
 		if ( ! $r['blocking'] )
-			return array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
+			return array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
 
 		list($theHeaders, $theBody) = explode("\r\n\r\n", $strResponse, 2);
 		$theHeaders = WP_Http::processHeaders($theHeaders);
@@ -1090,7 +1155,7 @@ class WP_Http_ExtHTTP {
 		$theResponse['code'] = $info['response_code'];
 		$theResponse['message'] = get_status_header_desc($info['response_code']);
 
-		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $theResponse);
+		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $theResponse, 'cookies' => $theHeaders['cookies']);
 	}
 
 	/**
@@ -1127,14 +1192,14 @@ class WP_Http_Curl {
 	 *
 	 * @param string $url
 	 * @param str|array $args Optional. Override the defaults.
-	 * @return array 'headers', 'body', and 'response' keys.
+	 * @return array 'headers', 'body', 'cookies' and 'response' keys.
 	 */
 	function request($url, $args = array()) {
 		$defaults = array(
 			'method' => 'GET', 'timeout' => 5,
 			'redirection' => 5, 'httpversion' => '1.0',
 			'blocking' => true,
-			'headers' => array(), 'body' => null
+			'headers' => array(), 'body' => null, 'cookies' => array()
 		);
 
 		$r = wp_parse_args( $args, $defaults );
@@ -1146,6 +1211,9 @@ class WP_Http_Curl {
 			$r['user-agent'] = $r['headers']['user-agent'];
 			unset($r['headers']['user-agent']);
 		}
+		
+		// Construct Cookie: header if any cookies are set
+		WP_Http::buildCookieHeader( $r );
 
 		// cURL extension will sometimes fail when the timeout is less than 1 as
 		// it may round down to 0, which gives it unlimited timeout.
@@ -1153,34 +1221,43 @@ class WP_Http_Curl {
 			$r['timeout'] = 1;
 
 		$handle = curl_init();
+
 		curl_setopt( $handle, CURLOPT_URL, $url);
-
-		// The cURL extension requires that the option be set for the HEAD to
-		// work properly.
-		if ( 'HEAD' === $r['method'] ) {
-			curl_setopt( $handle, CURLOPT_NOBODY, true );
-		}
-
-		if ( true === $r['blocking'] ) {
-			curl_setopt( $handle, CURLOPT_HEADER, true );
-			curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 1 );
-		} else {
-			curl_setopt( $handle, CURLOPT_HEADER, false );
-			curl_setopt( $handle, CURLOPT_NOBODY, true );
-			curl_setopt( $handle, CURLOPT_RETURNTRANSFER, 0 );
-		}
-
+		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, apply_filters('https_ssl_verify', $r['sslverify']) );
+		curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, apply_filters('https_ssl_verify', $r['sslverify']) );
 		curl_setopt( $handle, CURLOPT_USERAGENT, $r['user-agent'] );
-		curl_setopt( $handle, CURLOPT_CONNECTTIMEOUT, 1 );
+		curl_setopt( $handle, CURLOPT_CONNECTTIMEOUT, $r['timeout'] );
 		curl_setopt( $handle, CURLOPT_TIMEOUT, $r['timeout'] );
 		curl_setopt( $handle, CURLOPT_MAXREDIRS, $r['redirection'] );
+
+		switch ( $r['method'] ) {
+			case 'HEAD':
+				curl_setopt( $handle, CURLOPT_NOBODY, true );
+				break;
+			case 'POST':
+				curl_setopt( $handle, CURLOPT_POST, true );
+				curl_setopt( $handle, CURLOPT_POSTFIELDS, $r['body'] );
+				break;
+		}
+
+		if ( true === $r['blocking'] )
+			curl_setopt( $handle, CURLOPT_HEADER, true );
+		else
+			curl_setopt( $handle, CURLOPT_HEADER, false );
 
 		// The option doesn't work with safe mode or when open_basedir is set.
 		if ( !ini_get('safe_mode') && !ini_get('open_basedir') )
 			curl_setopt( $handle, CURLOPT_FOLLOWLOCATION, true );
 
-		if( ! is_null($r['headers']) )
-			curl_setopt( $handle, CURLOPT_HTTPHEADER, $r['headers'] );
+		if ( !empty( $r['headers'] ) ) {
+			// cURL expects full header strings in each element
+			$headers = array();
+			foreach ( $r['headers'] as $name => $value ) {
+				$headers[] = "{$name}: $value";
+			}
+			curl_setopt( $handle, CURLOPT_HTTPHEADER, $headers );
+		}
 
 		if ( $r['httpversion'] == '1.0' )
 			curl_setopt( $handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0 );
@@ -1192,12 +1269,12 @@ class WP_Http_Curl {
 		// without some reference.
 		do_action_ref_array( 'http_api_curl', array(&$handle) );
 
-		// We don't need to return the body, so don't. Just execution request
+		// We don't need to return the body, so don't. Just execute request
 		// and return.
 		if ( ! $r['blocking'] ) {
 			curl_exec( $handle );
 			curl_close( $handle );
-			return array( 'headers' => array(), 'body' => '', 'response' => array('code', 'message') );
+			return array( 'headers' => array(), 'body' => '', 'response' => array('code' => false, 'message' => false), 'cookies' => array() );
 		}
 
 		$theResponse = curl_exec( $handle );
@@ -1217,7 +1294,7 @@ class WP_Http_Curl {
 			if ( in_array( curl_getinfo( $handle, CURLINFO_HTTP_CODE ), array(301, 302) ) )
 				return new WP_Error('http_request_failed', __('Too many redirects.'));
 
-			$theHeaders = array( 'headers' => array() );
+			$theHeaders = array( 'headers' => array(), 'cookies' => array() );
 			$theBody = '';
 		}
 
@@ -1230,7 +1307,7 @@ class WP_Http_Curl {
 		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders) )
 			$theBody = WP_Http_Encoding::decompress( $theBody );
 
-		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $response);
+		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $response, 'cookies' => $theHeaders['cookies']);
 	}
 
 	/**
@@ -1246,6 +1323,135 @@ class WP_Http_Curl {
 			return true;
 
 		return false;
+	}
+}
+
+
+/**
+ * Internal representation of a cookie.
+ *
+ * Returned cookies are represented using this class, and when cookies are
+ * set, if they are not already a WP_Http_Cookie() object, then they are turned
+ * into one.
+ *
+ * @package WordPress
+ * @subpackage HTTP
+ */
+class WP_Http_Cookie {
+	var $name,
+		$value,
+		$expires,
+		$path,
+		$domain;
+	
+	/**
+	 * PHP4 style Constructor - Calls PHP5 Style Constructor
+	 */
+	function WP_Http_Cookie( $data ) {
+		return $this->__construct( $data );
+	}
+	
+	/**
+	 * Sets up this cookie object.
+	 *
+	 * @access public
+	 *
+	 * @param mixed $data Either an associative array describing the cookie, or a header-string detailing it.
+	 * 		If it's an array, it should include the following elements:
+	 * 			- name
+	 * 			- value [should NOT be urlencoded already]
+	 * 			- expires (optional) String or int (UNIX timestamp)
+	 * 			- path (optional)
+	 * 			- domain (optional)
+	 */
+	function __construct( $data ) {
+		if ( is_string( $data ) ) {
+			// Assume it's a header string direct from a previous request
+			$pairs = explode( ';', $data );
+			
+			// Special handling for first pair; name=value. Also be careful of "=" in value
+			$name  = trim( substr( $pairs[0], 0, strpos( $pairs[0], '=' ) ) );
+			$value = substr( $pairs[0], strpos( $pairs[0], '=' ) + 1 );
+			$this->name  = $name;
+			$this->value = urldecode( $value );
+			array_shift( $pairs );
+			
+			// Set everything else as a property
+			foreach ( $pairs as $pair ) {
+				list( $key, $val ) = explode( '=', $pair );
+				$key = strtolower( trim( $key ) );
+				if ( 'expires' == $key )
+					$val = strtotime( $val );
+				$this->$key = $val;
+			}
+		} else {
+			if ( !isset( $data['name'] ) )
+				return false;
+			
+			// Set properties based directly on parameters
+			$this->name   = $data['name'];
+			$this->value  = isset( $data['value'] ) ? $data['value'] : '';
+			$this->path   = isset( $data['path'] ) ? $data['path'] : '';
+			$this->domain = isset( $data['domain'] ) ? $data['domain'] : '';
+			if ( isset( $data['expires'] ) )
+				$this->expires = is_int( $data['expires'] ) ? $data['expires'] : strtotime( $data['expires'] );
+			else
+				$this->expires = null;
+		}
+	}
+	
+	/**
+	 * Confirms that it's OK to send this cookie to the URL checked against.
+	 * 
+	 * Decision is based on RFC 2109/2965, so look there for details on validity.
+	 *
+	 * @access public
+	 *
+	 * @param string $url URL you intend to send this cookie to
+	 * @return boolean TRUE if allowed, FALSE otherwise.
+	 */
+	function test( $url ) {
+		// Expires - if expired then nothing else matters
+		if ( time() > $this->expires )
+			return false;
+		
+		// Get details on the URL we're thinking about sending to
+		$url = parse_url( $url );
+		$url['port'] = isset( $url['port'] ) ? $url['port'] : 80;
+		$url['path'] = isset( $url['path'] ) ? $url['path'] : '/';
+		
+		 // Values to use for comparison against the URL
+		$path   = isset( $this->path )   ? $this->path   : '/';
+		$port   = isset( $this->port )   ? $this->port   : 80;
+		$domain = isset( $this->domain ) ? strtolower( $this->domain ) : strtolower( $url['host'] );
+		if ( false === stripos( $domain, '.' ) )
+			$domain .= '.local';
+		
+		// Host - very basic check that the request URL ends with the domain restriction (minus leading dot)
+		$domain = substr( $domain, 0, 1 ) == '.' ? substr( $domain, 1 ) : $domain;
+		if ( substr( $url['host'], -strlen( $domain ) ) != $domain )
+			return false;
+		
+		// Port - supports "port-lists" in the format: "80,8000,8080"
+		if ( !in_array( $url['port'], explode( ',', $port) ) )
+			return false;
+		
+		// Path - request path must start with path restriction
+		if ( substr( $url['path'], 0, strlen( $path ) ) != $path )
+			return false;
+		
+		return true;
+	}
+	
+	function getHeaderValue() {
+		if ( empty( $this->name ) || empty( $this->value ) )
+			return '';
+		
+		return $this->name . '=' . urlencode( $this->value );
+	}
+	
+	function getFullHeader() {
+		return 'Cookie: ' . $this->getHeaderValue();
 	}
 }
 
@@ -1272,7 +1478,7 @@ function &_wp_http_get_object() {
  * The array structure is a little complex.
  *
  * <code>
- * $res = array( 'headers' => array(), 'response' => array('code', 'message') );
+ * $res = array( 'headers' => array(), 'response' => array('code' => int, 'message' => string) );
  * </code>
  *
  * All of the headers in $res['headers'] are with the name as the key and the

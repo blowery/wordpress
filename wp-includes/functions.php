@@ -37,7 +37,10 @@ function mysql2date( $dateformatstring, $mysqlstring, $translate = true ) {
 	if( 'U' == $dateformatstring )
 		return $i;
 
-	return date_i18n( $dateformatstring, $i );
+	if ( $translate)
+	    return date_i18n( $dateformatstring, $i );
+	else
+	    return date( $dateformatstring, $i );
 }
 
 /**
@@ -46,13 +49,13 @@ function mysql2date( $dateformatstring, $mysqlstring, $translate = true ) {
  * The 'mysql' type will return the time in the format for MySQL DATETIME field.
  * The 'timestamp' type will return the current timestamp.
  *
- * If the $gmt is set to either '1' or 'true', then both types will use the
- * GMT offset in the WordPress option to add the GMT offset to the time.
+ * If $gmt is set to either '1' or 'true', then both types will use GMT time.
+ * if $gmt is false, the output is adjusted with the GMT offset in the WordPress option.
  *
  * @since 1.0.0
  *
  * @param string $type Either 'mysql' or 'timestamp'.
- * @param int|bool $gmt Optional. Whether to use $gmt offset. Default is false.
+ * @param int|bool $gmt Optional. Whether to use GMT timezone. Default is false.
  * @return int|string String if $type is 'gmt', int if $type is 'timestamp'.
  */
 function current_time( $type, $gmt = 0 ) {
@@ -619,6 +622,82 @@ function delete_option( $name ) {
 		wp_cache_delete( $name, 'options' );
 	}
 	return true;
+}
+
+/**
+ * Delete a transient
+ *
+ * @since 2.8.0
+ * @package WordPress
+ * @subpackage Transient
+ *
+ * @param string $transient Transient name. Expected to not be SQL-escaped
+ * @return bool true if successful, false otherwise
+ */
+function delete_transient($transient) {
+	global $_wp_using_ext_object_cache, $wpdb;
+
+	if ( $_wp_using_ext_object_cache ) {
+		return wp_cache_delete($transient, 'transient');
+	} else {
+		$transient = '_transient_' . $wpdb->escape($transient);
+		return delete_option($transient);
+	}
+}
+
+/**
+ * Get the value of a transient
+ *
+ * If the transient does not exist or does not have a value, then the return value
+ * will be false.
+ * 
+ * @since 2.8.0
+ * @package WordPress
+ * @subpackage Transient
+ *
+ * @param string $transient Transient name. Expected to not be SQL-escaped
+ * @return mixed Value of transient
+ */
+function get_transient($transient) {
+	global $_wp_using_ext_object_cache, $wpdb;
+
+	if ( $_wp_using_ext_object_cache ) {
+		$value = wp_cache_get($transient, 'transient');
+	} else {
+		$transient_option = '_transient_' . $wpdb->escape($transient);
+		$value = get_option($transient_option);
+	}
+
+	return apply_filters('transient_' . $transient, $value);
+}
+
+/**
+ * Set/update the value of a transient
+ *
+ * You do not need to serialize values, if the value needs to be serialize, then
+ * it will be serialized before it is set.
+ *
+ * @since 2.8.0
+ * @package WordPress
+ * @subpackage Transient
+ *
+ * @param string $transient Transient name. Expected to not be SQL-escaped
+ * @param mixed $value Transient value.
+ * @return bool False if value was not set and true if value was set.
+ */
+function set_transient($transient, $value) {
+	global $_wp_using_ext_object_cache, $wpdb;
+
+	if ( $_wp_using_ext_object_cache ) {
+		return wp_cache_set($transient, $value, 'transient');
+	} else {
+		$transient = '_transient_' . $transient;
+		$safe_transient = $wpdb->escape($transient);
+		if ( false === get_option( $safe_transient ) )
+			return add_option($transient, $value, '', 'no');
+		else
+			return update_option($transient, $value);
+	}
 }
 
 /**
@@ -2433,7 +2512,7 @@ function smilies_init() {
 		// new subpattern?
 		if ($firstchar != $subchar) {
 			if ($subchar != '') {
-				$wp_smiliessearch .= ')|';
+				$wp_smiliessearch .= ')|(?:\s|^)';
 			}
 			$subchar = $firstchar;
 			$wp_smiliessearch .= preg_quote($firstchar, '/') . '(?:';
@@ -2443,7 +2522,7 @@ function smilies_init() {
 		$wp_smiliessearch .= preg_quote($rest);
 	}
 
-	$wp_smiliessearch .= ')(?:\s|$)/';
+	$wp_smiliessearch .= ')(?:\s|$)/m';
 }
 
 /**
@@ -2579,12 +2658,12 @@ function dead_db() {
 }
 
 /**
- * Converts value to positive integer.
+ * Converts value to nonnegative integer.
  *
  * @since 2.5.0
  *
- * @param mixed $maybeint Data you wish to have convered to an absolute integer
- * @return int An absolute integer
+ * @param mixed $maybeint Data you wish to have convered to an nonnegative integer
+ * @return int An nonnegative integer
  */
 function absint( $maybeint ) {
 	return abs( intval( $maybeint ) );

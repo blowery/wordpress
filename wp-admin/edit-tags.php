@@ -16,6 +16,9 @@ wp_reset_vars( array('action', 'tag', 'taxonomy') );
 if ( empty($taxonomy) )
 	$taxonomy = 'post_tag';
 
+if ( !is_taxonomy($taxonomy) )
+	wp_die(__('Invalid taxonomy'));
+
 if ( isset( $_GET['action'] ) && isset($_GET['delete_tags']) && ( 'delete' == $_GET['action'] || 'delete' == $_GET['action2'] ) )
 	$action = 'bulk-delete';
 
@@ -157,6 +160,7 @@ endif; ?>
 <div id="col-right">
 <div class="col-wrap">
 <form id="posts-filter" action="" method="get">
+<input type="hidden" name="taxonomy" value="<?php echo attribute_escape($taxonomy); ?>" />
 <div class="tablenav">
 <?php
 $pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
@@ -244,9 +248,9 @@ if ( $page_links )
 <h3><?php _e('Popular Tags'); ?></h3>
 <?php
 if ( $can_manage )
-	wp_tag_cloud(array('link' => 'edit'));
+	wp_tag_cloud(array('taxonomy' => $taxonomy, 'link' => 'edit'));
 else
-	wp_tag_cloud();
+	wp_tag_cloud(array('taxonomy' => $taxonomy));
 ?>
 </div>
 
@@ -258,6 +262,7 @@ else
 <div id="ajax-response"></div>
 <form name="addtag" id="addtag" method="post" action="edit-tags.php" class="add:the-list: validate">
 <input type="hidden" name="action" value="addtag" />
+<input type="hidden" name="taxonomy" value="<?php echo attribute_escape($taxonomy); ?>" />
 <?php wp_original_referer_field(true, 'previous'); wp_nonce_field('add-tag'); ?>
 
 <div class="form-field form-required">

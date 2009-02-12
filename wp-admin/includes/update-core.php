@@ -161,11 +161,7 @@ $_old_files = array(
 'wp-images/smilies',
 'wp-images/wp-small.png',
 'wp-images/wpminilogo.png',
-'wp.php',
-'wp-content/themes/default/attachment.php',
-'wp-content/themes/default/images/kubrickbg.jpg',
-'wp-content/plugins/markdown.php',
-'wp-content/plugins/textile1.php',
+'wp.php'
 );
 
 /**
@@ -254,7 +250,7 @@ function update_core($from, $to) {
 	$wp_filesystem->delete($from, true);
 
 	// Force refresh of update information
-	delete_option('update_core');
+	delete_transient('update_core');
 
 	// Remove maintenance file, we're done.
 	$wp_filesystem->delete($maintenance_file);

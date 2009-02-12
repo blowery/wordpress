@@ -92,15 +92,18 @@ function get_permalink($id = 0, $leavename = false) {
 		$leavename? '' : '%pagename%',
 	);
 
-	if ( is_object($id) && isset($id->filter) && 'sample' == $id->filter )
+	if ( is_object($id) && isset($id->filter) && 'sample' == $id->filter ) {
 		$post = $id;
-	else
+		$sample = true;
+	} else {
 		$post = &get_post($id);
+		$sample = false;
+	}
 
 	if ( empty($post->ID) ) return false;
 
 	if ( $post->post_type == 'page' )
-		return get_page_link($post->ID, $leavename);
+		return get_page_link($post->ID, $leavename, $sample);
 	elseif ($post->post_type == 'attachment')
 		return get_attachment_link($post->ID);
 
@@ -177,10 +180,11 @@ function post_permalink($post_id = 0, $deprecated = '') {
  * @since 1.5.0
  *
  * @param int $id Optional. Post ID.
- * @param bool $leavename Optional, defaults to false. Whether to keep post name or page name.
+ * @param bool $leavename Optional, defaults to false. Whether to keep page name.
+ * @param bool $sample Optional, defaults to false. Is it a sample permalink.
  * @return string
  */
-function get_page_link($id = false, $leavename = false) {
+function get_page_link( $id = false, $leavename = false, $sample = false ) {
 	global $post;
 
 	$id = (int) $id;
@@ -190,7 +194,7 @@ function get_page_link($id = false, $leavename = false) {
 	if ( 'page' == get_option('show_on_front') && $id == get_option('page_on_front') )
 		$link = get_option('home');
 	else
-		$link = _get_page_link( $id , $leavename );
+		$link = _get_page_link( $id , $leavename, $sample );
 
 	return apply_filters('page_link', $link, $id);
 }
@@ -205,9 +209,10 @@ function get_page_link($id = false, $leavename = false) {
  *
  * @param int $id Optional. Post ID.
  * @param bool $leavename Optional. Leave name.
+ * @param bool $sample Optional. Sample permalink.
  * @return string
  */
-function _get_page_link( $id = false, $leavename = false ) {
+function _get_page_link( $id = false, $leavename = false, $sample = false ) {
 	global $post, $wp_rewrite;
 
 	if ( !$id )
@@ -217,7 +222,7 @@ function _get_page_link( $id = false, $leavename = false ) {
 
 	$pagestruct = $wp_rewrite->get_page_permastruct();
 
-	if ( '' != $pagestruct && isset($post->post_status) && 'draft' != $post->post_status ) {
+	if ( '' != $pagestruct && ( ( isset($post->post_status) && 'draft' != $post->post_status ) || $sample ) ) {
 		$link = get_page_uri($id);
 		$link = ( $leavename ) ? $pagestruct : str_replace('%pagename%', $link, $pagestruct);
 		$link = get_option('home') . "/$link";
@@ -570,7 +575,7 @@ function get_tag_feed_link($tag_id, $feed = '') {
  * @return string
  */
 function get_edit_tag_link( $tag_id = 0, $taxonomy = 'post_tag' ) {
-	$tag = get_term($tag_id, 'post_tag');
+	$tag = get_term($tag_id, $taxonomy);
 
 	if ( !current_user_can('manage_categories') )
 		return;
