@@ -238,4 +238,84 @@ function show_message($message) {
 	echo "<p>$message</p>\n";
 }
 
+function wp_doc_link_parse( $content ) {
+	if ( !is_string( $content ) || empty( $content ) )
+		return array();
+		
+	$tokens = token_get_all( $content );
+	$functions = array();
+	$ignore_functions = array();
+	for ( $t = 0, $count = count( $tokens ); $t < $count; $t++ ) {
+		if ( !is_array( $tokens[$t] ) ) continue;
+		if ( T_STRING == $tokens[$t][0] && ( '(' == $tokens[ $t + 1 ] || '(' == $tokens[ $t + 2 ] ) ) {
+			// If it's a function or class defined locally, there's not going to be any docs available
+			if ( 'class' == $tokens[ $t - 2 ][1] || 'function' == $tokens[ $t - 2 ][1] || T_OBJECT_OPERATOR == $tokens[ $t - 1 ][0] ) {
+				$ignore_functions[] = $tokens[$t][1];
+			}
+			// Add this to our stack of unique references
+			$functions[] = $tokens[$t][1];
+		}
+	}
+	
+	$functions = array_unique( $functions );
+	sort( $functions );
+	$ignore_functions = apply_filters( 'documentation_ignore_functions', $ignore_functions );
+	$ignore_functions = array_unique( $ignore_functions );
+	
+	$out = array();
+	foreach ( $functions as $function ) {
+		if ( in_array( $function, $ignore_functions ) )
+			continue;
+		$out[] = $function;
+	}
+	
+	return $out;
+}
+
+/**
+ * Determines the language to use for CodePress syntax highlighting,
+ * based only on a filename.
+ * 
+ * @since 2.8
+ * 
+ * @param string $filename The name of the file to be highlighting
+**/
+function codepress_get_lang( $filename ) {
+	$codepress_supported_langs = apply_filters( 'codepress_supported_langs', 
+									array( '.css' => 'css',
+											'.js' => 'javascript', 
+											'.php' => 'php', 
+											'.html' => 'html', 
+											'.htm' => 'html', 
+											'.txt' => 'text' 
+											) );
+	$extension = substr( $filename, strrpos( $filename, '.' ) );
+	if ( $extension && array_key_exists( $extension, $codepress_supported_langs ) )
+		return $codepress_supported_langs[$extension];
+	
+	return 'generic';
+}
+
+/**
+ * Adds Javascript required to make CodePress work on the theme/plugin editors.
+ * 
+ * This code is attached to the action admin_print_footer_scripts.
+ * 
+ * @since 2.8
+**/
+function codepress_footer_js() {
+	// Script-loader breaks CP's automatic path-detection, thus CodePress.path
+	// CP edits in an iframe, so we need to grab content back into normal form
+	?><script type="text/javascript">
+/* <![CDATA[ */
+var codepress_path = '<?php echo includes_url('js/codepress/'); ?>';
+jQuery('#template').submit(function(){
+	if (jQuery('#newcontent_cp').length)
+		jQuery('#newcontent_cp').val(newcontent.getCode()).removeAttr('disabled');
+});
+/* ]]> */
+</script>
+<?php
+}
+
 ?>

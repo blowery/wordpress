@@ -517,7 +517,8 @@ function update_option( $option_name, $newvalue ) {
 		wp_cache_set( $option_name, $newvalue, 'options' );
 	}
 
-	$wpdb->query( $wpdb->prepare( "UPDATE $wpdb->options SET option_value = %s WHERE option_name = %s", $newvalue, $option_name ) );
+	$wpdb->update($wpdb->options, array('option_value' => $newvalue), array('option_name' => $option_name) );
+
 	if ( $wpdb->rows_affected == 1 ) {
 		do_action( "update_option_{$option_name}", $oldvalue, $_newvalue );
 		return true;
@@ -584,7 +585,7 @@ function add_option( $name, $value = '', $deprecated = '', $autoload = 'yes' ) {
 		wp_cache_set( 'notoptions', $notoptions, 'options' );
 	}
 
-	$wpdb->query( $wpdb->prepare( "INSERT INTO $wpdb->options (option_name, option_value, autoload) VALUES (%s, %s, %s)", $name, $value, $autoload ) );
+	$wpdb->insert($wpdb->options, array('option_name' => $name, 'option_value' => $value, 'autoload' => $autoload) );
 
 	do_action( "add_option_{$name}", $name, $value );
 	return;
@@ -665,6 +666,17 @@ function get_transient($transient) {
 		$value = wp_cache_get($transient, 'transient');
 	} else {
 		$transient_option = '_transient_' . $wpdb->escape($transient);
+		// If option is not in alloptions, it is not autoloaded and thus has a timeout
+		$alloptions = wp_load_alloptions();
+		if ( !isset( $alloptions[$transient_option] ) ) {
+			$transient_timeout = '_transient_timeout_' . $wpdb->escape($transient);
+			if ( get_option($transient_timeout) < time() ) {
+				delete_option($transient_option);
+				delete_option($transient_timeout);
+				return false;
+			}
+		}
+
 		$value = get_option($transient_option);
 	}
 
@@ -683,20 +695,30 @@ function get_transient($transient) {
  *
  * @param string $transient Transient name. Expected to not be SQL-escaped
  * @param mixed $value Transient value.
+ * @param int $expiration Time until expiration in seconds, default 0
  * @return bool False if value was not set and true if value was set.
  */
-function set_transient($transient, $value) {
+function set_transient($transient, $value, $expiration = 0) {
 	global $_wp_using_ext_object_cache, $wpdb;
 
 	if ( $_wp_using_ext_object_cache ) {
-		return wp_cache_set($transient, $value, 'transient');
+		return wp_cache_set($transient, $value, 'transient', $expiration);
 	} else {
+		$transient_timeout = '_transient_timeout_' . $transient;
 		$transient = '_transient_' . $transient;
 		$safe_transient = $wpdb->escape($transient);
-		if ( false === get_option( $safe_transient ) )
-			return add_option($transient, $value, '', 'no');
-		else
+		if ( false === get_option( $safe_transient ) ) {
+			$autoload = 'yes';
+			if ( 0 != $expiration ) {
+				$autoload = 'no'; 
+				add_option($transient_timeout, time() + $expiration, '', 'no');
+			}
+			return add_option($transient, $value, '', $autoload);
+		} else {
+			if ( 0 != $expiration )
+				update_option($transient_timeout, time() + $expiration);
 			return update_option($transient, $value);
+		}
 	}
 }
 
@@ -1069,12 +1091,11 @@ function do_enclose( $content, $post_ID ) {
 		if ( $url != '' && !$wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = 'enclosure' AND meta_value LIKE (%s)", $post_ID, $url . '%' ) ) ) {
 			if ( $headers = wp_get_http_headers( $url) ) {
 				$len = (int) $headers['content-length'];
-				$type = $wpdb->escape( $headers['content-type'] );
+				$type = $headers['content-type'];
 				$allowed_types = array( 'video', 'audio' );
 				if ( in_array( substr( $type, 0, strpos( $type, "/" ) ), $allowed_types ) ) {
 					$meta_value = "$url\n$len\n$type\n";
-					$wpdb->query( $wpdb->prepare( "INSERT INTO `$wpdb->postmeta` ( `post_id` , `meta_key` , `meta_value` )
-					VALUES ( %d, 'enclosure' , %s)", $post_ID, $meta_value ) );
+					$wpdb->insert($wpdb->postmeta, array('post_id' => $post_ID, 'meta_key' => 'enclosure', 'meta_value' => $meta_value) );
 				}
 			}
 		}
@@ -1435,10 +1456,32 @@ function status_header( $header ) {
 	if ( function_exists( 'apply_filters' ) )
 		$status_header = apply_filters( 'status_header', $status_header, $header, $text, $protocol );
 
-	if ( version_compare( phpversion(), '4.3.0', '>=' ) )
-		return @header( $status_header, true, $header );
-	else
-		return @header( $status_header );
+	return @header( $status_header, true, $header );
+}
+
+/**
+ * Gets the header information to prevent caching.
+ *
+ * The several different headers cover the different ways cache prevention is handled
+ * by different browsers
+ *
+ * @since 2.8
+ *
+ * @uses apply_filters()
+ * @return array The associative array of header names and field values.
+ */
+function wp_get_nocache_headers() {
+	$headers = array(
+		'Expires' => 'Wed, 11 Jan 1984 05:00:00 GMT',
+		'Last-Modified' => gmdate( 'D, d M Y H:i:s' ) . ' GMT',
+		'Cache-Control' => 'no-cache, must-revalidate, max-age=0',
+		'Pragma' => 'no-cache',
+	);
+	
+	if ( function_exists('apply_filters') ) {
+		$headers = apply_filters('nocache_headers', $headers);
+	}
+	return $headers;
 }
 
 /**
@@ -1448,13 +1491,12 @@ function status_header( $header ) {
  * be sent so that all of them get the point that no caching should occur.
  *
  * @since 2.0.0
+ * @uses wp_get_nocache_headers()
  */
 function nocache_headers() {
-	// why are these @-silenced when other header calls aren't?
-	@header( 'Expires: Wed, 11 Jan 1984 05:00:00 GMT' );
-	@header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
-	@header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
-	@header( 'Pragma: no-cache' );
+	$headers = wp_get_nocache_headers();
+	foreach( (array) $headers as $name => $field_value ) 
+		@header("{$name}: {$field_value}");		
 }
 
 /**
@@ -2979,6 +3021,20 @@ function wp_clone( $object ) {
 		$can_clone = version_compare( phpversion(), '5.0', '>=' );
 	}
 	return $can_clone ? clone( $object ) : $object;
+}
+
+function get_site_option( $key, $default = false, $use_cache = true ) {
+	return get_option($key, $default);
+}
+
+// expects $key, $value not to be SQL escaped
+function add_site_option( $key, $value ) {
+	return add_option($key, $value);
+}
+
+// expects $key, $value not to be SQL escaped
+function update_site_option( $key, $value ) {
+	return update_option($key, $value);
 }
 
 

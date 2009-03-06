@@ -124,6 +124,7 @@ function _cat_row( $category, $level, $name_override = false ) {
 		$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 		if ( $default_cat_id != $category->term_id )
 			$actions['delete'] = "<a class='delete:the-list:cat-$category->term_id submitdelete' href='" . wp_nonce_url("categories.php?action=delete&amp;cat_ID=$category->term_id", 'delete-category_' . $category->term_id) . "'>" . __('Delete') . "</a>";
+		$actions = apply_filters('cat_row_actions', $actions, $category);
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -294,6 +295,7 @@ function link_cat_row( $category, $name_override = false ) {
 		$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 		if ( $default_cat_id != $category->term_id )
 			$actions['delete'] = "<a class='delete:the-list:link-cat-$category->term_id submitdelete' href='" . wp_nonce_url("link-category.php?action=delete&amp;cat_ID=$category->term_id", 'delete-link-category_' . $category->term_id) . "'>" . __('Delete') . "</a>";
+		$actions = apply_filters('link_cat_row_actions', $actions, $category);
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -363,29 +365,58 @@ function link_cat_row( $category, $name_override = false ) {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs the html checked attribute.
  *
+ * Compares the first two arguments and if identical marks as checked
+ * 
  * @since unknown
  *
- * @param unknown_type $checked
- * @param unknown_type $current
+ * @param any $checked One of the values to compare
+ * @param any $current (true) The other value to compare if not just true
+ * @param bool $echo Whether or not to echo or just return the string
  */
-function checked( $checked, $current) {
-	if ( $checked == $current)
-		echo ' checked="checked"';
+function checked( $checked, $current = true, $echo = true) {
+	return __checked_selected_helper( $checked, $current, $echo, 'checked' );
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs the html selected attribute.
+ * 
+ * Compares the first two arguments and if identical marks as selected
  *
  * @since unknown
  *
- * @param unknown_type $selected
- * @param unknown_type $current
+ * @param any $checked One of the values to compare
+ * @param any $current (true) The other value to compare if not just true
+ * @param bool $echo Whether or not to echo or just return the string
  */
-function selected( $selected, $current) {
-	if ( $selected == $current)
-		echo ' selected="selected"';
+function selected( $selected, $current = true, $echo = true) {
+	return __checked_selected_helper( $selected, $current, $echo, 'selected' );
+}
+
+/**
+ * Private helper function for checked and selected.
+ * 
+ * Compares the first two arguments and if identical marks as $type
+ *
+ * @since unknown
+ * @access private
+ *
+ * @param any $checked One of the values to compare
+ * @param any $current (true) The other value to compare if not just true
+ * @param bool $echo Whether or not to echo or just return the string
+ * @param string $type The type of checked|selected we are doing.
+ */
+function __checked_selected_helper( $helper, $current, $echo, $type) {
+	if ( $helper == $current)
+		$result = " $type='$type'";
+	else
+		$result = '';
+	
+	if ($echo)
+		echo $result;
+	
+	return $result;
 }
 
 //
@@ -623,6 +654,7 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 					$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
 					$actions['delete'] = "<a class='delete:the-list:tag-$tag->term_id submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "'>" . __('Delete') . "</a>";
+					$actions = apply_filters('tag_row_actions', $actions, $tag);
 					$action_count = count($actions);
 					$i = 0;
 					$out .= '<div class="row-actions">';
@@ -703,7 +735,8 @@ function tag_rows( $page = 1, $pagesize = 20, $searchterms = '', $taxonomy = 'po
 function wp_manage_posts_columns() {
 	$posts_columns = array();
 	$posts_columns['cb'] = '<input type="checkbox" />';
-	$posts_columns['title'] = _c('Post|noun');
+	/* translators: manage posts column name */
+	$posts_columns['title'] = _x('Post', 'column name');
 	$posts_columns['author'] = __('Author');
 	$posts_columns['categories'] = __('Categories');
 	$posts_columns['tags'] = __('Tags');
@@ -727,13 +760,16 @@ function wp_manage_media_columns() {
 	$posts_columns = array();
 	$posts_columns['cb'] = '<input type="checkbox" />';
 	$posts_columns['icon'] = '';
-	$posts_columns['media'] = _c('File|media column header');
+	/* translators: column name */
+	$posts_columns['media'] = _x('File', 'column name');
 	$posts_columns['author'] = __('Author');
 	//$posts_columns['tags'] = _c('Tags|media column header');
-	$posts_columns['parent'] = _c('Attached to|media column header');
+	/* translators: column name */
+	$posts_columns['parent'] = _x('Attached to', 'column name');
 	$posts_columns['comments'] = '<div class="vers"><img alt="Comments" src="images/comment-grey-bubble.png" /></div>';
 	//$posts_columns['comments'] = __('Comments');
-	$posts_columns['date'] = _c('Date|media column header');
+	/* translators: column name */
+	$posts_columns['date'] = _x('Date', 'column name');
 	$posts_columns = apply_filters('manage_media_columns', $posts_columns);
 
 	return $posts_columns;
@@ -791,7 +827,8 @@ function get_column_headers($page) {
 			$_wp_column_headers[$page] = array(
 				'cb' => '<input type="checkbox" />',
 				'author' => __('Author'),
-				'comment' => _c('Comment|noun'),
+				/* translators: column name */
+				'comment' => _x('Comment', 'column name'),
 				//'date' => __('Submitted'),
 				'response' => __('In Response To')
 			);
@@ -1028,8 +1065,12 @@ function inline_edit_row( $type ) {
 				<span class="input-text-wrap"><input type="text" name="post_password" class="inline-edit-password-input" value="" /></span>
 			</label>
 
-			<em style="margin:5px 10px 0 0" class="alignleft"><?php echo _c( '&ndash;OR&ndash;|Between password field and private checkbox on post quick edit interface' ); ?></em>
-
+			<em style="margin:5px 10px 0 0" class="alignleft">
+				<?php
+				/* translators: Between password field and private checkbox on post quick edit interface */
+				echo __( '&ndash;OR&ndash;' );
+				?>
+			</em>
 			<label class="alignleft inline-edit-private">
 				<input type="checkbox" name="keep_private" value="private" />
 				<span class="checkbox-title"><?php echo $is_page ? __('Private page') : __('Private post'); ?></span>
@@ -1157,7 +1198,7 @@ function inline_edit_row( $type ) {
 <?php endif; // $bulk ?>
 				<?php endif; ?>
 					<option value="pending"><?php _e( 'Pending Review' ); ?></option>
-					<option value="draft"><?php _e( 'Unpublished' ); ?></option>
+					<option value="draft"><?php _e( 'Draft' ); ?></option>
 				</select>
 			</label>
 
@@ -1399,6 +1440,7 @@ function _post_row($a_post, $pending_comments, $mode) {
 			} else {
 				$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
 			}
+			$actions = apply_filters('post_row_actions', $actions, $post);
 			$action_count = count($actions);
 			$i = 0;
 			echo '<div class="row-actions">';
@@ -1594,6 +1636,7 @@ foreach ($posts_columns as $column_name=>$column_display_name) {
 		} else {
 			$actions['view'] = '<a href="' . get_permalink($page->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
 		}
+		$actions = apply_filters('page_row_actions', $actions, $page);
 		$action_count = count($actions);
 
 		$i = 0;
@@ -1832,6 +1875,7 @@ function user_row( $user_object, $style = '', $role = '' ) {
 		$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 		if ( $current_user->ID != $user_object->ID )
 			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("users.php?action=delete&amp;user=$user_object->ID", 'bulk-users') . "'>" . __('Delete') . "</a>";
+		$actions = apply_filters('user_row_actions', $actions, $user_object);
 		$action_count = count($actions);
 		$i = 0;
 		$edit .= '<div class="row-actions">';
@@ -2069,7 +2113,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 						}
 					}
 					if ( 'spam' != $the_comment_status )
-						$actions['spam'] = "<a href='$spam_url' class='delete:the-comment-list:comment-$comment->comment_ID::spam=1 vim-s vim-destructive' title='" . __( 'Mark this comment as spam' ) . "'>" . _c( 'Spam|verb' ) . '</a>';
+						$actions['spam'] = "<a href='$spam_url' class='delete:the-comment-list:comment-$comment->comment_ID::spam=1 vim-s vim-destructive' title='" . __( 'Mark this comment as spam' ) . "'>" . /* translators: mark as spam link */ _x( 'Spam', 'verb' ) . '</a>';
 					$actions['delete'] = "<a href='$delete_url' class='delete:the-comment-list:comment-$comment->comment_ID delete vim-d vim-destructive'>" . __('Delete') . '</a>';
 					$actions['edit'] = "<a href='comment.php?action=editcomment&amp;c={$comment->comment_ID}' title='" . __('Edit comment') . "'>". __('Edit') . '</a>';
 					$actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
@@ -2471,10 +2515,11 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 	$month .= '</select>';
 
 	$day = '<input type="text" ' . ( $multi ? '' : 'id="jj" ' ) . 'name="jj" value="' . $jj . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
-	$year = '<input type="text" ' . ( $multi ? '' : 'id="aa" ' ) . 'name="aa" value="' . $aa . '" size="4" maxlength="5"' . $tab_index_attribute . ' autocomplete="off" />';
+	$year = '<input type="text" ' . ( $multi ? '' : 'id="aa" ' ) . 'name="aa" value="' . $aa . '" size="4" maxlength="4"' . $tab_index_attribute . ' autocomplete="off" />';
 	$hour = '<input type="text" ' . ( $multi ? '' : 'id="hh" ' ) . 'name="hh" value="' . $hh . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
 	$minute = '<input type="text" ' . ( $multi ? '' : 'id="mn" ' ) . 'name="mn" value="' . $mn . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
-	printf(_c('%1$s%2$s, %3$s @ %4$s : %5$s|1: month input, 2: day input, 3: year input, 4: hour input, 5: minute input'), $month, $day, $year, $hour, $minute);
+	/* translators: 1: month input, 2: day input, 3: year input, 4: hour input, 5: minute input */
+	printf(__('%1$s%2$s, %3$s @ %4$s : %5$s'), $month, $day, $year, $hour, $minute);
 
 	echo '<input type="hidden" id="ss" name="ss" value="' . $ss . '" />';
 
@@ -2703,6 +2748,11 @@ function wp_max_upload_size() {
 function wp_import_upload_form( $action ) {
 	$bytes = apply_filters( 'import_upload_size_limit', wp_max_upload_size() );
 	$size = wp_convert_bytes_to_hr( $bytes );
+	$upload_dir = wp_upload_dir();
+	if ( ! empty( $upload_dir['error'] ) ) :
+		?><div class="error"><p><?php _e('Before you can upload your import file, you will need to fix the following error:'); ?></p>
+		<p><strong><?php echo $upload_dir['error']; ?></strong></p></div><?php 
+	else : 
 ?>
 <form enctype="multipart/form-data" id="import-upload-form" method="post" action="<?php echo attribute_escape($action) ?>">
 <p>
@@ -2717,6 +2767,7 @@ function wp_import_upload_form( $action ) {
 </p>
 </form>
 <?php
+	endif;
 }
 
 /**
@@ -3237,7 +3288,10 @@ function _post_states($post) {
 	if ( 'draft' == $post->post_status && 'draft' != $post_status )
 		$post_states[] = __('Draft');
 	if ( 'pending' == $post->post_status && 'pending' != $post_status )
-		$post_states[] = _c('Pending|post state');
+		/* translators: post state */
+		$post_states[] = _x('Pending', 'post state');
+	if ( is_sticky($post->ID) )
+		$post_states[] = __('Sticky');
 
 	$post_states = apply_filters( 'display_post_states', $post_states );
 
@@ -3286,6 +3340,7 @@ function screen_meta($screen) {
 ?>
 	<br class="clear" />
 	</div></form>
+<?php echo screen_layout($screen); ?>
 </div>
 
 <?php
@@ -3296,29 +3351,38 @@ function screen_meta($screen) {
 	if ( !isset($_wp_contextual_help) )
 		$_wp_contextual_help = array();
 
-	if ( !isset($_wp_contextual_help['post']) ) {
-		$help = drag_drop_help();
-		$help .= '<p>' . __('<a href="http://codex.wordpress.org/Writing_Posts" target="_blank">Writing Posts</a>') . '</p>';
-		$_wp_contextual_help['post'] = $help;
+	switch ( $screen ) {
+		case 'post':
+			if ( !isset($_wp_contextual_help['post']) ) {
+				$help = drag_drop_help();
+				$help .= '<p>' . __('<a href="http://codex.wordpress.org/Writing_Posts" target="_blank">Writing Posts</a>') . '</p>';
+				$_wp_contextual_help['post'] = $help;
+			}
+			break;
+		case 'page':
+			if ( !isset($_wp_contextual_help['page']) ) {
+				$help = drag_drop_help();
+				$_wp_contextual_help['page'] = $help;
+			}
+			break;
+		case 'dashboard':
+			if ( !isset($_wp_contextual_help['dashboard']) ) {
+				$help = '<p>' . __('The modules on this screen can be arranged in several columns. You can select the number of columns from the Screen Options tab.') . "</p>\n";
+				$help .= drag_drop_help();
+				$_wp_contextual_help['dashboard'] = $help;
+			}
+			break;
+		case 'link':
+			if ( !isset($_wp_contextual_help['link']) ) {
+				$help = drag_drop_help();
+				$_wp_contextual_help['link'] = $help;
+			}
+			break;
+		case 'options-general':
+			if ( !isset($_wp_contextual_help['options-general']) )
+				$_wp_contextual_help['options-general'] =  __('<a href="http://codex.wordpress.org/Settings_General_SubPanel" target="_blank">General Settings</a>');
+			break;
 	}
-
-	if ( !isset($_wp_contextual_help['page']) ) {
-		$help = drag_drop_help();
-		$_wp_contextual_help['page'] = $help;
-	}
-
-	if ( !isset($_wp_contextual_help['dashboard']) ) {
-		$help = drag_drop_help();
-		$_wp_contextual_help['dashboard'] = $help;
-	}
-
-	if ( !isset($_wp_contextual_help['link']) ) {
-		$help = drag_drop_help();
-		$_wp_contextual_help['link'] = $help;
-	}
-
-	if ( !isset($_wp_contextual_help['options-general']) )
-		$_wp_contextual_help['options-general'] =  __('<a href="http://codex.wordpress.org/Settings_General_SubPanel" target="_blank">General Settings</a>');
 
 	$_wp_contextual_help = apply_filters('contextual_help_list', $_wp_contextual_help, $screen);
 	?>
@@ -3379,9 +3443,39 @@ function add_contextual_help($screen, $help) {
 
 function drag_drop_help() {
 	return '
-	<p>' .	__('Most of the modules on this screen can be moved. If you hover your mouse over the title bar of a module you’ll notice the 4 arrow cursor appears to let you know it is movable. Click on it, hold down the mouse button and start dragging the module to a new location. As you drag the module, notice the dotted gray box that also moves. This box indicates where the module will be placed when you release the mouse button.') . '</p>
+	<p>' .	__('Most of the modules on this screen can be moved. If you hover your mouse over the title bar of a module you&rsquo;ll notice the 4 arrow cursor appears to let you know it is movable. Click on it, hold down the mouse button and start dragging the module to a new location. As you drag the module, notice the dotted gray box that also moves. This box indicates where the module will be placed when you release the mouse button.') . '</p>
 	<p>' . __('The same modules can be expanded and collapsed by clicking once on their title bar and also completely hidden from the Screen Options tab.') . '</p>
 ';
+}
+
+
+function screen_layout($screen) {
+	global $screen_layout_columns;
+
+	if ( 'dashboard' == $screen ) {
+		$screen_layout_columns = get_user_option('screen_layout_dashboard');
+		$num = 4;
+/* add to the write pages?
+	} elseif ( in_array( $screen, array('post', 'page', 'link') ) ) {
+		$screen_layout_columns = get_user_option('screen_layout_write');
+		$num = 2;
+*/
+	} else {
+		$screen_layout_columns = 0;
+		return '';
+	}
+	
+	if ( ! $screen_layout_columns )
+			$screen_layout_columns = 2;
+
+	$i = 1;
+	$return = '<h5>' . __('Screen Layout') . "</h5>\n<div class='columns-prefs'>" . __('Number of Columns:') . "\n";
+	while ( $i <= $num ) {
+		$return .= "<label><input type='radio' name='screen_columns' value='$i'" . ( ($screen_layout_columns == $i) ? " checked='checked'" : "" ) . " /> $i</label>\n";
+		++$i;
+	}
+	$return .= "</div>\n";
+	return $return;
 }
 
 function screen_icon($name = '') {

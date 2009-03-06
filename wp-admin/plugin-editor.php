@@ -12,12 +12,18 @@ require_once('admin.php');
 $title = __("Edit Plugins");
 $parent_file = 'plugins.php';
 
-wp_reset_vars(array('action', 'redirect', 'profile', 'error', 'warning', 'a', 'file'));
+wp_reset_vars(array('action', 'redirect', 'profile', 'error', 'warning', 'a', 'file', 'plugin'));
 
 wp_admin_css( 'theme-editor' );
 
 $plugins = get_plugins();
-$plugin_files = array_keys($plugins);
+
+if ( empty($plugin) ) {
+	$plugin = array_keys($plugins);
+	$plugin = $plugin[0];
+}
+
+$plugin_files = get_plugin_files($plugin);
 
 if (empty($file))
 	$file = $plugin_files[0];
@@ -74,6 +80,8 @@ default:
 		exit;
 	}
 
+	wp_enqueue_script( 'codepress' );
+	add_action( 'admin_print_footer_scripts', 'codepress_footer_js' );
 	require_once('admin-header.php');
 
 	update_recently_edited(WP_PLUGIN_DIR . '/' . $file);
@@ -81,8 +89,23 @@ default:
 	if ( ! is_file($real_file) )
 		$error = 1;
 
-	if ( ! $error )
-		$content = htmlspecialchars(file_get_contents($real_file));
+	if ( ! $error ) {
+		$content = file_get_contents( $real_file );
+
+		if ( '.php' == substr( $real_file, strrpos( $real_file, '.' ) ) ) {
+			$functions = wp_doc_link_parse( $content );
+
+			$docs_select = '<select name="docs-list" id="docs-list">';
+			$docs_select .= '<option value="">' . __( 'Function Name...' ) . '</option>';
+			foreach ( $functions as $function) {
+				$docs_select .= '<option value="' . urlencode( $function ) . '">' . htmlspecialchars( $function ) . '()</option>';
+			}
+			$docs_select .= '</select>';
+		}
+
+		$content = htmlspecialchars( $content );
+		$codepress_lang = codepress_get_lang($real_file);
+	}
 
 	?>
 <?php if (isset($_GET['a'])) : ?>
@@ -98,11 +121,27 @@ default:
 <div class="wrap">
 <?php screen_icon(); ?>
 <h2><?php echo wp_specialchars( $title ); ?></h2>
-
+<div class="bordertitle">
+	<form id="themeselector" action="plugin-editor.php" method="post">
+		<strong><label for="theme"><?php _e('Select plugin to edit:'); ?> </label></strong>
+		<select name="plugin" id="plugin">
+<?php
+	foreach ($plugins as $plugin_key => $a_plugin) {
+	$plugin_name = $a_plugin['Name'];
+	if ($plugin_key == $plugin) $selected = " selected='selected'";
+	else $selected = '';
+	$plugin_name = attribute_escape($plugin_name);
+	echo "\n\t<option value=\"$plugin_key\" $selected>$plugin_name</option>";
+}
+?>
+		</select>
+		<input type="submit" name="Submit" value="<?php _e('Select') ?>" class="button" />
+	</form>
+</div>
 <div class="tablenav">
 <div class="alignleft">
 <big><?php
-	if ( is_plugin_active($file) ) {
+	if ( is_plugin_active($plugin) ) {
 		if ( is_writeable($real_file) )
 			echo sprintf(__('Editing <strong>%s</strong> (active)'), $file);
 		else
@@ -121,20 +160,23 @@ default:
 	<div id="templateside">
 	<h3 id="bordertitle"><?php _e('Plugin Files'); ?></h3>
 
-	<h4><?php _e('Plugins'); ?></h4>
 	<ul>
 <?php foreach($plugin_files as $plugin_file) : ?>
-		<li><a href="plugin-editor.php?file=<?php echo $plugin_file; ?>"><?php echo $plugins[$plugin_file]['Name']; ?></a></li>
+		<li<?php echo $file == $plugin_file ? ' class="highlight"' : ''; ?>><a href="plugin-editor.php?file=<?php echo $plugin_file; ?>&plugin=<?php echo $plugin; ?>"><?php echo $plugin_file ?></a></li>
 <?php endforeach; ?>
 	</ul>
 	</div>
 <?php	if ( ! $error ) { ?>
 	<form name="template" id="template" action="plugin-editor.php" method="post">
 	<?php wp_nonce_field('edit-plugin_' . $file) ?>
-		<div><textarea cols="70" rows="25" name="newcontent" id="newcontent" tabindex="1"><?php echo $content ?></textarea>
+		<div><textarea cols="70" rows="25" name="newcontent" id="newcontent" tabindex="1" class="codepress <?php echo $codepress_lang ?>"><?php echo $content ?></textarea>
 		<input type="hidden" name="action" value="update" />
 		<input type="hidden" name="file" value="<?php echo $file ?>" />
+		<input type="hidden" name="plugin" value="<?php echo $plugin ?>" />
 		</div>
+		<?php if ( count( $functions ) ) : ?>
+		<div id="documentation"><label for="docs-list">Documentation:</label> <?php echo $docs_select ?> <input type="button" class="button" value=" <?php _e( 'Lookup' ) ?> " onclick="if ( '' != jQuery('#docs-list').val() ) { window.open( 'http://api.wordpress.org/core/handbook/1.0/?function=' + escape( jQuery( '#docs-list' ).val() ) + '&locale=<?php echo urlencode( get_locale() ) ?>&version=<?php echo urlencode( $wp_version ) ?>&redirect=true'); }" /></div>
+		<?php endif; ?>
 <?php if ( is_writeable($real_file) ) : ?>
 	<?php if ( in_array($file, (array) get_option('active_plugins')) ) { ?>
 		<p><?php _e('<strong>Warning:</strong> Making changes to active plugins is not recommended.  If your changes cause a fatal error, the plugin will be automatically deactivated.'); ?></p>

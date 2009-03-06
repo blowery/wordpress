@@ -6,7 +6,18 @@
  * {@link http://backpress.automattic.com/ BackPress}. WordPress themes and
  * plugins will only be concerned about the filters and actions set in this
  * file.
- *
+ * 
+ * Several constants are used to manage the loading, concatenating and compression of scripts and CSS:
+ * define('SCRIPT_DEBUG', true); loads the develppment (non-minified) versions of all scripts
+ * define('CONCATENATE_SCRIPTS', false); disables both compression and cancatenating,
+ * define('COMPRESS_SCRIPTS', false); disables compression of scripts,
+ * define('COMPRESS_CSS', false); disables compression of CSS,
+ * define('ENFORCE_GZIP', true); forces gzip for compression (default is deflate).
+ * 
+ * The globals $concatenate_scripts, $compress_scripts and $compress_css can be set by plugins
+ * to temporarily override the above settings. Also a compression test is run once and the result is saved
+ * as option 'can_compress_scripts' (0/1). The test will run again if that option is deleted.
+ * 
  * @package WordPress
  */
 
@@ -29,6 +40,7 @@ require( ABSPATH . WPINC . '/functions.wp-styles.php' );
  * Setup WordPress scripts to load by default for Administration Panels.
  *
  * Localizes a few of the scripts.
+ * $scripts->add_data( 'script-handle', 'group', 1 ); queues the script for the footer
  *
  * @since 2.6.0
  *
@@ -45,7 +57,6 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->default_dirs = array('/wp-admin/js/', '/wp-includes/js/');
 
 	$suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '.dev' : '';
-
 
 	$scripts->add( 'utils', "/wp-admin/js/utils$suffix.js", false, '20090102' );
 
@@ -113,7 +124,7 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'cropper', '/wp-includes/js/crop/cropper.js', array('scriptaculous-dragdrop'), '20070118');
 
-	$scripts->add( 'jquery', '/wp-includes/js/jquery/jquery.js', false, '1.3.1');
+	$scripts->add( 'jquery', '/wp-includes/js/jquery/jquery.js', false, '1.2.6-min');
 
 	$scripts->add( 'jquery-ui-core', '/wp-includes/js/jquery/ui.core.js', array('jquery'), '1.5.2' );
 	$scripts->add_data( 'jquery-ui-core', 'group', 1 );
@@ -234,7 +245,7 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'xfn', "/wp-admin/js/xfn$suffix.js", false, '3517m' );
 
-		$scripts->add( 'postbox', "/wp-admin/js/postbox$suffix.js", array('jquery-ui-sortable'), '20090102' );
+		$scripts->add( 'postbox', "/wp-admin/js/postbox$suffix.js", array('jquery-ui-sortable'), '20090223' );
 		$scripts->add_data( 'postbox', 'group', 1 );
 		$scripts->localize( 'postbox', 'postboxL10n', array(
 			'requestFile' => admin_url('admin-ajax.php')
@@ -249,7 +260,7 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(slugL10n);}catch(e){};'
 		) );
 
-		$scripts->add( 'post', "/wp-admin/js/post$suffix.js", array('suggest', 'jquery-ui-tabs', 'wp-lists', 'postbox', 'slug'), '20090201' );
+		$scripts->add( 'post', "/wp-admin/js/post$suffix.js", array('suggest', 'jquery-ui-tabs', 'wp-lists', 'postbox', 'slug'), '20090219' );
 		$scripts->add_data( 'post', 'group', 1 );
 		$scripts->localize( 'post', 'postL10n', array(
 			'tagsUsed' =>  __('Tags used on this post:'),
@@ -341,7 +352,7 @@ function wp_default_scripts( &$scripts ) {
 			'l10n_print_after' => 'try{convertEntities(wpGearsL10n);}catch(e){};'
 		));
 
-		$scripts->add( 'theme-preview', "/wp-admin/js/theme-preview$suffix.js", array( 'thickbox', 'jquery' ), '20090114' );
+		$scripts->add( 'theme-preview', "/wp-admin/js/theme-preview$suffix.js", array( 'thickbox', 'jquery' ), '20090225' );
 		$scripts->add_data( 'theme-preview', 'group', 1 );
 
 		$scripts->add( 'inline-edit-post', "/wp-admin/js/inline-edit-post$suffix.js", array( 'jquery-form', 'suggest' ), '20090125' );
@@ -377,7 +388,9 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'media', "/wp-admin/js/media$suffix.js", array( 'jquery-ui-draggable', 'jquery-ui-resizable' ), '20090113' );
 		$scripts->add_data( 'media', 'group', 1 );
-
+		
+		$scripts->add( 'codepress', '/wp-includes/js/codepress/codepress.js', false, '0.9.6' );
+		$scripts->add_data( 'codepress', 'group', 1 );
 	}
 }
 
@@ -425,13 +438,14 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'global', '/wp-admin/css/global.css', array(), '20081226' );
 	$styles->add( 'media', '/wp-admin/css/media.css', array(), '20081210' );
 	$styles->add( 'widgets', '/wp-admin/css/widgets.css', array(), '20081210' );
-	$styles->add( 'dashboard', '/wp-admin/css/dashboard.css', array(), '20081210' );
+	$styles->add( 'dashboard', '/wp-admin/css/dashboard.css', array(), '20090305' );
 	$styles->add( 'install', '/wp-admin/css/install.css', array(), '20081210' );
 	$styles->add( 'theme-editor', '/wp-admin/css/theme-editor.css', array(), '20081210' );
 	$styles->add( 'press-this', '/wp-admin/css/press-this.css', array(), '20081210' );
 	$styles->add( 'thickbox', '/wp-includes/js/thickbox/thickbox.css', array(), '20081210' );
 	$styles->add( 'login', '/wp-admin/css/login.css', array(), '20081210' );
 	$styles->add( 'plugin-install', '/wp-admin/css/plugin-install.css', array(), '20081210' );
+	$styles->add( 'theme-install', '/wp-admin/css/theme-install.css', array(), '20090227' );
 	$styles->add( 'farbtastic', '/wp-admin/css/farbtastic.css', array(), '1.2' );
 
 	foreach ( $rtl_styles as $rtl_style )
@@ -534,10 +548,10 @@ function wp_style_loader_src( $src, $handle ) {
  * @see wp_print_scripts()
  */
 function print_head_scripts() {
+	global $wp_scripts, $concatenate_scripts;
+
 	if ( ! did_action('wp_print_scripts') )
 		do_action('wp_print_scripts');
-
-	global $wp_scripts, $concatenate_scripts;
 
 	if ( !is_a($wp_scripts, 'WP_Scripts') )
 		$wp_scripts = new WP_Scripts();
@@ -547,7 +561,7 @@ function print_head_scripts() {
 	$wp_scripts->do_head_items();
 
 	if ( apply_filters('print_head_scripts', true) )
-		_pring_scripts();
+		_print_scripts();
 
 	$wp_scripts->reset();
 	return $wp_scripts->done;
@@ -569,13 +583,13 @@ function print_footer_scripts() {
 	$wp_scripts->do_footer_items();
 
 	if ( apply_filters('print_footer_scripts', true) )
-		_pring_scripts();
+		_print_scripts();
 
 	$wp_scripts->reset();
 	return $wp_scripts->done;
 }
 
-function _pring_scripts() {
+function _print_scripts() {
 	global $wp_scripts, $compress_scripts;
 
 	$zip = $compress_scripts ? 1 : 0;
@@ -686,13 +700,13 @@ function script_concat_settings() {
 
 	if ( ! isset($compress_scripts) ) {
 		$compress_scripts = defined('COMPRESS_SCRIPTS') ? COMPRESS_SCRIPTS : true;
-		if ( $compress_scripts && ( ! get_option('can_compress_scripts') || $compressed_output ) )
+		if ( $compress_scripts && ( ! get_site_option('can_compress_scripts') || $compressed_output ) )
 			$compress_scripts = false;
 	}
 
 	if ( ! isset($compress_css) ) {
 		$compress_css = defined('COMPRESS_CSS') ? COMPRESS_CSS : true;
-		if ( $compress_css && ( ! get_option('can_compress_scripts') || $compressed_output ) )
+		if ( $compress_css && ( ! get_site_option('can_compress_scripts') || $compressed_output ) )
 			$compress_css = false;
 	}
 }

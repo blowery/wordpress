@@ -346,6 +346,7 @@ function get_default_post_to_edit() {
 	$post->post_name = '';
 	$post->post_author = '';
 	$post->post_date = '';
+	$post->post_date_gmt = '';
 	$post->post_password = '';
 	$post->post_status = 'draft';
 	$post->post_type = 'post';
@@ -397,30 +398,42 @@ function get_post_to_edit( $id ) {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Determine if a post exists based on title, content, and date
  *
  * @since unknown
  *
- * @param unknown_type $title
- * @param unknown_type $content
- * @param unknown_type $post_date
- * @return unknown
+ * @param string $title Post title
+ * @param string $content Optional post content
+ * @param string $date Optional post date
+ * @return int Post ID if post exists, 0 otherwise.
  */
-function post_exists($title, $content = '', $post_date = '') {
+function post_exists($title, $content = '', $date = '') {
 	global $wpdb;
 
-	$title = stripslashes($title);
-	$content = stripslashes($content);
-	$post_date = stripslashes($post_date);
+	$post_title = stripslashes( sanitize_post_field( 'post_title', $title, 0, 'db' ) );
+	$post_content = stripslashes( sanitize_post_field( 'post_content', $content, 0, 'db' ) );    
+	$post_date = stripslashes( sanitize_post_field( 'post_date', $date, 0, 'db' ) );
 
-	if (!empty ($post_date))
-		$post_date = $wpdb->prepare("AND post_date = %s", $post_date);
+	$query = "SELECT ID FROM $wpdb->posts WHERE 1=1";
+	$args = array();
 
-	if (!empty ($title))
-		return $wpdb->get_var( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s $post_date", $title) );
-	else
-		if (!empty ($content))
-			return $wpdb->get_var( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_content = %s $post_date", $content) );
+	if ( !empty ( $date ) ) {
+		$query .= ' AND post_date = %s';
+		$args[] = $post_date;
+	}
+
+	if ( !empty ( $title ) ) {
+		$query .= ' AND post_title = %s';
+		$args[] = $post_title;
+	}
+
+	if ( !empty ( $content ) ) {
+		$query .= 'AND post_content = %s';
+		$args[] = $post_content;
+	}
+    
+	if ( !empty ( $args ) )
+		return $wpdb->get_var( $wpdb->prepare($query, $args) );
 
 	return 0;
 }
@@ -743,7 +756,7 @@ function _relocate_children( $old_ID, $new_ID ) {
 	global $wpdb;
 	$old_ID = (int) $old_ID;
 	$new_ID = (int) $new_ID;
-	return $wpdb->query( $wpdb->prepare("UPDATE $wpdb->posts SET post_parent = %d WHERE post_parent = %d", $new_ID, $old_ID) );
+	return $wpdb->update($wpdb->posts, array('post_parent' => $new_ID), array('post_parent' => $old_ID) );
 }
 
 /**
@@ -774,11 +787,11 @@ function wp_edit_posts_query( $q = false ) {
 	$q['m']   = isset($q['m']) ? (int) $q['m'] : 0;
 	$q['cat'] = isset($q['cat']) ? (int) $q['cat'] : 0;
 	$post_stati  = array(	//	array( adj, noun )
-				'publish' => array(__('Published'), __('Published posts'), __ngettext_noop('Published <span class="count">(%s)</span>', 'Published <span class="count">(%s)</span>')),
-				'future' => array(__('Scheduled'), __('Scheduled posts'), __ngettext_noop('Scheduled <span class="count">(%s)</span>', 'Scheduled <span class="count">(%s)</span>')),
-				'pending' => array(__('Pending Review'), __('Pending posts'), __ngettext_noop('Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>')),
-				'draft' => array(__('Draft'), _c('Drafts|manage posts header'), __ngettext_noop('Draft <span class="count">(%s)</span>', 'Drafts <span class="count">(%s)</span>')),
-				'private' => array(__('Private'), __('Private posts'), __ngettext_noop('Private <span class="count">(%s)</span>', 'Private <span class="count">(%s)</span>')),
+				'publish' => array(__('Published'), __('Published posts'), _n_noop('Published <span class="count">(%s)</span>', 'Published <span class="count">(%s)</span>')),
+				'future' => array(__('Scheduled'), __('Scheduled posts'), _n_noop('Scheduled <span class="count">(%s)</span>', 'Scheduled <span class="count">(%s)</span>')),
+				'pending' => array(__('Pending Review'), __('Pending posts'), _n_noop('Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>')),
+				'draft' => array(__('Draft'), _c('Drafts|manage posts header'), _n_noop('Draft <span class="count">(%s)</span>', 'Drafts <span class="count">(%s)</span>')),
+				'private' => array(__('Private'), __('Private posts'), _n_noop('Private <span class="count">(%s)</span>', 'Private <span class="count">(%s)</span>')),
 			);
 
 	$post_stati = apply_filters('post_stati', $post_stati);
@@ -840,9 +853,9 @@ function wp_edit_attachments_query( $q = false ) {
 	$q['post_status'] = 'any';
 	$q['posts_per_page'] = 15;
 	$post_mime_types = array(	//	array( adj, noun )
-				'image' => array(__('Images'), __('Manage Images'), __ngettext_noop('Image <span class="count">(%s)</span>', 'Images <span class="count">(%s)</span>')),
-				'audio' => array(__('Audio'), __('Manage Audio'), __ngettext_noop('Audio <span class="count">(%s)</span>', 'Audio <span class="count">(%s)</span>')),
-				'video' => array(__('Video'), __('Manage Video'), __ngettext_noop('Video <span class="count">(%s)</span>', 'Video <span class="count">(%s)</span>')),
+				'image' => array(__('Images'), __('Manage Images'), _n_noop('Image <span class="count">(%s)</span>', 'Images <span class="count">(%s)</span>')),
+				'audio' => array(__('Audio'), __('Manage Audio'), _n_noop('Audio <span class="count">(%s)</span>', 'Audio <span class="count">(%s)</span>')),
+				'video' => array(__('Video'), __('Manage Video'), _n_noop('Video <span class="count">(%s)</span>', 'Video <span class="count">(%s)</span>')),
 			);
 	$post_mime_types = apply_filters('post_mime_types', $post_mime_types);
 

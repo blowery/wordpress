@@ -58,7 +58,8 @@ function login_header($title = 'Log In', $message = '', $wp_error = '') {
 
 <div id="login"><h1><a href="<?php echo apply_filters('login_headerurl', 'http://wordpress.org/'); ?>" title="<?php echo apply_filters('login_headertitle', __('Powered by WordPress')); ?>"><?php bloginfo('name'); ?></a></h1>
 <?php
-	if ( !empty( $message ) ) echo apply_filters('login_message', $message) . "\n";
+	$message = apply_filters('login_message', $message);
+	if ( !empty( $message ) ) echo $message . "\n";
 
 	// Incase a plugin uses $error rather than the $errors object
 	if ( !empty( $error ) ) {
@@ -139,7 +140,7 @@ function retrieve_password() {
 		$key = wp_generate_password(20, false);
 		do_action('retrieve_password_key', $user_login, $key);
 		// Now insert the new md5 key into the db
-		$wpdb->query($wpdb->prepare("UPDATE $wpdb->users SET user_activation_key = %s WHERE user_login = %s", $key, $user_login));
+		$wpdb->update($wpdb->users, array('user_activation_key' => $key), array('user_login' => $user_login));
 	}
 	$message = __('Someone has asked to reset the password for the following site and username.') . "\r\n\r\n";
 	$message .= get_option('siteurl') . "\r\n\r\n";
@@ -434,7 +435,7 @@ default:
 
 	if ( !is_wp_error($user) ) {
 		// If the user can't edit posts, send them to their profile.
-		if ( !$user->has_cap('edit_posts') && ( empty( $redirect_to ) || $redirect_to == 'wp-admin/' ) )
+		if ( !$user->has_cap('edit_posts') && ( empty( $redirect_to ) || $redirect_to == 'wp-admin/' || $redirect_to == admin_url() ) )
 			$redirect_to = admin_url('profile.php');
 		wp_safe_redirect($redirect_to);
 		exit();

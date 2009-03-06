@@ -10,11 +10,17 @@
 require_once('admin.php');
 
 if ( isset($_GET['action']) ) {
-	check_admin_referer('switch-theme_' . $_GET['template']);
-
-	if ('activate' == $_GET['action']) {
+	if ( 'activate' == $_GET['action'] ) {
+		check_admin_referer('switch-theme_' . $_GET['template']);
 		switch_theme($_GET['template'], $_GET['stylesheet']);
 		wp_redirect('themes.php?activated=true');
+		exit;
+	} else if ( 'delete' == $_GET['action'] ) {
+		check_admin_referer('delete-theme_' . $_GET['template']);
+		if ( !current_user_can('update_themes') )
+			wp_die( __( 'Cheatin&#8217; uh?' ) );
+		delete_theme($_GET['template']);
+		wp_redirect('themes.php?deleted=true');
 		exit;
 	}
 }
@@ -32,6 +38,8 @@ require_once('admin-header.php');
 <div id="message1" class="updated fade"><p><?php _e('The active theme is broken.  Reverting to the default theme.'); ?></p></div>
 <?php elseif ( isset($_GET['activated']) ) : ?>
 <div id="message2" class="updated fade"><p><?php printf(__('New theme activated. <a href="%s">Visit site</a>'), get_bloginfo('url') . '/'); ?></p></div>
+<?php elseif ( isset($_GET['deleted']) ) : ?>
+<div id="message3" class="updated fade"><p><?php _e('Theme deleted.') ?></p></div>
 <?php endif; ?>
 
 <?php
@@ -74,7 +82,7 @@ $themes = array_slice( $themes, $start, $per_page );
 function theme_update_available( $theme ) {
 	static $themes_update;
 	if ( !isset($themes_update) )
-		$themes_update = get_option('update_themes');
+		$themes_update = get_transient('update_themes');
 
 	if ( is_object($theme) && isset($theme->stylesheet) )
 		$stylesheet = $theme->stylesheet;
@@ -108,7 +116,9 @@ function theme_update_available( $theme ) {
 <?php if ( $ct->screenshot ) : ?>
 <img src="<?php echo WP_CONTENT_URL . $ct->stylesheet_dir . '/' . $ct->screenshot; ?>" alt="<?php _e('Current theme preview'); ?>" />
 <?php endif; ?>
-<h4><?php printf(_c('%1$s %2$s by %3$s|1: theme title, 2: theme version, 3: theme author'), $ct->title, $ct->version, $ct->author) ; ?></h4>
+<h4><?php
+	/* translators: 1: theme title, 2: theme version, 3: theme author */
+	printf(__('%1$s %2$s by %3$s'), $ct->title, $ct->version, $ct->author) ; ?></h4>
 <p class="description"><?php echo $ct->description; ?></p>
 <?php if ($ct->parent_theme) { ?>
 	<p><?php printf(__('The template files are located in <code>%2$s</code>.  The stylesheet files are located in <code>%3$s</code>.  <strong>%4$s</strong> uses templates from <strong>%5$s</strong>.  Changes made to the templates will affect both themes.'), $ct->title, $ct->template_dir, $ct->stylesheet_dir, $ct->title, $ct->parent_theme); ?></p>
@@ -174,16 +184,25 @@ foreach ( $cols as $col => $theme_name ) {
 	$preview_link = htmlspecialchars( add_query_arg( array('preview' => 1, 'template' => $template, 'stylesheet' => $stylesheet, 'TB_iframe' => 'true', 'width' => 600, 'height' => 400 ), $preview_link ) );
 	$preview_text = attribute_escape( sprintf( __('Preview of "%s"'), $title ) );
 	$tags = $themes[$theme_name]['Tags'];
-	$thickbox_class = 'thickbox';
+	$thickbox_class = 'thickbox thickbox-preview';
 	$activate_link = wp_nonce_url("themes.php?action=activate&amp;template=".urlencode($template)."&amp;stylesheet=".urlencode($stylesheet), 'switch-theme_' . $template);
 	$activate_text = attribute_escape( sprintf( __('Activate "%s"'), $title ) );
+	$actions = array();
+	$actions[] = '<a href="' . $activate_link .  '" title="' . $activate_text . '">' . __('Activate') . '</a>';
+	$actions[] = '<a href="' . $preview_link . '" class="thickbox thickbox-preview" title="' . attribute_escape(sprintf(__('Preview "%s"'), $theme_name)) . '">' . __('Preview') . '</a>';
+	if ( current_user_can('update_themes') )
+		$actions[] = '<a class="submitdelete deletion" href="' . wp_nonce_url("themes.php?action=delete&amp;template=$template", 'delete-theme_' . $template) . '" onclick="' . "if ( confirm('" . js_escape(sprintf( __("You are about to delete this theme '%s'\n  'Cancel' to stop, 'OK' to delete."), $theme_name )) . "') ) {return true;}return false;" . '">' . __('Delete') . '</a>';	
+	$actions = apply_filters('theme_action_links', $actions, $themes[$theme_name]);
+
+	$actions = implode ( ' | ', $actions );
 ?>
 		<a href="<?php echo $activate_link; ?>" class="<?php echo $thickbox_class; ?> screenshot">
 <?php if ( $screenshot ) : ?>
 			<img src="<?php echo WP_CONTENT_URL . $stylesheet_dir . '/' . $screenshot; ?>" alt="" />
 <?php endif; ?>
 		</a>
-		<h3><a class="<?php echo $thickbox_class; ?>" href="<?php echo $activate_link; ?>"><?php echo $title; ?></a></h3>
+		<h3><?php echo $title; ?></h3>
+		<span class='action-links'><?php echo $actions ?></span>
 		<p><?php echo $description; ?></p>
 <?php if ( $tags ) : ?>
 		<p><?php _e('Tags:'); ?> <?php echo join(', ', $tags); ?></p>

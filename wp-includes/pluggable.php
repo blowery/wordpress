@@ -328,7 +328,13 @@ function wp_mail( $to, $subject, $message, $headers = '', $attachments = array()
 		$from_name = 'WordPress';
 	}
 
-	// If we don't have an email from the input headers
+	/* If we don't have an email from the input headers default to wordpress@$sitename
+	 * Some hosts will block outgoing mail from this address if it doesn't exist but
+	 * there's no easy alternative. Defaulting to admin_email might appear to be another 
+	 * option but some hosts may refuse to relay mail from an unknown domain. See
+	 * http://trac.wordpress.org/ticket/5007.
+	 */
+	
 	if ( !isset( $from_email ) ) {
 		// Get the site domain and get rid of www.
 		$sitename = strtolower( $_SERVER['SERVER_NAME'] );
@@ -339,7 +345,7 @@ function wp_mail( $to, $subject, $message, $headers = '', $attachments = array()
 		$from_email = 'wordpress@' . $sitename;
 	}
 
-	// Set the from name and email
+	// Plugin authors can override the potentially troublesome default
 	$phpmailer->From = apply_filters( 'wp_mail_from', $from_email );
 	$phpmailer->FromName = apply_filters( 'wp_mail_from_name', $from_name );
 
@@ -432,7 +438,9 @@ function wp_authenticate($username, $password) {
 		$user = new WP_Error('authentication_failed', __('<strong>ERROR</strong>: Invalid username or incorrect password.'));
 	}
 
-	if (is_wp_error($user)) {
+	$ignore_codes = array('empty_username', 'empty_password');
+
+	if (is_wp_error($user) && !in_array($user->get_error_code(), $ignore_codes) ) {
 		do_action('wp_login_failed', $username);
 	}
 
@@ -599,9 +607,9 @@ if ( !function_exists('wp_set_auth_cookie') ) :
  */
 function wp_set_auth_cookie($user_id, $remember = false, $secure = '') {
 	if ( $remember ) {
-		$expiration = $expire = time() + 1209600;
+		$expiration = $expire = time() + apply_filters('auth_cookie_expiration', 1209600, $user_id, $remember);
 	} else {
-		$expiration = time() + 172800;
+		$expiration = time() + apply_filters('auth_cookie_expiration', 172800, $user_id, $remember);
 		$expire = 0;
 	}
 
@@ -716,6 +724,8 @@ function auth_redirect() {
 	}
 
 	if ( $user_id = wp_validate_auth_cookie() ) {
+		do_action('auth_redirect', $user_id);
+
 		// If the user wants ssl but the session is not ssl, redirect.
 		if ( !$secure && get_user_option('use_ssl', $user_id) && false !== strpos($_SERVER['REQUEST_URI'], 'wp-admin') ) {
 			if ( 0 === strpos($_SERVER['REQUEST_URI'], 'http') ) {
@@ -1032,7 +1042,7 @@ function wp_notify_moderator($comment_id) {
 	$notify_message .= sprintf( __('Delete it: %s'), admin_url("comment.php?action=cdc&c=$comment_id") ) . "\r\n";
 	$notify_message .= sprintf( __('Spam it: %s'), admin_url("comment.php?action=cdc&dt=spam&c=$comment_id") ) . "\r\n";
 
-	$notify_message .= sprintf( __ngettext('Currently %s comment is waiting for approval. Please visit the moderation panel:',
+	$notify_message .= sprintf( _n('Currently %s comment is waiting for approval. Please visit the moderation panel:',
  		'Currently %s comments are waiting for approval. Please visit the moderation panel:', $comments_waiting), number_format_i18n($comments_waiting) ) . "\r\n";
 	$notify_message .= admin_url("edit-comments.php?comment_status=moderated") . "\r\n";
 
@@ -1220,7 +1230,7 @@ function wp_salt($scheme = 'auth') {
 		} else {
 			$salt = get_option('auth_salt');
 			if ( empty($salt) ) {
-				$salt = wp_generate_password();
+				$salt = wp_generate_password(64);
 				update_option('auth_salt', $salt);
 			}
 		}
@@ -1229,11 +1239,11 @@ function wp_salt($scheme = 'auth') {
 			$secret_key = SECURE_AUTH_KEY;
 
 		if ( defined('SECURE_AUTH_SALT') ) {
-			$salt = SECRET_AUTH_SALT;
+			$salt = SECURE_AUTH_SALT;
 		} else {
 			$salt = get_option('secure_auth_salt');
 			if ( empty($salt) ) {
-				$salt = wp_generate_password();
+				$salt = wp_generate_password(64);
 				update_option('secure_auth_salt', $salt);
 			}
 		}
@@ -1246,7 +1256,7 @@ function wp_salt($scheme = 'auth') {
 		} else {
 			$salt = get_option('logged_in_salt');
 			if ( empty($salt) ) {
-				$salt = wp_generate_password();
+				$salt = wp_generate_password(64);
 				update_option('logged_in_salt', $salt);
 			}
 		}
@@ -1259,7 +1269,7 @@ function wp_salt($scheme = 'auth') {
 		} else {
 			$salt = get_option('nonce_salt');
 			if ( empty($salt) ) {
-				$salt = wp_generate_password();
+				$salt = wp_generate_password(64);
 				update_option('nonce_salt', $salt);
 			}
 		}
@@ -1448,8 +1458,8 @@ function wp_set_password( $password, $user_id ) {
 	global $wpdb;
 
 	$hash = wp_hash_password($password);
-	$query = $wpdb->prepare("UPDATE $wpdb->users SET user_pass = %s, user_activation_key = '' WHERE ID = %d", $hash, $user_id);
-	$wpdb->query($query);
+	$wpdb->update($wpdb->users, array('user_pass' => $hash, 'user_activation_key' => ''), array('ID' => $user_id) );
+
 	wp_cache_delete($user_id, 'users');
 }
 endif;

@@ -18,25 +18,24 @@ $title = __('Install Themes');
 $parent_file = 'themes.php';
 
 wp_reset_vars( array('tab', 'paged') );
-//wp_enqueue_style( 'theme-install' );
-//wp_enqueue_script( 'theme-install' );
-//TODO: Combine? This'll do until a new UI is dreamed up though :)
-wp_enqueue_style( 'plugin-install' );
-wp_enqueue_script( 'plugin-install' );
+wp_enqueue_style( 'theme-install' );
+wp_enqueue_script( 'theme-install' );
 
 add_thickbox();
+wp_enqueue_script( 'theme-preview' );
 
 //These are the tabs which are shown on the page,
 $tabs = array();
-$tabs['dashboard'] = __('Start Page'); //TODO: Better name?
+$tabs['dashboard'] = __('Search');
 if ( 'search' == $tab )
 	$tabs['search']	= __('Search Results');
+$tabs['upload'] = __('Upload');
 $tabs['featured'] = __('Featured');
-$tabs['popular']  = __('Popular');
+//$tabs['popular']  = __('Popular');
 $tabs['new']      = __('Newest');
 $tabs['updated']  = __('Recently Updated');
 
-$nonmenu_tabs = array('install', 'theme-information', 'upload'); //Valid actions to perform which do not have a Menu item.
+$nonmenu_tabs = array('install', 'theme-information', 'do_upload'); //Valid actions to perform which do not have a Menu item.
 
 $tabs = apply_filters('install_themes_tabs', $tabs );
 $nonmenu_tabs = apply_filters('install_themes_nonmenu_tabs', $nonmenu_tabs);

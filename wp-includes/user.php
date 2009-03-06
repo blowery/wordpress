@@ -89,9 +89,9 @@ function wp_authenticate_username_password($user, $username, $password) {
 		return new WP_Error('invalid_username', __('<strong>ERROR</strong>: Invalid username.'));
 	}
 
-	$user = apply_filters('wp_authenticate_user', $user, $password);
-	if ( is_wp_error($user) ) {
-		return $user;
+	$userdata = apply_filters('wp_authenticate_user', $userdata, $password);
+	if ( is_wp_error($userdata) ) {
+		return $userdata;
 	}
 
 	if ( !wp_check_password($password, $userdata->user_pass, $userdata->ID) ) {
@@ -278,7 +278,7 @@ function get_users_of_blog( $id = '' ) {
 	global $wpdb, $blog_id;
 	if ( empty($id) )
 		$id = (int) $blog_id;
-	$users = $wpdb->get_results( "SELECT user_id, user_login, display_name, user_email, meta_value FROM $wpdb->users, $wpdb->usermeta WHERE " . $wpdb->users . ".ID = " . $wpdb->usermeta . ".user_id AND meta_key = '" . $wpdb->prefix . "capabilities' ORDER BY {$wpdb->usermeta}.user_id" );
+	$users = $wpdb->get_results( "SELECT user_id, user_id AS ID, user_login, display_name, user_email, meta_value FROM $wpdb->users, $wpdb->usermeta WHERE {$wpdb->users}.ID = {$wpdb->usermeta}.user_id AND meta_key = '{$wpdb->prefix}capabilities' ORDER BY {$wpdb->usermeta}.user_id" );
 	return $users;
 }
 
@@ -399,15 +399,12 @@ function update_usermeta( $user_id, $meta_key, $meta_value ) {
 	}
 
 	$cur = $wpdb->get_row( $wpdb->prepare("SELECT * FROM $wpdb->usermeta WHERE user_id = %d AND meta_key = %s", $user_id, $meta_key) );
-	if ( !$cur ) {
-		$wpdb->query( $wpdb->prepare("INSERT INTO $wpdb->usermeta ( user_id, meta_key, meta_value )
-		VALUES
-		( %d, %s, %s )", $user_id, $meta_key, $meta_value) );
-	} else if ( $cur->meta_value != $meta_value ) {
-		$wpdb->query( $wpdb->prepare("UPDATE $wpdb->usermeta SET meta_value = %s WHERE user_id = %d AND meta_key = %s", $meta_value, $user_id, $meta_key) );
-	} else {
+	if ( !$cur )
+		$wpdb->insert($wpdb->usermeta, compact('user_id', 'meta_key', 'meta_value') );
+	else if ( $cur->meta_value != $meta_value )
+		$wpdb->update($wpdb->usermeta, compact('meta_value'), compact('user_id', 'meta_key') );
+	else
 		return false;
-	}
 
 	wp_cache_delete($user_id, 'users');
 

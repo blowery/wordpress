@@ -18,6 +18,8 @@ require_once('../wp-load.php');
 require_once('includes/admin.php');
 @header('Content-Type: text/html; charset=' . get_option('blog_charset'));
 
+do_action('admin_init');
+
 if ( ! is_user_logged_in() ) {
 
 	if ( $_POST['action'] == 'autosave' ) {
@@ -35,13 +37,16 @@ if ( ! is_user_logged_in() ) {
 			$x->send();
 	}
 
+	if ( !empty( $_POST['action']) )
+		do_action( 'wp_ajax_nopriv_' . $_POST['action'] );
+
 	die('-1');
 }
 
 if ( isset( $_GET['action'] ) ) :
 switch ( $action = $_GET['action'] ) :
 case 'ajax-tag-search' :
-	if ( !current_user_can( 'manage_categories' ) )
+	if ( !current_user_can( 'edit_posts' ) )
 		die('-1');
 
 	$s = $_GET['q']; // is this slashed already?
@@ -69,7 +74,7 @@ case 'wp-compression-test' :
 		die('-1');
 
 	if ( ini_get('zlib.output_compression') || 'ob_gzhandler' == ini_get('output_handler') ) {
-		update_option('can_compress_scripts', 0);
+		update_site_option('can_compress_scripts', 0);
 		die('0');
 	}
 
@@ -98,9 +103,9 @@ case 'wp-compression-test' :
 			echo $out;
 			die;
 		} elseif ( 'no' == $_GET['test'] ) {
-			update_option('can_compress_scripts', 0);
+			update_site_option('can_compress_scripts', 0);
 		} elseif ( 'yes' == $_GET['test'] ) {
-			update_option('can_compress_scripts', 1);
+			update_site_option('can_compress_scripts', 1);
 		}
 	}
 
@@ -312,8 +317,14 @@ case 'delete-page' :
 		die('0');
 	break;
 case 'dim-comment' : // On success, die with time() instead of 1
-	if ( !$comment = get_comment( $id ) )
-		die('0');
+
+	if ( !$comment = get_comment( $id ) ) {
+		$x = new WP_Ajax_Response( array(
+			'what' => 'comment',
+			'id' => new WP_Error('invalid_comment', sprintf(__('Comment %d does not exist'), $id))
+		) );
+		$x->send();
+	}
 
 	if ( !current_user_can( 'edit_post', $comment->comment_post_ID ) )
 		die('-1');
@@ -327,15 +338,21 @@ case 'dim-comment' : // On success, die with time() instead of 1
 	$r = 0;
 	if ( in_array( $current, array( 'unapproved', 'spam' ) ) ) {
 		check_ajax_referer( "approve-comment_$id" );
-		if ( wp_set_comment_status( $comment->comment_ID, 'approve' ) )
-			$r = 1;
+		$result = wp_set_comment_status( $comment->comment_ID, 'approve', true );
 	} else {
 		check_ajax_referer( "unapprove-comment_$id" );
-		if ( wp_set_comment_status( $comment->comment_ID, 'hold' ) )
-			$r = 1;
+		$result = wp_set_comment_status( $comment->comment_ID, 'hold', true );
 	}
-	if ( $r ) // Decide if we need to send back '1' or a more complicated response including page links and comment counts
-		_wp_ajax_delete_comment_response( $comment->comment_ID );
+	if ( is_wp_error($result) ) {
+		$x = new WP_Ajax_Response( array(
+			'what' => 'comment',
+			'id' => $result
+		) );
+		$x->send();
+	}
+
+	// Decide if we need to send back '1' or a more complicated response including page links and comment counts
+	_wp_ajax_delete_comment_response( $comment->comment_ID );
 	die( '0' );
 	break;
 case 'add-category' : // On the Fly
@@ -947,32 +964,63 @@ case 'autosave-generate-nonces' :
 break;
 case 'closed-postboxes' :
 	check_ajax_referer( 'closedpostboxes', 'closedpostboxesnonce' );
-	$closed = isset( $_POST['closed'] )? $_POST['closed'] : '';
+	$closed = isset( $_POST['closed'] ) ? $_POST['closed'] : '';
 	$closed = explode( ',', $_POST['closed'] );
-	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
+	$hidden = isset( $_POST['hidden'] ) ? $_POST['hidden'] : '';
 	$hidden = explode( ',', $_POST['hidden'] );
-	$page = isset( $_POST['page'] )? $_POST['page'] : '';
-	if ( !preg_match( '/^[a-z-_]+$/', $page ) ) {
+	$page = isset( $_POST['page'] ) ? $_POST['page'] : '';
+
+	if ( !preg_match( '/^[a-z_-]+$/', $page ) )
 		die(-1);
-	}
-	$current_user = wp_get_current_user();
+
+	if ( ! $user = wp_get_current_user() )
+		die(-1);
+
 	if ( is_array($closed) )
-		update_usermeta($current_user->ID, 'closedpostboxes_'.$page, $closed);
+		update_usermeta($user->ID, 'closedpostboxes_'.$page, $closed);
+
 	if ( is_array($hidden) )
-		update_usermeta($current_user->ID, 'meta-box-hidden_'.$page, $hidden);
-break;
+		update_usermeta($user->ID, 'meta-box-hidden_'.$page, $hidden);
+
+	die('1');
+	break;
 case 'hidden-columns' :
 	check_ajax_referer( 'hiddencolumns', 'hiddencolumnsnonce' );
-	$hidden = isset( $_POST['hidden'] )? $_POST['hidden'] : '';
+	$hidden = isset( $_POST['hidden'] ) ? $_POST['hidden'] : '';
 	$hidden = explode( ',', $_POST['hidden'] );
-	$page = isset( $_POST['page'] )? $_POST['page'] : '';
-	if ( !preg_match( '/^[a-z_-]+$/', $page ) ) {
+	$page = isset( $_POST['page'] ) ? $_POST['page'] : '';
+
+	if ( !preg_match( '/^[a-z_-]+$/', $page ) )
 		die(-1);
-	}
-	$current_user = wp_get_current_user();
+
+	if ( ! $user = wp_get_current_user() )
+		die(-1);
+
 	if ( is_array($hidden) )
-		update_usermeta($current_user->ID, "manage-$page-columns-hidden", $hidden);
-break;
+		update_usermeta($user->ID, "manage-$page-columns-hidden", $hidden);
+
+	die('1');
+	break;
+case 'meta-box-order':
+	check_ajax_referer( 'meta-box-order' );
+	$order = isset( $_POST['order'] ) ? (array) $_POST['order'] : false;
+	$page_columns = isset( $_POST['page_columns'] ) ? (int) $_POST['page_columns'] : 0;
+	$page = isset( $_POST['page'] ) ? $_POST['page'] : '';
+
+	if ( !preg_match( '/^[a-z_-]+$/', $page ) )
+		die(-1);
+
+	if ( ! $user = wp_get_current_user() )
+		die(-1);
+
+	if ( $order )
+		update_user_option($user->ID, "meta-box-order_$page", $order);
+
+	if ( $page_columns )
+		update_usermeta($user->ID, "screen_layout_$page", $page_columns);
+
+	die('1');
+	break;
 case 'get-permalink':
 	check_ajax_referer( 'getpermalink', 'getpermalinknonce' );
 	$post_id = isset($_POST['post_id'])? intval($_POST['post_id']) : 0;
@@ -1104,11 +1152,6 @@ case 'inline-save-tax':
 
 	exit;
 	break;
-case 'meta-box-order':
-	check_ajax_referer( 'meta-box-order' );
-	update_user_option( $GLOBALS['current_user']->ID, "meta-box-order_$_POST[page]", $_POST['order'] );
-	die('1');
-	break;
 case 'find_posts':
 	check_ajax_referer( 'find-posts' );
 
@@ -1179,7 +1222,7 @@ case 'lj-importer' :
 		die('-1');
 	if ( empty( $_POST['step'] ) )
 		die( '-1' );
-
+	define('WP_IMPORTING', true);
 	include( ABSPATH . 'wp-admin/import/livejournal.php' );
 	$result = $lj_api_import->{ 'step' . ( (int) $_POST['step'] ) }();
 	if ( is_wp_error( $result ) )

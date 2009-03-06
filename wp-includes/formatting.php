@@ -1121,17 +1121,11 @@ function antispambot($emailaddy, $mailto=0) {
  * @return string HTML A element with URI address.
  */
 function _make_url_clickable_cb($matches) {
-	$ret = '';
 	$url = $matches[2];
 	$url = clean_url($url);
 	if ( empty($url) )
 		return $matches[0];
-	// removed trailing [.,;:] from URL
-	if ( in_array(substr($url, -1), array('.', ',', ';', ':')) === true ) {
-		$ret = substr($url, -1);
-		$url = substr($url, 0, strlen($url)-1);
-	}
-	return $matches[1] . "<a href=\"$url\" rel=\"nofollow\">$url</a>" . $ret;
+	return $matches[1] . "<a href=\"$url\" rel=\"nofollow\">$url</a>";
 }
 
 /**
@@ -1192,7 +1186,7 @@ function _make_email_clickable_cb($matches) {
 function make_clickable($ret) {
 	$ret = ' ' . $ret;
 	// in testing, using arrays here was found to be faster
-	$ret = preg_replace_callback('#([\s>])([\w]+?://[\w\\x80-\\xff\#$%&~/.\-;:=,?@\[\]+]*)#is', '_make_url_clickable_cb', $ret);
+	$ret = preg_replace_callback('#(?<=[\s>])(\()?([\w]+?://(?:[\w\\x80-\\xff\#$%&~/\-=?@\[\](+]|[.,;:](?![\s<])|(?(1)\)(?![\s<])|\)))*)#is', '_make_url_clickable_cb', $ret);
 	$ret = preg_replace_callback('#([\s>])((www|ftp)\.[\w\\x80-\\xff\#$%&~/.\-;:=,?@\[\]+]*)#is', '_make_web_ftp_clickable_cb', $ret);
 	$ret = preg_replace_callback('#([\s>])([.0-9a-z_+-]+)@(([0-9a-z-]+\.)+[0-9a-z]{2,})#i', '_make_email_clickable_cb', $ret);
 	// this one is not in an array because we need it to run last, for cleanup of accidental links within links
@@ -1479,19 +1473,19 @@ function human_time_diff( $from, $to = '' ) {
 		if ($mins <= 1) {
 			$mins = 1;
 		}
-		$since = sprintf(__ngettext('%s min', '%s mins', $mins), $mins);
+		$since = sprintf(_n('%s min', '%s mins', $mins), $mins);
 	} else if (($diff <= 86400) && ($diff > 3600)) {
 		$hours = round($diff / 3600);
 		if ($hours <= 1) {
 			$hours = 1;
 		}
-		$since = sprintf(__ngettext('%s hour', '%s hours', $hours), $hours);
+		$since = sprintf(_n('%s hour', '%s hours', $hours), $hours);
 	} elseif ($diff >= 86400) {
 		$days = round($diff / 86400);
 		if ($days <= 1) {
 			$days = 1;
 		}
-		$since = sprintf(__ngettext('%s day', '%s days', $days), $days);
+		$since = sprintf(_n('%s day', '%s days', $days), $days);
 	}
 	return $since;
 }
@@ -2257,7 +2251,7 @@ function wp_sprintf_l($pattern, $args) {
  */
 function wp_html_excerpt( $str, $count ) {
 	$str = strip_tags( $str );
-	$str = mb_strcut( $str, 0, $count );
+	$str = mb_substr( $str, 0, $count );
 	// remove part of an entity at the end
 	$str = preg_replace( '/&[^;\s]{0,6}$/', '', $str );
 	return $str;

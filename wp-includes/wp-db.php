@@ -273,6 +273,15 @@ class wpdb {
 	var $collate;
 
 	/**
+	 * Whether to use mysql_real_escape_string
+	 *
+	 * @since 2.8.0
+	 * @access public
+	 * @var bool
+	 */
+	var $real_escape = false;
+
+	/**
 	 * Connects to the database server and selects a database
 	 *
 	 * PHP4 compatibility layer for calling the PHP5 constructor.
@@ -333,16 +342,17 @@ class wpdb {
 		$this->ready = true;
 
 		if ( $this->has_cap( 'collation' ) ) {
-			$collation_query = '';
 			if ( !empty($this->charset) ) {
-				$collation_query = "SET NAMES '{$this->charset}'";
-				if (!empty($this->collate) )
-					$collation_query .= " COLLATE '{$this->collate}'";
+				if ( function_exists('mysql_set_charset') ) {
+					mysql_set_charset($this->charset, $this->dbh);
+					$this->real_escape = true;
+				} else {
+					$collation_query = "SET NAMES '{$this->charset}'";
+					if ( !empty($this->collate) )
+						$collation_query .= " COLLATE '{$this->collate}'";
+					$this->query($collation_query);
+				}
 			}
-
-			if ( !empty($collation_query) )
-				$this->query($collation_query);
-
 		}
 
 		$this->select($dbname);
@@ -417,23 +427,53 @@ class wpdb {
 		}
 	}
 
+	function _weak_escape($string) {
+		return addslashes($string);
+	}
+
+	function _real_escape($string) {
+		if ( $this->dbh && $this->real_escape )
+			return mysql_real_escape_string( $string, $this->dbh );
+		else
+			return addslashes( $string );	
+	}
+
+	function _escape($data) {
+		if ( is_array($data) ) {
+			foreach ( (array) $data as $k => $v ) {
+				if ( is_array($v) )
+					$data[$k] = $this->_escape( $v );
+				else
+					$data[$k] = $this->_real_escape( $v );
+			}
+		} else {
+			$data = $this->_real_escape( $data );
+		}
+
+		return $data;
+	}
+
 	/**
-	 * Escapes content for insertion into the database, for security
+	 * Escapes content for insertion into the database using addslashes(), for security
 	 *
 	 * @since 0.71
 	 *
-	 * @param string $string
+	 * @param string|array $data
 	 * @return string query safe string
 	 */
-	function escape($string) {
-		return addslashes( $string );
-		// Disable rest for now, causing problems
-		/*
-		if( !$this->dbh || version_compare( phpversion(), '4.3.0' ) == '-1' )
-			return mysql_escape_string( $string );
-		else
-			return mysql_real_escape_string( $string, $this->dbh );
-		*/
+	function escape($data) {
+		if ( is_array($data) ) {
+			foreach ( (array) $data as $k => $v ) {
+				if ( is_array($v) )
+					$data[$k] = $this->escape( $v );
+				else
+					$data[$k] = $this->_weak_escape( $v );
+			}
+		} else {
+			$data = $this->_weak_escape( $data );
+		}
+
+		return $data;
 	}
 
 	/**
@@ -443,8 +483,8 @@ class wpdb {
 	 *
 	 * @param string $s
 	 */
-	function escape_by_ref(&$s) {
-		$s = $this->escape($s);
+	function escape_by_ref(&$string) {
+		$string = $this->_real_escape( $string );
 	}
 
 	/**
@@ -462,6 +502,9 @@ class wpdb {
 			return;
 		$args = func_get_args();
 		$query = array_shift($args);
+		// If args were passed as an array, move them up
+		if ( is_array($args[0]) )
+			$args = $args[0];
 		$query = str_replace("'%s'", '%s', $query); // in case someone mistakenly already singlequoted it
 		$query = str_replace('"%s"', '%s', $query); // doublequote unquoting
 		$query = str_replace('%s', "'%s'", $query); // quote the strings
@@ -656,12 +699,26 @@ class wpdb {
 	 *
 	 * @param string $table WARNING: not sanitized!
 	 * @param array $data Should not already be SQL-escaped
+	 * @param array|string $format The format of the field values.
 	 * @return mixed Results of $this->query()
 	 */
-	function insert($table, $data) {
-		$data = add_magic_quotes($data);
+	function insert($table, $data, $format = null) {
+		global $db_field_types;
+
+		$formats = $format = (array) $format;
 		$fields = array_keys($data);
-		return $this->query("INSERT INTO $table (`" . implode('`,`',$fields) . "`) VALUES ('".implode("','",$data)."')");
+		$formatted_fields = array();
+		foreach ( $fields as $field ) {
+			if ( !empty($format) )
+				$form = ( $form = array_shift($formats) ) ? $form : $format[0];
+			elseif ( isset($db_field_types[$field]) )
+				$form = $db_field_types[$field];
+			else
+				$form = '%s';
+			$formatted_fields[] = $form;
+		}
+		$sql = "INSERT INTO $table (`" . implode( '`,`', $fields ) . "`) VALUES ('" . implode( "','", $formatted_fields ) . "')";
+		return $this->query( $this->prepare( $sql, $data) );
 	}
 
 	/**
@@ -672,21 +729,41 @@ class wpdb {
 	 * @param string $table WARNING: not sanitized!
 	 * @param array $data Should not already be SQL-escaped
 	 * @param array $where A named array of WHERE column => value relationships.  Multiple member pairs will be joined with ANDs.  WARNING: the column names are not currently sanitized!
+	 * @param array|string $format The format of the field values.
+	 * @param array|string $where_format The format of the where field values.
 	 * @return mixed Results of $this->query()
 	 */
-	function update($table, $data, $where){
-		$data = add_magic_quotes($data);
-		$bits = $wheres = array();
-		foreach ( (array) array_keys($data) as $k )
-			$bits[] = "`$k` = '$data[$k]'";
+	function update($table, $data, $where, $format = null, $where_format = null) {
+		global $db_field_types;
 
-		if ( is_array( $where ) )
-			foreach ( $where as $c => $v )
-				$wheres[] = "$c = '" . $this->escape( $v ) . "'";
-		else
+		if ( !is_array( $where ) )
 			return false;
 
-		return $this->query( "UPDATE $table SET " . implode( ', ', $bits ) . ' WHERE ' . implode( ' AND ', $wheres ) );
+		$formats = $format = (array) $format;
+		$bits = $wheres = array();
+		foreach ( (array) array_keys($data) as $field ) {
+			if ( !empty($format) )
+				$form = ( $form = array_shift($formats) ) ? $form : $format[0];
+			elseif ( isset($db_field_types[$field]) )
+				$form = $db_field_types[$field];
+			else
+				$form = '%s';
+			$bits[] = "`$field` = {$form}";
+		}
+
+		$where_formats = $where_format = (array) $where_format;
+		foreach ( (array) array_keys($where) as $field ) {
+			if ( !empty($where_format) )
+				$form = ( $form = array_shift($where_formats) ) ? $form : $where_format[0];
+			elseif ( isset($db_field_types[$field]) )
+				$form = $db_field_types[$field];
+			else
+				$form = '%s';
+			$wheres[] = "$field = {$form}";
+		}
+
+		$sql = "UPDATE $table SET " . implode( ', ', $bits ) . ' WHERE ' . implode( ' AND ', $wheres );
+		return $this->query( $this->prepare( $sql, array_merge(array_values($data), array_values($where))) );
 	}
 
 	/**

@@ -385,6 +385,7 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 	$year = get_query_var('year');
 	$monthnum = get_query_var('monthnum');
 	$day = get_query_var('day');
+	$search = get_query_var('s');
 	$title = '';
 
 	$t_sep = '%WP_TITILE_SEP%'; // Temporary separator, for accurate flipping, if necessary
@@ -455,6 +456,11 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 		$term = $wp_query->get_queried_object();
 		$term = $term->name;
 		$title = "$tax$t_sep$term";
+	}
+	
+	//If it's a search
+	if ( is_search() ) {
+		$title = sprintf(__('Search Results %s %s'), $t_sep, strip_tags($search));
 	}
 
 	if ( is_404() ) {
@@ -760,7 +766,7 @@ function wp_get_archives($args = '') {
 	$output = '';
 
 	if ( 'monthly' == $type ) {
-		$query = "SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date), MONTH(post_date) ORDER BY post_date DESC $limit";
+		$query = "SELECT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date), MONTH(post_date) ORDER BY post_date DESC $limit";
 		$key = md5($query);
 		$cache = wp_cache_get( 'wp_get_archives' , 'general');
 		if ( !isset( $cache[ $key ] ) ) {
@@ -781,7 +787,7 @@ function wp_get_archives($args = '') {
 			}
 		}
 	} elseif ('yearly' == $type) {
-		$query = "SELECT DISTINCT YEAR(post_date) AS `year`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date) ORDER BY post_date DESC $limit";
+		$query = "SELECT YEAR(post_date) AS `year`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date) ORDER BY post_date DESC $limit";
 		$key = md5($query);
 		$cache = wp_cache_get( 'wp_get_archives' , 'general');
 		if ( !isset( $cache[ $key ] ) ) {
@@ -802,7 +808,7 @@ function wp_get_archives($args = '') {
 			}
 		}
 	} elseif ( 'daily' == $type ) {
-		$query = "SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, DAYOFMONTH(post_date) AS `dayofmonth`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date) ORDER BY post_date DESC $limit";
+		$query = "SELECT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, DAYOFMONTH(post_date) AS `dayofmonth`, count(ID) as posts FROM $wpdb->posts $join $where GROUP BY YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date) ORDER BY post_date DESC $limit";
 		$key = md5($query);
 		$cache = wp_cache_get( 'wp_get_archives' , 'general');
 		if ( !isset( $cache[ $key ] ) ) {
@@ -924,14 +930,17 @@ function get_calendar($initial = true) {
 	if ( !is_array($cache) )
 		$cache = array();
 
-	ob_start();
 	// Quick check. If we have no posts at all, abort!
 	if ( !$posts ) {
-		$gotsome = $wpdb->get_var("SELECT ID from $wpdb->posts WHERE post_type = 'post' AND post_status = 'publish' ORDER BY post_date DESC LIMIT 1");
-		if ( !$gotsome )
+		$gotsome = $wpdb->get_var("SELECT 1 FROM $wpdb->posts WHERE post_type = 'post' AND post_status = 'publish' LIMIT 1");
+		if ( !$gotsome ) {
+			$cache[ $key ] = '';
+			wp_cache_set( 'get_calendar', $cache, 'calendar' );
 			return;
+		}
 	}
 
+	ob_start();
 	if ( isset($_GET['w']) )
 		$w = ''.intval($_GET['w']);
 
@@ -1954,10 +1963,10 @@ function the_generator( $type ) {
 function get_the_generator( $type ) {
 	switch ($type) {
 		case 'html':
-			$gen = '<meta name="generator" content="WordPress ' . get_bloginfo( 'version' ) . '">' . "\n";
+			$gen = '<meta name="generator" content="WordPress ' . get_bloginfo( 'version' ) . '">';
 			break;
 		case 'xhtml':
-			$gen = '<meta name="generator" content="WordPress ' . get_bloginfo( 'version' ) . '" />' . "\n";
+			$gen = '<meta name="generator" content="WordPress ' . get_bloginfo( 'version' ) . '" />';
 			break;
 		case 'atom':
 			$gen = '<generator uri="http://wordpress.org/" version="' . get_bloginfo_rss( 'version' ) . '">WordPress</generator>';

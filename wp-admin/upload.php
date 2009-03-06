@@ -121,9 +121,9 @@ if ( isset($_GET['detached']) ) {
 	}
 
 	$post_mime_types = array(
-				'image' => array(__('Images'), __('Manage Images'), __ngettext_noop('Image (%s)', 'Images (%s)')),
-				'audio' => array(__('Audio'), __('Manage Audio'), __ngettext_noop('Audio (%s)', 'Audio (%s)')),
-				'video' => array(__('Video'), __('Manage Video'), __ngettext_noop('Video (%s)', 'Video (%s)')),
+				'image' => array(__('Images'), __('Manage Images'), _n_noop('Image (%s)', 'Images (%s)')),
+				'audio' => array(__('Audio'), __('Manage Audio'), _n_noop('Audio (%s)', 'Audio (%s)')),
+				'video' => array(__('Video'), __('Manage Video'), _n_noop('Video (%s)', 'Video (%s)')),
 			);
 	$post_mime_types = apply_filters('post_mime_types', $post_mime_types);
 
@@ -147,7 +147,7 @@ if ( isset($_GET['posted']) && (int) $_GET['posted'] ) {
 
 if ( isset($_GET['attached']) && (int) $_GET['attached'] ) {
 	$attached = (int) $_GET['attached'];
-	$message = sprintf( __ngettext('Reattached %d attachment', 'Reattached %d attachments', $attached), $attached );
+	$message = sprintf( _n('Reattached %d attachment', 'Reattached %d attachments', $attached), $attached );
 	$_SERVER['REQUEST_URI'] = remove_query_arg(array('attached'), $_SERVER['REQUEST_URI']);
 }
 
@@ -188,7 +188,7 @@ foreach ( $matches as $type => $reals )
 		$num_posts[$type] = ( isset( $num_posts[$type] ) ) ? $num_posts[$type] + $_num_posts[$real] : $_num_posts[$real];
 
 $class = empty($_GET['post_mime_type']) && ! isset($_GET['detached']) ? ' class="current"' : '';
-$type_links[] = "<li><a href='upload.php'$class>" . sprintf( __ngettext( 'All <span class="count">(%s)</span>', 'All <span class="count">(%s)</span>', $_total_posts ), number_format_i18n( $_total_posts ) ) . '</a>';
+$type_links[] = "<li><a href='upload.php'$class>" . sprintf( _n( 'All <span class="count">(%s)</span>', 'All <span class="count">(%s)</span>', $_total_posts ), number_format_i18n( $_total_posts ) ) . '</a>';
 foreach ( $post_mime_types as $mime_type => $label ) {
 	$class = '';
 
@@ -198,7 +198,7 @@ foreach ( $post_mime_types as $mime_type => $label ) {
 	if ( !empty($_GET['post_mime_type']) && wp_match_mime_types($mime_type, $_GET['post_mime_type']) )
 		$class = ' class="current"';
 
-	$type_links[] = "<li><a href='upload.php?post_mime_type=$mime_type'$class>" . sprintf( __ngettext( $label[2][0], $label[2][1], $num_posts[$mime_type] ), number_format_i18n( $num_posts[$mime_type] )) . '</a>';
+	$type_links[] = "<li><a href='upload.php?post_mime_type=$mime_type'$class>" . sprintf( _n( $label[2][0], $label[2][1], $num_posts[$mime_type] ), number_format_i18n( $num_posts[$mime_type] )) . '</a>';
 }
 $class = isset($_GET['detached']) ? ' class="current"' : '';
 $type_links[] = '<li><a href="upload.php?detached=1"' . $class . '>' . __('Unattached') . '</a>';
@@ -302,8 +302,9 @@ foreach ($arc_result as $arc_row) {
 <tr>
 	<th scope="col" class="check-column"><input type="checkbox" /></th>
 	<th scope="col"></th>
-	<th scope="col"><?php echo _c('Media|media column header'); ?></th>
-	<th scope="col"><?php echo _c('Date Added|media column header'); ?></th>
+	<th scope="col"><?php /* translators: column name in media */ echo _x('Media', 'media column name'); ?></th>
+	<th scope="col"><?php /* translators: column name in media */ echo _x('Author', 'media column name'); ?></th>
+	<th scope="col"><?php /* translators: column name in media */ echo _x('Date Added', 'media column name'); ?></th>
 </tr>
 </thead>
 
@@ -311,8 +312,9 @@ foreach ($arc_result as $arc_row) {
 <tr>
 	<th scope="col" class="check-column"><input type="checkbox" /></th>
 	<th scope="col"></th>
-	<th scope="col"><?php echo _c('Media|media column header'); ?></th>
-	<th scope="col"><?php echo _c('Date Added|media column header'); ?></th>
+	<th scope="col"><?php /* translators: column name in media */ echo _x('Media', 'media column name'); ?></th>
+	<th scope="col"><?php /* translators: column name in media */ echo _x('Author', 'media column name'); ?></th>
+	<th scope="col"><?php /* translators: column name in media */ echo _x('Date Added', 'media column name'); ?></th>
 </tr>
 </tfoot>
 
@@ -331,10 +333,10 @@ foreach ($arc_result as $arc_row) {
 			<a href="media.php?action=edit&amp;attachment_id=<?php echo $post->ID; ?>" title="<?php echo attribute_escape(sprintf(__('Edit "%s"'), $att_title)); ?>"><?php echo $thumb; ?></a>
 <?php	} ?></td>
 
-		<td><strong><a href="<?php echo get_edit_post_link( $post->ID ); ?>" title="<?php echo attribute_escape(sprintf(__('Edit "%s"'), $att_title)); ?>"><?php echo $att_title; ?></a></strong><br />
+		<td class="media column-media"><strong><a href="<?php echo get_edit_post_link( $post->ID ); ?>" title="<?php echo attribute_escape(sprintf(__('Edit "%s"'), $att_title)); ?>"><?php echo $att_title; ?></a></strong><br />
 		<?php echo strtoupper(preg_replace('/^.*?\.(\w+)$/', '$1', get_attached_file($post->ID))); ?>
 
-		<p>
+		<div class="row-actions">
 		<?php
 		$actions = array();
 		if ( current_user_can('edit_post', $post->ID) )
@@ -344,6 +346,7 @@ foreach ($arc_result as $arc_row) {
 		$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . attribute_escape(sprintf(__('View "%s"'), $title)) . '" rel="permalink">' . __('View') . '</a>';
 		if ( current_user_can('edit_post', $post->ID) )
 			$actions['attach'] = '<a href="#the-list" onclick="findPosts.open(\'media[]\',\''.$post->ID.'\');return false;">'.__('Attach').'</a>';
+		$actions = apply_filters( 'media_row_actions', $actions, $post );
 		$action_count = count($actions);
 		$i = 0;
 		foreach ( $actions as $action => $link ) {
@@ -351,8 +354,8 @@ foreach ($arc_result as $arc_row) {
 			( $i == $action_count ) ? $sep = '' : $sep = ' | ';
 			echo "<span class='$action'>$link$sep</span>";
 		} ?>
-		</p></td>
-
+		</div></td>
+		<td class="author column-author"><?php $author = get_userdata($post->post_author); echo $author->display_name; ?></td>
 <?php	if ( '0000-00-00 00:00:00' == $post->post_date && 'date' == $column_name ) {
 			$t_time = $h_time = __('Unpublished');
 		} else {
@@ -368,7 +371,7 @@ foreach ($arc_result as $arc_row) {
 				$h_time = mysql2date(__('Y/m/d'), $m_time);
 			}
 		} ?>
-		<td><?php echo $h_time ?></td>
+		<td class="date column-date"><?php echo $h_time ?></td>
 	</tr>
 <?php	}
 

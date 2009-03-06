@@ -143,24 +143,52 @@ function _wp_dashboard_control_callback( $dashboard, $meta_box ) {
  * @since unknown
  */
 function wp_dashboard() {
-	echo "<div id='dashboard-widgets' class='metabox-holder'>\n\n";
+	global $screen_layout_columns;
 
-	echo "<div id='side-info-column' class='inner-sidebar'>\n\n";
-	$class = do_meta_boxes( 'dashboard', 'side', '' ) ? ' class="has-sidebar"' : '';
-	echo "</div>\n\n";
-
-	echo "<div id='post-body'$class>\n\n";
-	echo "<div id='dashboard-widgets-main-content' class='has-sidebar-content'>\n\n";
+	$hide2 = $hide3 = $hide4 = '';
+	switch ( $screen_layout_columns ) {
+		case 4:
+			$width = 'width:24.5%;';
+			break;
+		case 3:
+			$width = 'width:32.67%;';
+			$hide4 = 'display:none;';
+			break;
+		case 2:
+			$width = 'width:49%;';
+			$hide3 = $hide4 = 'display:none;';
+			break;
+		default:
+			$width = 'width:98%;';
+			$hide2 = $hide3 = $hide4 = 'display:none;';
+	}
+?>
+<div id='dashboard-widgets' class='metabox-holder'>
+<?php
+	echo "\t<div class='postbox-container' style='$width'>\n";
 	do_meta_boxes( 'dashboard', 'normal', '' );
-	echo "</div>\n\n";
-	echo "</div>\n\n";
+	
+	echo "\t</div><div class='postbox-container' style='{$hide2}$width'>\n";
+	do_meta_boxes( 'dashboard', 'side', '' );
 
-	echo "<form style='display: none' method='get' action=''>\n<p>\n";
+	echo "\t</div><div class='postbox-container' style='{$hide3}$width'>\n";
+	do_meta_boxes( 'dashboard', 'column3', '' );
+
+	echo "\t</div><div class='postbox-container' style='{$hide4}$width'>\n";
+	do_meta_boxes( 'dashboard', 'column4', '' );
+?>
+</div></div>
+
+<form style='display: none' method='get' action=''>
+	<p>
+<?php
 	wp_nonce_field( 'closedpostboxes', 'closedpostboxesnonce', false );
 	wp_nonce_field( 'meta-box-order', 'meta-box-order-nonce', false );
-	echo "</p>\n</form>\n";
+?>
+	</p>
+</form>
 
-	echo "</div>";
+<?php
 }
 
 /* Dashboard Widgets */
@@ -181,7 +209,7 @@ function wp_dashboard_right_now() {
 
 	// Posts
 	$num = number_format_i18n( $num_posts->publish );
-	$text = __ngettext( 'Post', 'Posts', intval($num_posts->publish) );
+	$text = _n( 'Post', 'Posts', intval($num_posts->publish) );
 	if ( current_user_can( 'edit_posts' ) ) {
 		$num = "<a href='edit.php'>$num</a>";
 		$text = "<a href='edit.php'>$text</a>";
@@ -190,16 +218,16 @@ function wp_dashboard_right_now() {
 	echo '<td class="t posts">' . $text . '</td>';
 	/* TODO: Show status breakdown on hover
 	if ( $can_edit_pages && !empty($num_pages->publish) ) { // how many pages is not exposed in feeds.  Don't show if !current_user_can
-		$post_type_texts[] = '<a href="edit-pages.php">'.sprintf( __ngettext( '%s page', '%s pages', $num_pages->publish ), number_format_i18n( $num_pages->publish ) ).'</a>';
+		$post_type_texts[] = '<a href="edit-pages.php">'.sprintf( _n( '%s page', '%s pages', $num_pages->publish ), number_format_i18n( $num_pages->publish ) ).'</a>';
 	}
 	if ( $can_edit_posts && !empty($num_posts->draft) ) {
-		$post_type_texts[] = '<a href="edit.php?post_status=draft">'.sprintf( __ngettext( '%s draft', '%s drafts', $num_posts->draft ), number_format_i18n( $num_posts->draft ) ).'</a>';
+		$post_type_texts[] = '<a href="edit.php?post_status=draft">'.sprintf( _n( '%s draft', '%s drafts', $num_posts->draft ), number_format_i18n( $num_posts->draft ) ).'</a>';
 	}
 	if ( $can_edit_posts && !empty($num_posts->future) ) {
-		$post_type_texts[] = '<a href="edit.php?post_status=future">'.sprintf( __ngettext( '%s scheduled post', '%s scheduled posts', $num_posts->future ), number_format_i18n( $num_posts->future ) ).'</a>';
+		$post_type_texts[] = '<a href="edit.php?post_status=future">'.sprintf( _n( '%s scheduled post', '%s scheduled posts', $num_posts->future ), number_format_i18n( $num_posts->future ) ).'</a>';
 	}
 	if ( current_user_can('publish_posts') && !empty($num_posts->pending) ) {
-		$pending_text = sprintf( __ngettext( 'There is <a href="%1$s">%2$s post</a> pending your review.', 'There are <a href="%1$s">%2$s posts</a> pending your review.', $num_posts->pending ), 'edit.php?post_status=pending', number_format_i18n( $num_posts->pending ) );
+		$pending_text = sprintf( _n( 'There is <a href="%1$s">%2$s post</a> pending your review.', 'There are <a href="%1$s">%2$s posts</a> pending your review.', $num_posts->pending ), 'edit.php?post_status=pending', number_format_i18n( $num_posts->pending ) );
 	} else {
 		$pending_text = '';
 	}
@@ -207,7 +235,7 @@ function wp_dashboard_right_now() {
 
 	// Total Comments
 	$num = number_format_i18n($num_comm->total_comments);
-	$text = __ngettext( 'Comment', 'Comments', $num_comm->total_comments );
+	$text = _n( 'Comment', 'Comments', $num_comm->total_comments );
 	if ( current_user_can( 'moderate_comments' ) ) {
 		$num = "<a href='edit-comments.php'>$num</a>";
 		$text = "<a href='edit-comments.php'>$text</a>";
@@ -219,7 +247,7 @@ function wp_dashboard_right_now() {
 
 	// Pages
 	$num = number_format_i18n( $num_pages->publish );
-	$text = __ngettext( 'Page', 'Pages', $num_pages->publish );
+	$text = _n( 'Page', 'Pages', $num_pages->publish );
 	if ( current_user_can( 'edit_pages' ) ) {
 		$num = "<a href='edit-pages.php'>$num</a>";
 		$text = "<a href='edit-pages.php'>$text</a>";
@@ -229,7 +257,7 @@ function wp_dashboard_right_now() {
 
 	// Approved Comments
 	$num = number_format_i18n($num_comm->approved);
-	$text = __ngettext( 'Approved', 'Approved', $num_comm->approved );
+	$text = _nc( 'Approved|Right Now', 'Approved', $num_comm->approved );
 	if ( current_user_can( 'moderate_comments' ) ) {
 		$num = "<a href='edit-comments.php?comment_status=approved'>$num</a>";
 		$text = "<a class='approved' href='edit-comments.php?comment_status=approved'>$text</a>";
@@ -241,7 +269,7 @@ function wp_dashboard_right_now() {
 
 	// Categories
 	$num = number_format_i18n( $num_cats );
-	$text = __ngettext( 'Category', 'Categories', $num_cats );
+	$text = _n( 'Category', 'Categories', $num_cats );
 	if ( current_user_can( 'manage_categories' ) ) {
 		$num = "<a href='categories.php'>$num</a>";
 		$text = "<a href='categories.php'>$text</a>";
@@ -251,7 +279,7 @@ function wp_dashboard_right_now() {
 
 	// Pending Comments
 	$num = number_format_i18n($num_comm->moderated);
-	$text = __ngettext( 'Pending', 'Pending', $num_comm->moderated );
+	$text = _n( 'Pending', 'Pending', $num_comm->moderated );
 	if ( current_user_can( 'moderate_comments' ) ) {
 		$num = "<a href='edit-comments.php?comment_status=moderated'><span class='pending-count'>$num</span></a>";
 		$text = "<a class='waiting' href='edit-comments.php?comment_status=moderated'>$text</a>";
@@ -263,7 +291,7 @@ function wp_dashboard_right_now() {
 
 	// Tags
 	$num = number_format_i18n( $num_tags );
-	$text = __ngettext( 'Tag', 'Tags', $num_tags );
+	$text = _n( 'Tag', 'Tags', $num_tags );
 	if ( current_user_can( 'manage_categories' ) ) {
 		$num = "<a href='edit-tags.php'>$num</a>";
 		$text = "<a href='edit-tags.php'>$text</a>";
@@ -273,7 +301,7 @@ function wp_dashboard_right_now() {
 
 	// Spam Comments
 	$num = number_format_i18n($num_comm->spam);
-	$text = __ngettext( 'Spam', 'Spam', $num_comm->spam );
+	$text = _n( 'Spam', 'Spam', $num_comm->spam );
 	if ( current_user_can( 'moderate_comments' ) ) {
 		$num = "<a href='edit-comments.php?comment_status=spam'><span class='spam-count'>$num</span></a>";
 		$text = "<a class='spam' href='edit-comments.php?comment_status=spam'>$text</a>";
@@ -294,9 +322,9 @@ function wp_dashboard_right_now() {
 	echo "\n\t<p>";
 	if ( current_user_can( 'switch_themes' ) ) {
 		echo '<a href="themes.php" class="button rbutton">' . __('Change Theme') . '</a>';
-		printf(__ngettext('Theme <span class="b"><a href="themes.php">%1$s</a></span> with <span class="b"><a href="widgets.php">%2$s Widget</a></span>', 'Theme <span class="b"><a href="themes.php">%1$s</a></span> with <span class="b"><a href="widgets.php">%2$s Widgets</a></span>', $num_widgets), $ct->title, $num);
+		printf(_n('Theme <span class="b"><a href="themes.php">%1$s</a></span> with <span class="b"><a href="widgets.php">%2$s Widget</a></span>', 'Theme <span class="b"><a href="themes.php">%1$s</a></span> with <span class="b"><a href="widgets.php">%2$s Widgets</a></span>', $num_widgets), $ct->title, $num);
 	} else {
-		printf(__ngettext('Theme <span class="b">%1$s</span> with <span class="b">%2$s Widget</span>', 'Theme <span class="b">%1$s</span> with <span class="b">%2$s Widgets</span>', $num_widgets), $ct->title, $num);
+		printf(_n('Theme <span class="b">%1$s</span> with <span class="b">%2$s Widget</span>', 'Theme <span class="b">%1$s</span> with <span class="b">%2$s Widgets</span>', $num_widgets), $ct->title, $num);
 	}
 
 	echo '</p>';
@@ -498,7 +526,7 @@ function _wp_dashboard_recent_comments_row( &$comment, $show_date = true ) {
 		$actions['edit'] = "<a href='comment.php?action=editcomment&amp;c={$comment->comment_ID}' title='" . __('Edit comment') . "'>". __('Edit') . '</a>';
 		//$actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$comment->comment_post_ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
 		$actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$comment->comment_post_ID.'\');return false;" class="vim-r hide-if-no-js" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a>';
-		$actions['spam'] = "<a href='$spam_url' class='delete:the-comment-list:comment-$comment->comment_ID::spam=1 vim-s vim-destructive' title='" . __( 'Mark this comment as spam' ) . "'>" . _c( 'Spam|verb' ) . '</a>';
+		$actions['spam'] = "<a href='$spam_url' class='delete:the-comment-list:comment-$comment->comment_ID::spam=1 vim-s vim-destructive' title='" . __( 'Mark this comment as spam' ) . "'>" . /* translators: mark as spam link */  _x( 'Spam', 'verb' ) . '</a>';
 		$actions['delete'] = "<a href='$delete_url' class='delete:the-comment-list:comment-$comment->comment_ID delete vim-d vim-destructive'>" . __('Delete') . '</a>';
 
 		$actions = apply_filters( 'comment_row_actions', $actions, $comment );
@@ -522,6 +550,8 @@ function _wp_dashboard_recent_comments_row( &$comment, $show_date = true ) {
 			<?php if ( !$comment->comment_type || 'comment' == $comment->comment_type ) : ?>
 
 			<?php echo get_avatar( $comment, 50 ); ?>
+
+			<div class="dashboard-comment-wrap">
 			<h4 class="comment-meta"><?php printf( __( 'From %1$s on %2$s%3$s' ), '<cite class="comment-author">' . get_comment_author_link() . '</cite>', $comment_post_link." ".$comment_link, ' <span class="approve">' . __( '[Pending]' ) . '</span>' ); ?></h4>
 
 			<?php
@@ -538,8 +568,9 @@ function _wp_dashboard_recent_comments_row( &$comment, $show_date = true ) {
 				endswitch;
 				$type = wp_specialchars( $type );
 			?>
-
-			<h4 class="comment-meta"><?php printf( __( '%1$s on %2$s' ), "<strong>$type</strong>", $comment_post_link ); ?></h4>
+			<div class="dashboard-comment-wrap">
+			<?php /* translators: %1$s is type of comment, %2$s is link to the post */ ?>
+			<h4 class="comment-meta"><?php printf( _x( '%1$s on %2$s', 'dashboard' ), "<strong>$type</strong>", $comment_post_link ); ?></h4>
 			<p class="comment-author"><?php comment_author_link(); ?></p>
 
 			<?php endif; // comment_type ?>
@@ -553,7 +584,7 @@ function _wp_dashboard_recent_comments_row( &$comment, $show_date = true ) {
 				<div class="author-url"><?php echo attribute_escape( $comment->comment_author_url ); ?></div>
 				<div class="comment_status"><?php echo $comment->comment_approved; ?></div>
 			</div>
-
+			</div>
 		</div>
 <?php
 }
@@ -570,60 +601,58 @@ function wp_dashboard_incoming_links() {
 function wp_dashboard_incoming_links_output() {
 	$widgets = get_option( 'dashboard_widget_options' );
 	@extract( @$widgets['dashboard_incoming_links'], EXTR_SKIP );
-	$rss = @fetch_rss( $url );
-	if ( isset($rss->items) && 0 < count($rss->items) )  {
+	$rss = fetch_feed( $url );
 
-		echo "<ul>\n";
+	if ( !$rss->get_item_quantity() ) {
+		echo '<p>' . __('This dashboard widget queries <a href="http://blogsearch.google.com/">Google Blog Search</a> so that when another blog links to your site it will show up here. It has found no incoming links&hellip; yet. It&#8217;s okay &#8212; there is no rush.') . "</p>\n";
+		return;
+	}
 
-		$rss->items = array_slice($rss->items, 0, $items);
-		foreach ( $rss->items as $item ) {
-			$publisher = '';
-			$site_link = '';
-			$link = '';
-			$content = '';
-			$date = '';
-			$link = clean_url( strip_tags( $item['link'] ) );
+	echo "<ul>\n";
 
-			if ( isset( $item['author_uri'] ) )
-				$site_link = clean_url( strip_tags( $item['author_uri'] ) );
+	$count = 0;
+	foreach ( $rss->get_items() as $item ) {
+		$publisher = '';
+		$site_link = '';
+		$link = '';
+		$content = '';
+		$date = '';
+		$link = clean_url( strip_tags( $item->get_link() ) );
 
-			if ( !$publisher = wp_specialchars( strip_tags( isset($item['dc']['publisher']) ? $item['dc']['publisher'] : $item['author_name'] ) ) )
-				$publisher = __( 'Somebody' );
-			if ( $site_link )
-				$publisher = "<a href='$site_link'>$publisher</a>";
-			else
-				$publisher = "<strong>$publisher</strong>";
+		$author = $item->get_author();
+		$site_link = clean_url( strip_tags( $author->get_link() ) );
 
-			if ( isset($item['description']) )
-				$content = $item['description'];
-			elseif ( isset($item['summary']) )
-				$content = $item['summary'];
-			elseif ( isset($item['atom_content']) )
-				$content = $item['atom_content'];
-			else
-				$content = __( 'something' );
-			$content = wp_html_excerpt($content, 50) . ' ...';
-			if ( $link )
-				$text = _c( '%1$s linked here <a href="%2$s">saying</a>, "%3$s"|feed_display' );
-			else
-				$text = _c( '%1$s linked here saying, "%3$s"|feed_display' );
+		if ( !$publisher = wp_specialchars( strip_tags( $author->get_name() ) ) )
+			$publisher = __( 'Somebody' );
+		if ( $site_link )
+			$publisher = "<a href='$site_link'>$publisher</a>";
+		else
+			$publisher = "<strong>$publisher</strong>";
 
-			if ( $show_date ) {
-				if ( $show_author || $show_summary )
-					$text .= _c( ' on %4$s|feed_display' );
-				$date = wp_specialchars( strip_tags( isset($item['pubdate']) ? $item['pubdate'] : $item['published'] ) );
-				$date = strtotime( $date );
-				$date = gmdate( get_option( 'date_format' ), $date );
-			}
+		$content = $item->get_content();
+		$content = wp_html_excerpt($content, 50) . ' ...';
 
-			echo "\t<li>" . sprintf( _c( "$text|feed_display" ), $publisher, $link, $content, $date ) . "</li>\n";
+		if ( $link )
+			/* translators: incoming links feed, %1$s is other person, %3$s is content */
+			$text = __( '%1$s linked here <a href="%2$s">saying</a>, "%3$s"' );
+		else
+			/* translators: incoming links feed, %1$s is other person, %3$s is content */
+			$text = __( '%1$s linked here saying, "%3$s"' );
+
+		if ( $show_date ) {
+			if ( $show_author || $show_summary )
+				/* translators: incoming links feed, %4$s is the date */
+				$text .= ' ' . __( 'on %4$s' );
+			$date = wp_specialchars( strip_tags( $item->get_date() ) );
+			$date = strtotime( $date );
+			$date = gmdate( get_option( 'date_format' ), $date );
 		}
 
-		echo "</ul>\n";
-
-	} else {
-		echo '<p>' . __('This dashboard widget queries <a href="http://blogsearch.google.com/">Google Blog Search</a> so that when another blog links to your site it will show up here. It has found no incoming links&hellip; yet. It&#8217;s okay &#8212; there is no rush.') . "</p>\n";
+		echo "\t<li>" . sprintf( $text, $publisher, $link, $content, $date ) . "</li>\n";
 	}
+
+	echo "</ul>\n";
+
 }
 
 function wp_dashboard_incoming_links_control() {
@@ -670,24 +699,21 @@ function wp_dashboard_secondary_control() {
 function wp_dashboard_secondary_output() {
 	$widgets = get_option( 'dashboard_widget_options' );
 	@extract( @$widgets['dashboard_secondary'], EXTR_SKIP );
-	$rss = @fetch_rss( $url );
+	$rss = @fetch_feed( $url );
 
-	if ( !isset($rss->items) || 0 == count($rss->items) )
-		return false;
-
-	$rss->items = array_slice($rss->items, 0, $items);
-
-	if ( 'http://planet.wordpress.org/' == $rss->channel['link'] ) {
-		foreach ( array_keys($rss->items) as $i ) {
-			list($site, $description) = explode( ':', wp_specialchars($rss->items[$i]['title']), 2 );
-			$rss->items[$i]['dc']['creator'] = trim($site);
-			$rss->items[$i]['title'] = trim($description);
+	if ( is_wp_error($rss) ) {
+		if ( is_admin() || current_user_can('manage_options') ) {
+			echo '<div class="rss-widget"><p>';
+			printf(__('<strong>RSS Error</strong>: %s'), $rss->get_error_message());
+			echo '</p></div>';
 		}
+	} elseif ( !$rss->get_item_quantity() ) {
+		return false;
+	} else {
+		echo '<div class="rss-widget">';
+		wp_widget_rss_output( $rss, $widgets['dashboard_secondary'] );
+		echo '</div>';
 	}
-
-	echo "<div class='rss-widget'>";
-	wp_widget_rss_output( $rss, $widgets['dashboard_secondary'] );
-	echo "</div>";
 }
 
 function wp_dashboard_plugins() {
@@ -704,36 +730,36 @@ function wp_dashboard_plugins() {
  * @since unknown
  */
 function wp_dashboard_plugins_output() {
-	$popular = @fetch_rss( 'http://wordpress.org/extend/plugins/rss/browse/popular/' );
-	$new     = @fetch_rss( 'http://wordpress.org/extend/plugins/rss/browse/new/' );
-	$updated = @fetch_rss( 'http://wordpress.org/extend/plugins/rss/browse/updated/' );
+	$popular = fetch_feed( 'http://wordpress.org/extend/plugins/rss/browse/popular/' );
+	$new     = fetch_feed( 'http://wordpress.org/extend/plugins/rss/browse/new/' );
+	$updated = fetch_feed( 'http://wordpress.org/extend/plugins/rss/browse/updated/' );
 
 	foreach ( array( 'popular' => __('Most Popular'), 'new' => __('Newest Plugins'), 'updated' => __('Recently Updated') ) as $feed => $label ) {
-		if ( !isset($$feed->items) || 0 == count($$feed->items) )
+		if ( !$$feed->get_item_quantity() )
 			continue;
 
-		$$feed->items = array_slice($$feed->items, 0, 5);
-		$item_key = array_rand($$feed->items);
+		$items = $$feed->get_items(0, 5);
+		$item_key = array_rand($items);
 
 		// Eliminate some common badly formed plugin descriptions
-		while ( ( null !== $item_key = array_rand($$feed->items) ) && false !== strpos( $$feed->items[$item_key]['description'], 'Plugin Name:' ) )
-			unset($$feed->items[$item_key]);
+		while ( ( null !== $item_key = array_rand($items) ) && false !== strpos( $items[$item_key]->get_description(), 'Plugin Name:' ) )
+			unset($items[$item_key]);
 
-		if ( !isset($$feed->items[$item_key]) )
+		if ( !isset($items[$item_key]) )
 			continue;
 
-		$item = $$feed->items[$item_key];
+		$item = $items[$item_key];
 
 		// current bbPress feed item titles are: user on "topic title"
-		if ( preg_match( '/"(.*)"/s', $item['title'], $matches ) )
+		if ( preg_match( '/&quot;(.*)&quot;/s', $item->get_title(), $matches ) )
 			$title = $matches[1];
 		else // but let's make it forward compatible if things change
-			$title = $item['title'];
+			$title = $item->get_title();
 		$title = wp_specialchars( $title );
 
-		$description = wp_specialchars( strip_tags(html_entity_decode($item['description'], ENT_QUOTES)) );
+		$description = wp_specialchars( strip_tags(html_entity_decode($item->get_description(), ENT_QUOTES, get_option('blog_charset'))) );
 
-		list($link, $frag) = explode( '#', $item['link'] );
+		list($link, $frag) = explode( '#', $item->get_link() );
 
 		$link = clean_url($link);
 		if( preg_match('|/([^/]+?)/?$|', $link, $matches) )
@@ -778,18 +804,19 @@ function wp_dashboard_cached_rss_widget( $widget_id, $callback, $check_urls = ar
 	}
 
 
-	require_once( ABSPATH . WPINC . '/rss.php' );
-	init(); // initialize rss constants
-
-	$cache = new RSSCache( MAGPIE_CACHE_DIR, MAGPIE_CACHE_AGE );
-
+	/* TODO Cache check here.
 	foreach ( $check_urls as $check_url ) {
-		$status = $cache->check_cache( $check_url );
+
 		if ( 'HIT' !== $status ) {
 			echo $loading;
 			return false;
 		}
 	}
+	*/
+
+	// Always load async until above fixed.
+	echo $loading;
+	return false;
 
 	if ( $callback && is_callable( $callback ) ) {
 		$args = array_slice( func_get_args(), 2 );
@@ -844,9 +871,8 @@ function wp_dashboard_rss_control( $widget_id, $form_inputs = array() ) {
 		$widget_options[$widget_id] = wp_widget_rss_process( $_POST['widget-rss'][$number] );
 		// title is optional.  If black, fill it if possible
 		if ( !$widget_options[$widget_id]['title'] && isset($_POST['widget-rss'][$number]['title']) ) {
-			require_once(ABSPATH . WPINC . '/rss.php');
-			$rss = fetch_rss($widget_options[$widget_id]['url']);
-			$widget_options[$widget_id]['title'] = htmlentities(strip_tags($rss->channel['title']));
+			$rss = fetch_feed($widget_options[$widget_id]['url']);
+			$widget_options[$widget_id]['title'] = htmlentities(strip_tags($rss->get_title()));
 		}
 		update_option( 'dashboard_widget_options', $widget_options );
 	}

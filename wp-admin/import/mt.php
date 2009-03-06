@@ -39,7 +39,7 @@ class MT_Import {
 <p><?php _e('Howdy! We&#8217;re about to begin importing all of your Movable Type or Typepad entries into WordPress. To begin, either choose a file to upload and click "Upload file and import," or use FTP to upload your MT export file as <code>mt-export.txt</code> in your <code>/wp-content/</code> directory and then click "Import mt-export.txt"'); ?></p>
 
 <?php wp_import_upload_form( add_query_arg('step', 1) ); ?>
-<form method="post" action="<?php echo add_query_arg('step', 1); ?>" class="import-upload-form">
+<form method="post" action="<?php echo attribute_escape(add_query_arg('step', 1)); ?>" class="import-upload-form">
 
 <?php wp_nonce_field('import-upload'); ?>
 <p>
@@ -288,7 +288,7 @@ class MT_Import {
 		}
 
 		if ( $num_comments )
-			printf(' '.__ngettext('(%s comment)', '(%s comments)', $num_comments), $num_comments);
+			printf(' '._n('(%s comment)', '(%s comments)', $num_comments), $num_comments);
 
 		$num_pings = 0;
 		foreach ( $pings as $ping ) {
@@ -305,7 +305,7 @@ class MT_Import {
 		}
 
 		if ( $num_pings )
-			printf(' '.__ngettext('(%s ping)', '(%s pings)', $num_pings), $num_pings);
+			printf(' '._n('(%s ping)', '(%s pings)', $num_pings), $num_pings);
 
 		echo "</li>";
 		//ob_flush();flush();

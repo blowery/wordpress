@@ -748,13 +748,58 @@ function wp_widget_pages_control() {
 function wp_widget_links($args) {
 	extract($args, EXTR_SKIP);
 
+	$link_options = get_option('widget_links');
+	$show_description = isset($link_options['description']) ? $link_options['description'] : false;
+	$show_name = isset($link_options['name']) ? $link_options['name'] : false;
+	$show_rating = isset($link_options['rating']) ? $link_options['rating'] : false;
+	$show_images = isset($link_options['images']) ? $link_options['images'] : true;
+
 	$before_widget = preg_replace('/id="[^"]*"/','id="%id"', $before_widget);
 	wp_list_bookmarks(apply_filters('widget_links_args', array(
 		'title_before' => $before_title, 'title_after' => $after_title,
 		'category_before' => $before_widget, 'category_after' => $after_widget,
-		'show_images' => true, 'class' => 'linkcat widget'
+		'show_images' => $show_images, 'show_description' => $show_description,
+		'show_name' => $show_name, 'show_rating' => $show_rating,
+		'class' => 'linkcat widget'
 	)));
 }
+
+/**
+ * Display and process links widget options form.
+ *
+ * @since 2.8.0
+ */
+function wp_widget_links_control() {
+	$options = $newoptions = get_option('widget_links');
+
+	//Defaults
+	if ( ! $newoptions )
+		$newoptions = array( 'images' => true, 'name' => true, 'description' => false, 'rating' => false);
+
+	if ( isset($_POST['links-submit']) ) {
+		$newoptions['description'] = isset($_POST['links-description']);
+		$newoptions['name'] = isset($_POST['links-name']);
+		$newoptions['rating'] = isset($_POST['links-rating']);
+		$newoptions['images'] = isset($_POST['links-images']);
+	}
+	if ( $options != $newoptions ) {
+		$options = $newoptions;
+		update_option('widget_links', $options);
+	}
+?>
+			<p>
+				<label for="links-images"><input class="checkbox" type="checkbox" <?php checked($options['images'], true) ?> id="links-images" name="links-images" /> <?php _e('Show Link Image'); ?></label>
+				<br />
+				<label for="links-name"><input class="checkbox" type="checkbox" <?php checked($options['name'], true) ?> id="links-name" name="links-name" /> <?php _e('Show Link Name'); ?></label>
+				<br />
+				<label for="links-description"><input class="checkbox" type="checkbox" <?php checked($options['description'], true) ?> id="links-description" name="links-description" /> <?php _e('Show Link Description'); ?></label>
+				<br />
+				<label for="links-rating"><input class="checkbox" type="checkbox" <?php checked($options['rating'], true) ?> id="links-rating" name="links-rating" /> <?php _e('Show Link Rating'); ?></label>
+			</p>
+			<input type="hidden" id="links-submit" name="links-submit" value="1" />
+<?php
+}
+
 
 /**
  * Display search widget.
@@ -1195,17 +1240,17 @@ function wp_widget_categories_control( $widget_args ) {
 
 			<p>
 				<label for="categories-dropdown-<?php echo $number; ?>">
-					<input type="checkbox" class="checkbox" id="categories-dropdown-<?php echo $number; ?>" name="widget-categories[<?php echo $number; ?>][dropdown]"<?php checked( $dropdown, true ); ?> />
+					<input type="checkbox" class="checkbox" id="categories-dropdown-<?php echo $number; ?>" name="widget-categories[<?php echo $number; ?>][dropdown]"<?php checked( $dropdown ); ?> />
 					<?php _e( 'Show as dropdown' ); ?>
 				</label>
 				<br />
 				<label for="categories-count-<?php echo $number; ?>">
-					<input type="checkbox" class="checkbox" id="categories-count-<?php echo $number; ?>" name="widget-categories[<?php echo $number; ?>][count]"<?php checked( $count, true ); ?> />
+					<input type="checkbox" class="checkbox" id="categories-count-<?php echo $number; ?>" name="widget-categories[<?php echo $number; ?>][count]"<?php checked( $count ); ?> />
 					<?php _e( 'Show post counts' ); ?>
 				</label>
 				<br />
 				<label for="categories-hierarchical-<?php echo $number; ?>">
-					<input type="checkbox" class="checkbox" id="categories-hierarchical-<?php echo $number; ?>" name="widget-categories[<?php echo $number; ?>][hierarchical]"<?php checked( $hierarchical, true ); ?> />
+					<input type="checkbox" class="checkbox" id="categories-hierarchical-<?php echo $number; ?>" name="widget-categories[<?php echo $number; ?>][hierarchical]"<?php checked( $hierarchical ); ?> />
 					<?php _e( 'Show hierarchy' ); ?>
 				</label>
 			</p>
@@ -1501,16 +1546,14 @@ function wp_widget_rss($args, $widget_args = 1) {
 	if ( empty($url) )
 		return;
 
-	require_once(ABSPATH . WPINC . '/rss.php');
-
-	$rss = fetch_rss($url);
-	$link = clean_url(strip_tags($rss->channel['link']));
+	$rss = fetch_feed($url);
+	$link = clean_url(strip_tags($rss->get_permalink()));
 	while ( strstr($link, 'http') != $link )
 		$link = substr($link, 1);
-	$desc = attribute_escape(strip_tags(html_entity_decode($rss->channel['description'], ENT_QUOTES)));
+	$desc = attribute_escape(strip_tags(html_entity_decode($rss->get_description(), ENT_QUOTES, get_option('blog_charset'))));
 	$title = $options[$number]['title'];
 	if ( empty($title) )
-		$title = htmlentities(strip_tags($rss->channel['title']));
+		$title = htmlentities(strip_tags($rss->get_title()));
 	if ( empty($title) )
 		$title = $desc;
 	if ( empty($title) )
@@ -1541,15 +1584,22 @@ function wp_widget_rss($args, $widget_args = 1) {
  */
 function wp_widget_rss_output( $rss, $args = array() ) {
 	if ( is_string( $rss ) ) {
-		require_once(ABSPATH . WPINC . '/rss.php');
-		if ( !$rss = fetch_rss($rss) )
+		if ( !$rss = fetch_feed($rss) )
 			return;
 	} elseif ( is_array($rss) && isset($rss['url']) ) {
-		require_once(ABSPATH . WPINC . '/rss.php');
 		$args = $rss;
-		if ( !$rss = fetch_rss($rss['url']) )
+		if ( !$rss = fetch_feed($rss['url']) )
 			return;
 	} elseif ( !is_object($rss) ) {
+		return;
+	}
+
+	if ( is_wp_error($rss) ) {
+		if ( is_admin() || current_user_can('manage_options') ) {
+			echo '<p>';
+			printf(__('<strong>RSS Error</strong>: %s'), $rss->get_error_message());
+			echo '</p>';
+		}
 		return;
 	}
 
@@ -1564,66 +1614,57 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 	$show_author   = (int) $show_author;
 	$show_date     = (int) $show_date;
 
-	if ( is_array( $rss->items ) && !empty( $rss->items ) ) {
-		$rss->items = array_slice($rss->items, 0, $items);
-		echo '<ul>';
-		foreach ( (array) $rss->items as $item ) {
-			while ( strstr($item['link'], 'http') != $item['link'] )
-				$item['link'] = substr($item['link'], 1);
-			$link = clean_url(strip_tags($item['link']));
-			$title = attribute_escape(strip_tags($item['title']));
-			if ( empty($title) )
-				$title = __('Untitled');
-			$desc = '';
-			if ( isset( $item['description'] ) && is_string( $item['description'] ) )
-				$desc = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item['description'], ENT_QUOTES))));
-			elseif ( isset( $item['summary'] ) && is_string( $item['summary'] ) )
-				$desc = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item['summary'], ENT_QUOTES))));
-			if ( 360 < strlen( $desc ) )
-				$desc = wp_html_excerpt( $desc, 360 ) . ' [&hellip;]';
-			$summary = $desc;
-
-			if ( $show_summary ) {
-				$desc = '';
-				$summary = wp_specialchars( $summary );
-				$summary = "<div class='rssSummary'>$summary</div>";
-			} else {
-				$summary = '';
-			}
-
-			$date = '';
-			if ( $show_date ) {
-				if ( isset($item['pubdate']) )
-					$date = $item['pubdate'];
-				elseif ( isset($item['published']) )
-					$date = $item['published'];
-
-				if ( $date ) {
-					if ( $date_stamp = strtotime( $date ) )
-						$date = ' <span class="rss-date">' . date_i18n( get_option( 'date_format' ), $date_stamp ) . '</span>';
-					else
-						$date = '';
-				}
-			}
-
-			$author = '';
-			if ( $show_author ) {
-				if ( isset($item['dc']['creator']) )
-					$author = ' <cite>' . wp_specialchars( strip_tags( $item['dc']['creator'] ) ) . '</cite>';
-				elseif ( isset($item['author_name']) )
-					$author = ' <cite>' . wp_specialchars( strip_tags( $item['author_name'] ) ) . '</cite>';
-			}
-
-			if ( $link == '' ) {
-				echo "<li>$title{$date}{$summary}{$author}</li>";
-			} else {
-				echo "<li><a class='rsswidget' href='$link' title='$desc'>$title</a>{$date}{$summary}{$author}</li>";
-			}
-}
-		echo '</ul>';
-	} else {
+	if ( !$rss->get_item_quantity() ) {
 		echo '<ul><li>' . __( 'An error has occurred; the feed is probably down. Try again later.' ) . '</li></ul>';
+		return;
 	}
+
+	echo '<ul>';
+	foreach ( $rss->get_items(0, $items) as $item ) {
+		$link = $item->get_link();
+		while ( strstr($link, 'http') != $link )
+			$link = substr($link, 1);
+		$link = clean_url(strip_tags($link));
+		$title = attribute_escape(strip_tags($item->get_title()));
+		if ( empty($title) )
+			$title = __('Untitled');
+
+		$desc = str_replace(array("\n", "\r"), ' ', attribute_escape(strip_tags(html_entity_decode($item->get_description(), ENT_QUOTES, get_option('blog_charset')))));
+		$desc = wp_html_excerpt( $desc, 360 ) . ' [&hellip;]';
+		$desc = wp_specialchars( $desc );
+
+		if ( $show_summary ) {
+			$summary = "<div class='rssSummary'>$desc</div>";
+		} else {
+			$summary = '';
+		}
+
+		$date = '';
+		if ( $show_date ) {
+			$date = $item->get_date();
+
+			if ( $date ) {
+				if ( $date_stamp = strtotime( $date ) )
+					$date = ' <span class="rss-date">' . date_i18n( get_option( 'date_format' ), $date_stamp ) . '</span>';
+				else
+					$date = '';
+			}
+		}
+
+		$author = '';
+		if ( $show_author ) {
+			$author = $item->get_author();
+			$author = $author->get_name();
+			$author = ' <cite>' . wp_specialchars( strip_tags( $author ) ) . '</cite>';
+		}
+
+		if ( $link == '' ) {
+			echo "<li>$title{$date}{$summary}{$author}</li>";
+		} else {
+			echo "<li><a class='rsswidget' href='$link' title='$desc'>$title</a>{$date}{$summary}{$author}</li>";
+		}
+	}
+	echo '</ul>';
 }
 
 /**
@@ -1810,15 +1851,14 @@ function wp_widget_rss_process( $widget_rss, $check_feed = true ) {
 	$show_date     = (int) $widget_rss['show_date'];
 
 	if ( $check_feed ) {
-		require_once(ABSPATH . WPINC . '/rss.php');
-		$rss = fetch_rss($url);
+		$rss = fetch_feed($url);
 		$error = false;
 		$link = '';
 		if ( !is_object($rss) ) {
 			$url = wp_specialchars(__('Error: could not find an RSS or ATOM feed at that URL.'), 1);
 			$error = sprintf(__('Error in RSS %1$d'), $widget_number );
 		} else {
-			$link = clean_url(strip_tags($rss->channel['link']));
+			$link = clean_url(strip_tags($rss->get_permalink()));
 			while ( strstr($link, 'http') != $link )
 				$link = substr($link, 1);
 		}
@@ -1928,6 +1968,7 @@ function wp_widgets_init() {
 
 	$widget_ops = array('classname' => 'widget_links', 'description' => __( "Your blogroll") );
 	wp_register_sidebar_widget('links', __('Links'), 'wp_widget_links', $widget_ops);
+	wp_register_widget_control('links', __('Links'), 'wp_widget_links_control' );
 
 	$widget_ops = array('classname' => 'widget_meta', 'description' => __( "Log in/out, admin, feed and WordPress links") );
 	wp_register_sidebar_widget('meta', __('Meta'), 'wp_widget_meta', $widget_ops);

@@ -80,7 +80,7 @@ if ( isset($_GET['s']) && $_GET['s'] )
 if ( isset($_GET['deleted']) ) {
 	echo '<div id="message" class="updated fade"><p>';
 	$deleted = (int) $_GET['deleted'];
-	printf(__ngettext('%s link deleted.', '%s links deleted', $deleted), $deleted);
+	printf(_n('%s link deleted.', '%s links deleted', $deleted), $deleted);
 	echo '</p></div>';
 	$_SERVER['REQUEST_URI'] = remove_query_arg(array('deleted'), $_SERVER['REQUEST_URI']);
 }
@@ -168,7 +168,7 @@ if ( $links ) {
 		$link->link_name = attribute_escape($link->link_name);
 		$link->link_category = wp_get_link_cats($link->link_id);
 		$short_url = str_replace('http://', '', $link->link_url);
-		$short_url = preg_replace('/^www./i', '', $short_url);
+		$short_url = preg_replace('/^www\./i', '', $short_url);
 		if ('/' == substr($short_url, -1))
 			$short_url = substr($short_url, 0, -1);
 		if (strlen($short_url) > 35)

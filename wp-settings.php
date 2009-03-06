@@ -247,6 +247,15 @@ require (ABSPATH . WPINC . '/compat.php');
 require (ABSPATH . WPINC . '/functions.php');
 require (ABSPATH . WPINC . '/classes.php');
 
+/**
+ * Format specifiers for DB columns. Columns not listed here default to %s.
+ * @since 2.8.0
+ */
+$db_field_types = array( 'post_author' => '%d', 'post_parent' => '%d', 'menu_order' => '%d', 'term_id' => '%d', 'term_group' => '%d', 'term_taxonomy_id' => '%d',
+	'parent' => '%d', 'count' => '%d','object_id' => '%d', 'term_order' => '%d', 'ID' => '%d', 'commment_ID' => '%d', 'comment_post_ID' => '%d', 'comment_parent' => '%d',
+	'user_id' => '%d', 'link_id' => '%d', 'link_owner' => '%d', 'link_rating' => '%d', 'option_id' => '%d', 'blog_id' => '%d', 'meta_id' => '%d', 'post_id' => '%d',
+	'user_status' => '%d', 'umeta_id' => '%d', 'comment_karma' => '%d', 'comment_count' => '%d');
+
 require_wp_db();
 
 if ( !empty($wpdb->error) )
@@ -273,8 +282,7 @@ if ( function_exists('wp_cache_add_global_groups') ) {
 
 require (ABSPATH . WPINC . '/plugin.php');
 require (ABSPATH . WPINC . '/default-filters.php');
-include_once(ABSPATH . WPINC . '/streams.php');
-include_once(ABSPATH . WPINC . '/gettext.php');
+include_once(ABSPATH . WPINC . '/pomo/mo.php');
 require_once (ABSPATH . WPINC . '/l10n.php');
 
 if ( !is_blog_installed() && (strpos($_SERVER['PHP_SELF'], 'install.php') === false && !defined('WP_INSTALLING')) ) {
@@ -463,18 +471,19 @@ if ( !defined( 'AUTOSAVE_INTERVAL' ) )
 require (ABSPATH . WPINC . '/vars.php');
 
 // Check for hacks file if the option is enabled
-if (get_option('hack_file')) {
-	if (file_exists(ABSPATH . 'my-hacks.php'))
+if ( get_option('hack_file') ) {
+	if ( file_exists(ABSPATH . 'my-hacks.php') )
 		require(ABSPATH . 'my-hacks.php');
 }
 
 if ( get_option('active_plugins') && !defined('WP_INSTALLING') ) {
 	$current_plugins = get_option('active_plugins');
 	if ( is_array($current_plugins) ) {
-		foreach ($current_plugins as $plugin) {
+		foreach ( $current_plugins as $plugin ) {
 			if ( '' != $plugin && 0 == validate_file($plugin) && file_exists(WP_PLUGIN_DIR . '/' . $plugin) )
 				include_once(WP_PLUGIN_DIR . '/' . $plugin);
 		}
+		unset($plugin);
 	}
 }
 

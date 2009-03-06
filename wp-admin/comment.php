@@ -123,7 +123,7 @@ if ( 'spam' == $_GET['dt'] ) {
 </tr>
 <?php } ?>
 <tr>
-<th scope="row" valign="top"><?php echo _c('Comment|noun'); ?></th>
+<th scope="row" valign="top"><?php /* translators: field name in comment form */ echo _x('Comment', 'noun'); ?></th>
 <td><?php echo $comment->comment_content; ?></td>
 </tr>
 </table>
@@ -216,7 +216,7 @@ case 'approvecomment' :
 case 'editedcomment' :
 
 	$comment_id = absint( $_POST['comment_ID'] );
-	$comment_post_id = absint( $_POST['comment_post_id'] );
+	$comment_post_id = absint( $_POST['comment_post_ID'] );
 
 	check_admin_referer( 'update-comment_' . $comment_id );
 

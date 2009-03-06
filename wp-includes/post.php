@@ -424,7 +424,7 @@ function set_post_type( $post_id = 0, $post_type = 'post' ) {
 	global $wpdb;
 
 	$post_type = sanitize_post_field('post_type', $post_type, $post_id, 'db');
-	$return = $wpdb->query( $wpdb->prepare("UPDATE $wpdb->posts SET post_type = %s WHERE ID = %d", $post_type, $post_id) );
+	$return = $wpdb->update($wpdb->posts, array('post_type' => $post_type), array('ID' => $post_id) );
 
 	if ( 'page' == $post_type )
 		clean_page_cache($post_id);
@@ -510,6 +510,9 @@ function get_posts($args = null) {
  * @return bool False for failure. True for success.
  */
 function add_post_meta($post_id, $meta_key, $meta_value, $unique = false) {
+	if ( !$meta_key )
+		return false;
+	
 	global $wpdb;
 
 	// make sure meta is added to the post, not a revision
@@ -558,6 +561,9 @@ function delete_post_meta($post_id, $meta_key, $meta_value = '') {
 	$meta_key = stripslashes( $meta_key );
 	$meta_value = maybe_serialize( stripslashes_deep($meta_value) );
 
+	if ( !$meta_key )
+		return false;
+	
 	if ( empty( $meta_value ) )
 		$meta_id = $wpdb->get_var( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE post_id = %d AND meta_key = %s", $post_id, $meta_key ) );
 	else
@@ -589,6 +595,9 @@ function delete_post_meta($post_id, $meta_key, $meta_value = '') {
  * @return mixed Will be an array if $single is false. Will be value of meta data field if $single is true.
  */
 function get_post_meta($post_id, $key, $single = false) {
+	if ( !$key )
+		return '';
+	
 	$post_id = (int) $post_id;
 
 	$meta_cache = wp_cache_get($post_id, 'post_meta');
@@ -637,6 +646,9 @@ function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '') {
 	// expected_slashed ($meta_key)
 	$meta_key = stripslashes($meta_key);
 
+	if ( !$meta_key )
+		return false;
+	
 	if ( ! $wpdb->get_var( $wpdb->prepare( "SELECT meta_key FROM $wpdb->postmeta WHERE meta_key = %s AND post_id = %d", $meta_key, $post_id ) ) ) {
 		return add_post_meta($post_id, $meta_key, $meta_value);
 	}
@@ -666,6 +678,9 @@ function update_post_meta($post_id, $meta_key, $meta_value, $prev_value = '') {
  * @return bool Whether the post meta key was deleted from the database
  */
 function delete_post_meta_by_key($post_meta_key) {
+	if ( !$post_meta_key )
+		return false;
+	
 	global $wpdb;
 	if ( $wpdb->query($wpdb->prepare("DELETE FROM $wpdb->postmeta WHERE meta_key = %s", $post_meta_key)) ) {
 		/** @todo Get post_ids and delete cache */
@@ -739,6 +754,9 @@ function get_post_custom_keys( $post_id = 0 ) {
  * @return array Meta field values.
  */
 function get_post_custom_values( $key = '', $post_id = 0 ) {
+	if ( !$key )
+		return null;
+	
 	$custom = get_post_custom($post_id);
 
 	return isset($custom[$key]) ? $custom[$key] : null;
@@ -2381,7 +2399,7 @@ function wp_insert_attachment($object, $file = false, $parent = 0) {
 		while ($post_name_check) {
 			$alt_post_name = $post_name . "-$suffix";
 			// expected_slashed ($alt_post_name, $post_name)
-			$post_name_check = $wpdb->get_var( $wpdb->prepare( "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_status = 'inherit' AND ID != %d AND post_parent = %d LIMIT 1", $alt_post_name, $post_ID, $post_parent));
+			$post_name_check = $wpdb->get_var( $wpdb->prepare( "SELECT post_name FROM $wpdb->posts WHERE post_name = %s AND post_status = 'inherit' AND ID != %d LIMIT 1", $alt_post_name, $post_ID, $post_parent));
 			$suffix++;
 		}
 		$post_name = $alt_post_name;
@@ -3507,7 +3525,8 @@ function _wp_put_post_revision( $post = null, $autosave = false ) {
 		return new WP_Error( 'post_type', __( 'Cannot create a revision of a revision' ) );
 
 	$post = _wp_post_revision_fields( $post, $autosave );
-
+	$post = add_magic_quotes($post); //since data is from db
+	
 	$revision_id = wp_insert_post( $post );
 	if ( is_wp_error($revision_id) )
 		return $revision_id;
@@ -3583,6 +3602,8 @@ function wp_restore_post_revision( $revision_id, $fields = null ) {
 		return false;
 
 	$update['ID'] = $revision['post_parent'];
+	
+	$update = add_magic_quotes( $update ); //since data is from db
 
 	$post_id = wp_update_post( $update );
 	if ( is_wp_error( $post_id ) )

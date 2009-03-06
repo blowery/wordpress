@@ -26,6 +26,9 @@ require_once(ABSPATH . WPINC . '/atomlib.php');
 /** Feed Handling API */
 require_once(ABSPATH . WPINC . '/feed.php');
 
+/** Admin Image API for metadata updating */
+require_once(ABSPATH . '/wp-admin/includes/image.php');
+
 $_SERVER['PATH_INFO'] = preg_replace( '/.*\/wp-app\.php/', '', $_SERVER['REQUEST_URI'] );
 
 /**
@@ -814,8 +817,11 @@ EOD;
 			$this->auth_required(__('Sorry, you do not have the right to edit this post.'));
 		}
 
+		$upload_dir = wp_upload_dir( );
 		$location = get_post_meta($entry['ID'], '_wp_attached_file', true);
 		$filetype = wp_check_filetype($location);
+
+		$location = "{$upload_dir['basedir']}/{$location}";
 
 		if(!isset($location) || 'attachment' != $entry['post_type'] || empty($filetype['ext']))
 			$this->internal_error(__('Error ocurred while accessing post metadata for file location.'));
@@ -842,6 +848,8 @@ EOD;
 		if (!$result) {
 			$this->internal_error(__('Sorry, your entry could not be posted. Something wrong happened.'));
 		}
+
+		wp_update_attachment_metadata( $postID, wp_generate_attachment_metadata( $postID, $location ) );
 
 		log_app('function',"put_file($postID)");
 		$this->ok();
@@ -1067,6 +1075,8 @@ EOD;
 		log_app('function',"get_feed($page, '$post_type')");
 		ob_start();
 
+		$this->ENTRY_PATH = $post_type;
+
 		if(!isset($page)) {
 			$page = 1;
 		}
@@ -1136,6 +1146,7 @@ EOD;
 				$varname = 'p';
 				break;
 			case 'attachment':
+				$this->ENTRY_PATH = 'attachment';
 				$varname = 'attachment_id';
 				break;
 		}
@@ -1189,9 +1200,7 @@ list($content_type, $content) = prep_atom_text_construct(get_the_content()); ?>
 <?php endif; ?>
 <?php } ?>
 	<link rel="edit" href="<?php $this->the_entry_url() ?>" />
-<?php foreach(get_the_category() as $category) { ?>
-	<category scheme="<?php bloginfo_rss('home') ?>" term="<?php echo $category->name?>" />
-<?php } ?>
+	<?php the_category_rss( 'atom' ); ?>
 <?php list($content_type, $content) = prep_atom_text_construct(get_the_excerpt()); ?>
 	<summary type="<?php echo $content_type ?>"><?php echo $content ?></summary>
 </entry>

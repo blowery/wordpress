@@ -340,7 +340,7 @@ function get_the_category_rss($type = 'rss') {
 		elseif ( 'atom' == $type )
 			$the_list .= sprintf( '<category scheme="%1$s" term="%2$s" />', attribute_escape( apply_filters( 'get_bloginfo_rss', get_bloginfo( 'url' ) ) ), attribute_escape( $cat_name ) );
 		else
-			$the_list .= "\n\t\t<category><![CDATA[" . html_entity_decode( $cat_name ) . "]]></category>\n";
+			$the_list .= "\n\t\t<category><![CDATA[" . html_entity_decode( $cat_name, ENT_COMPAT, get_option('blog_charset') ) . "]]></category>\n";
 	}
 
 	return apply_filters('the_category_rss', $the_list, $type);
@@ -403,10 +403,10 @@ function rss_enclosure() {
 	foreach ( (array) get_post_custom() as $key => $val) {
 		if ($key == 'enclosure') {
 			foreach ( (array) $val as $enc ) {
-				$enclosure = split("\n", $enc);
+				$enclosure = explode("\n", $enc);
 
 				//only get the the first element eg, audio/mpeg from 'audio/mpeg mpga mp2 mp3'
-				$t = split('[ \t]', trim($enclosure[2]) );
+				$t = preg_split('/[ \t]/', trim($enclosure[2]) );
 				$type = $t[0];
 
 				echo apply_filters('rss_enclosure', '<enclosure url="' . trim(htmlspecialchars($enclosure[0])) . '" length="' . trim($enclosure[1]) . '" type="' . $type . '" />' . "\n");
@@ -534,4 +534,27 @@ function feed_content_type( $type = '' ) {
 	return apply_filters( 'feed_content_type', $content_type, $type );
 }
 
-?>
+/**
+ * Build SimplePie object based on RSS or Atom feed from URL.
+ *
+ * @since 2.8
+ *
+ * @param string $url URL to retrieve feed
+ * @return WP_Error|SimplePie WP_Error object on failure or SimplePie object on success
+ */
+function fetch_feed($url) {
+	require_once (ABSPATH . WPINC . '/class-feed.php');
+
+	$feed = new SimplePie();
+	$feed->set_feed_url($url);
+	$feed->set_cache_class('WP_Feed_Cache');
+	$feed->set_file_class('WP_SimplePie_File');
+	$feed->set_cache_duration(43200);
+	$feed->init();
+	$feed->handle_content_type();
+
+	if ( $feed->error() )
+		return new WP_Error('simplepie-error', $feed->error());
+
+	return $feed;
+}

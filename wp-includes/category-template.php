@@ -7,40 +7,6 @@
  */
 
 /**
- * Retrieve category children list separated before and after the term IDs.
- *
- * @since 1.2.0
- *
- * @param int $id Category ID to retrieve children.
- * @param string $before Optional. Prepend before category term ID.
- * @param string $after Optional, default is empty string. Append after category term ID.
- * @param array $visited Optional. Category Term IDs that have already been added.
- * @return string
- */
-function get_category_children( $id, $before = '/', $after = '', $visited = array() ) {
-	if ( 0 == $id )
-		return '';
-
-	$chain = '';
-	/** TODO: consult hierarchy */
-	$cat_ids = get_all_category_ids();
-	foreach ( (array) $cat_ids as $cat_id ) {
-		if ( $cat_id == $id )
-			continue;
-
-		$category = get_category( $cat_id );
-		if ( is_wp_error( $category ) )
-			return $category;
-		if ( $category->parent == $id && !in_array( $category->term_id, $visited ) ) {
-			$visited[] = $category->term_id;
-			$chain .= $before.$category->term_id.$after;
-			$chain .= get_category_children( $category->term_id, $before, $after );
-		}
-	}
-	return $chain;
-}
-
-/**
  * Retrieve category link URL.
  *
  * @since 1.0.0
@@ -573,7 +539,7 @@ function wp_tag_cloud( $args = '' ) {
 		if ( 'edit' == $args['link'] )
 			$link = get_edit_tag_link( $tag->term_id, $args['taxonomy'] );
 		else
-			$link = get_term_link( $tag->term_id, $args['taxonomy'] );
+			$link = get_term_link( intval($tag->term_id), $args['taxonomy'] );
 		if ( is_wp_error( $link ) )
 			return false;
 
@@ -598,7 +564,7 @@ function wp_tag_cloud( $args = '' ) {
  * @return string text for the tooltip of a tag link.
  */
 function default_topic_count_text( $count ) {
-	return sprintf( __ngettext('%s topic', '%s topics', $count), number_format_i18n( $count ) );
+	return sprintf( _n('%s topic', '%s topics', $count), number_format_i18n( $count ) );
 }
 
 /**
@@ -638,7 +604,7 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 
 	if ( !isset( $args['topic_count_text_callback'] ) && isset( $args['single_text'] ) && isset( $args['multiple_text'] ) ) {
 		$body = 'return sprintf (
-			__ngettext('.var_export($args['single_text'], true).', '.var_export($args['multiple_text'], true).', $count),
+			_n('.var_export($args['single_text'], true).', '.var_export($args['multiple_text'], true).', $count),
 			number_format_i18n( $count ));';
 		$args['topic_count_text_callback'] = create_function('$count', $body);
 	}
@@ -659,10 +625,13 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 	if ( 'DESC' == $order )
 		$tags = array_reverse( $tags, true );
 	elseif ( 'RAND' == $order ) {
-		$keys = array_rand( $tags, count( $tags ) );
+		$keys = (array) array_rand( $tags, count( $tags ) );
+		$temp = array();
 		foreach ( $keys as $key )
 			$temp[$key] = $tags[$key];
+
 		$tags = $temp;
+		$temp = null;
 		unset( $temp );
 	}
 

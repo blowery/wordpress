@@ -77,17 +77,32 @@ default:
 	if ( !current_user_can('edit_themes') )
 		wp_die('<p>'.__('You do not have sufficient permissions to edit themes for this blog.').'</p>');
 
+	wp_enqueue_script( 'codepress' );
+	add_action( 'admin_print_footer_scripts', 'codepress_footer_js' );
 	require_once('admin-header.php');
 
 	update_recently_edited($file);
 
-	if (!is_file($real_file))
+	if ( !is_file($real_file) )
 		$error = 1;
 
-	if (!$error && filesize($real_file) > 0) {
+	if ( !$error && filesize($real_file) > 0 ) {
 		$f = fopen($real_file, 'r');
 		$content = fread($f, filesize($real_file));
-		$content = htmlspecialchars($content);
+
+		if ( '.php' == substr( $real_file, strrpos( $real_file, '.' ) ) ) {
+			$functions = wp_doc_link_parse( $content );
+
+			$docs_select = '<select name="docs-list" id="docs-list">';
+			$docs_select .= '<option value="">' . __( 'Function Name...' ) . '</option>';
+			foreach ( $functions as $function ) {
+				$docs_select .= '<option value="' . urlencode( $function ) . '">' . htmlspecialchars( $function ) . '()</option>';
+			}
+			$docs_select .= '</select>';
+		}
+
+		$content = htmlspecialchars( $content );
+		$codepress_lang = codepress_get_lang($real_file);
 	}
 
 	?>
@@ -182,11 +197,14 @@ if ($allowed_files) :
 	?>
 	<form name="template" id="template" action="theme-editor.php" method="post">
 	<?php wp_nonce_field('edit-theme_' . $file . $theme) ?>
-		 <div><textarea cols="70" rows="25" name="newcontent" id="newcontent" tabindex="1"><?php echo $content ?></textarea>
+		 <div><textarea cols="70" rows="25" name="newcontent" id="newcontent" tabindex="1" class="codepress <?php echo $codepress_lang ?>"><?php echo $content ?></textarea>
 		 <input type="hidden" name="action" value="update" />
 		 <input type="hidden" name="file" value="<?php echo $file ?>" />
 		 <input type="hidden" name="theme" value="<?php echo $theme ?>" />
 		 </div>
+		<?php if ( count( $functions ) ) : ?>
+		<div id="documentation"><label for="docs-list">Documentation:</label> <?php echo $docs_select ?> <input type="button" class="button" value=" <?php _e( 'Lookup' ) ?> " onclick="if ( '' != jQuery('#docs-list').val() ) { window.open( 'http://api.wordpress.org/core/handbook/1.0/?function=' + escape( jQuery( '#docs-list' ).val() ) + '&locale=<?php echo urlencode( get_locale() ) ?>&version=<?php echo urlencode( $wp_version ) ?>&redirect=true'); }" /></div>
+		<?php endif; ?>
 
 		<div>
 <?php if ( is_writeable($real_file) ) : ?>
