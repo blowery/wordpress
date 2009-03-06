@@ -3,7 +3,7 @@
 Plugin Name: Lijit Search
 Plugin URI: http://www.lijit.com
 Description: Search Powered Web Applications for Publishers. <a href="options-general.php?page=lijit.php">Click here to configure the Lijit Plugin</a>.
-Version: 1.01
+Version: 1.03
 Author: Crowd Favorite for Lijit Networks Inc.
 Author URI: http://crowdfavorite.com
 */
@@ -21,7 +21,7 @@ Author URI: http://crowdfavorite.com
 	 * **********************************************************************
 	 */
 
-	$lijit_plugin_version = '1.0';
+	$lijit_plugin_version = '1.03';
 	
 	function lijit_request_handler() {
 		if(cflj_is_configured()) {
@@ -284,7 +284,7 @@ Author URI: http://crowdfavorite.com
 	 * send page CSS
 	 */
 	function lijit_page_css() {
-		echo '#lwp_main{display:none;}';
+		echo '#lwp_main{display:none;}#lwpnet_main{display:none;}#lwp_wijit_container{display:none;}';
 	}
 	
 	/**
@@ -331,13 +331,13 @@ function lwp_hijack_submit(e) {
 				";
 		}
 		// if we're on a search results page then initiate a search
-		if($query !== false && get_option('lijit_search_type') != 'wijit') { lijit_results_page_javascript($query); }
+		#if($query !== false && get_option('lijit_search_type') != 'wijit') { lijit_results_page_javascript($query); }
 	}
 	
 	/**
 	 * javascript for displaying search results on landing page...
 	 */
-	function lijit_results_page_javascript($query) {
+/*	function lijit_results_page_javascript($query) {
 		echo "// extend the string prototype to return get vars
 String.prototype.getUrlHash = function(p){
 	if(this.indexOf(p+'=') != -1) {
@@ -346,20 +346,18 @@ String.prototype.getUrlHash = function(p){
 	else { return null; }
 }
 
-var s = window.location.search.getUrlHash('s');
+var lwp_detect_s = window.location.search.getUrlHash('s');
 if(window.addEventListener) { window.addEventListener('load', lijit_in_page_results, false); }
 else { window.attachEvent('onload', lijit_in_page_results); }
 
 function lijit_in_page_results() {
-	if(s != null && s != 'undefined') {
-		//var f = lwp_$('lwp_sfd');
-		//f.value = s;
-		lwp_dosearch(s);
+	if(lwp_detect_s != null && lwp_detect_s != 'undefined') {
+		lwp_dosearch(lwp_detect_s);
 	}
 }
 		";
 	}
-	
+*/	
 	/**
 	 * add title form control to standard lijit widget
 	 */
@@ -599,7 +597,7 @@ jQuery('window').ready(function(){
 				<form id="lijit_register" method="post" action="" style="display: none;">
 					<div id="lijit_register_results"></div>
 					<input type="hidden" name="lijit_referer" value="http:'.$_SERVER['SERVER_NAME'].$_SERVER['REQUEST_URI'].'" />
-					<input type="hidden" name="lijit_group_name" value="wordpress_plugin_brand" />
+					<input type="hidden" id="lijit_group_name" name="lijit_group_name" value="wordpress_plugin_brand" />
 					<fieldset>
 						<legend>Register as New User</legend>
 						<div>

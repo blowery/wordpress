@@ -2,7 +2,7 @@
 Contributors: alexkingorg, damniel
 Tags: search, widget, statistics,lijit
 Requires at least: 2.3
-Tested up to: 2.6
+Tested up to: 2.7.1
 Stable tag: trunk
 
 What if searching on the web worked the way it did in real life?

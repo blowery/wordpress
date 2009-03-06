@@ -4,13 +4,13 @@
 Plugin Name: All in One SEO Pack
 Plugin URI: http://semperfiwebdesign.com
 Description: Out-of-the-box SEO for your Wordpress blog.
-Version: 1.4.7
+Version: 1.4.7.3
 Author: Michael Torbert
 Author URI: http://semperfiwebdesign.com
 */
 
 /*
-Copyright (C) 2008 Michael Torbert, semperfiwebdesign.com (michael AT semperfiwebdesign DOT com)
+Copyright (C) 2008-2009 Michael Torbert, semperfiwebdesign.com (michael AT semperfiwebdesign DOT com)
 Original code by uberdose of uberdose.com
 
 This program is free software; you can redistribute it and/or modify
@@ -476,7 +476,7 @@ $UTF8_TABLES['strtoupper'] = array(
 
 class All_in_One_SEO_Pack {
 	
- 	var $version = "1.4.7";
+ 	var $version = "1.4.7.3";
  	
  	/** Max numbers of chars in auto-generated description */
  	var $maximum_description_length = 160;
@@ -2081,13 +2081,11 @@ add_action('template_redirect', array($aiosp, 'template_redirect'));
 
 add_action('init', array($aiosp, 'init'));
 
-if (substr($aiosp->wp_version, 0, 3) >= '2.5') {
-	add_action('edit_form_advanced', array($aiosp, 'add_meta_tags_textinput'));
-	add_action('edit_page_form', array($aiosp, 'add_meta_tags_textinput'));
-} else {
-	add_action('dbx_post_advanced', array($aiosp, 'add_meta_tags_textinput'));
-	add_action('dbx_page_advanced', array($aiosp, 'add_meta_tags_textinput'));
+if (substr($aiosp->wp_version, 0, 3) < '2.5') {
+        add_action('dbx_post_advanced', array($aiosp, 'add_meta_tags_textinput'));
+        add_action('dbx_page_advanced', array($aiosp, 'add_meta_tags_textinput'));
 }
+
 
 add_action('edit_post', array($aiosp, 'post_meta_tags'));
 add_action('publish_post', array($aiosp, 'post_meta_tags'));
@@ -2095,4 +2093,81 @@ add_action('save_post', array($aiosp, 'post_meta_tags'));
 add_action('edit_page_form', array($aiosp, 'post_meta_tags'));
 
 add_action('admin_menu', array($aiosp, 'admin_menu'));
+
+
+add_action('admin_menu', 'aiosp_meta_box_add');
+
+function aiosp_meta_box_add() {
+	// Check whether the 2.5 function add_meta_box exists, and if it doesn't use 2.3 functions.
+	if ( function_exists('add_meta_box') ) {
+		add_meta_box('aiosp','All in One SEO Pack','aiosp_meta','post');
+		add_meta_box('aiosp','All in One SEO Pack','aiosp_meta','page');
+	} else {
+		add_action('dbx_post_advanced', array($aiosp, 'add_meta_tags_textinput'));
+		add_action('dbx_page_advanced', array($aiosp, 'add_meta_tags_textinput'));
+	}
+}
+
+function aiosp_meta() {
+
+	global $post;
+	
+	$post_id = $post;
+	if (is_object($post_id)){
+		$post_id = $post_id->ID;
+	}
+ 	$keywords = htmlspecialchars(stripcslashes(get_post_meta($post_id, 'keywords', true)));
+    $title = htmlspecialchars(stripcslashes(get_post_meta($post_id, 'title', true)));
+	$description = htmlspecialchars(stripcslashes(get_post_meta($post_id, 'description', true)));
+    $aiosp_meta = htmlspecialchars(stripcslashes(get_post_meta($post_id, 'aiosp_meta', true)));
+    $aiosp_disable = htmlspecialchars(stripcslashes(get_post_meta($post_id, 'aiosp_disable', true)));
+	
+	?>
+		<SCRIPT LANGUAGE="JavaScript">
+		<!-- Begin
+		function countChars(field,cntfield) {
+		cntfield.value = field.value.length;
+		}
+		//  End -->
+		</script>
+		<input value="aiosp_edit" type="hidden" name="aiosp_edit" />
+		
+		<a target="__blank" href="http://semperfiwebdesign.com/portfolio/wordpress/wordpress-plugins/all-in-one-seo-pack/"><?php _e('Click here for Support', 'all_in_one_seo_pack') ?></a>
+		<table style="margin-bottom:40px">
+		<tr>
+		<th style="text-align:left;" colspan="2">
+		</th>
+		</tr>
+		<tr>
+		<th scope="row" style="text-align:right;"><?php _e('Title:', 'all_in_one_seo_pack') ?></th>
+		<td><input value="<?php echo $title ?>" type="text" name="aiosp_title" size="62"/></td>
+		</tr>
+		<tr>
+		<th scope="row" style="text-align:right;"><?php _e('Description:', 'all_in_one_seo_pack') ?></th>
+		<td><textarea name="aiosp_description" rows="1" cols="60"
+		onKeyDown="countChars(document.post.aiosp_description,document.post.length1)"
+		onKeyUp="countChars(document.post.aiosp_description,document.post.length1)"><?php echo $description ?></textarea><br />
+		<input readonly type="text" name="length1" size="3" maxlength="3" value="<?php echo strlen($description);?>" />
+		<?php _e(' characters. Most search engines use a maximum of 160 chars for the description.', 'all_in_one_seo_pack') ?>
+		</td>
+		</tr>
+		<tr>
+		<th scope="row" style="text-align:right;"><?php _e('Keywords (comma separated):', 'all_in_one_seo_pack') ?></th>
+		<td><input value="<?php echo $keywords ?>" type="text" name="aiosp_keywords" size="62"/></td>
+		</tr>
+
+
+		<tr>
+		<th scope="row" style="text-align:right; vertical-align:top;">
+		<?php _e('Disable on this page/post:', 'all_in_one_seo_pack')?>
+		</th>
+		<td>
+		<input type="checkbox" name="aiosp_disable" <?php if ($aiosp_disable) echo "checked=\"1\""; ?>/>
+		</td>
+		</tr>
+
+
+		</table>
+	<?php
+}
 ?>
