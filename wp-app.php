@@ -62,7 +62,7 @@ $always_authenticate = 1;
 function log_app($label,$msg) {
 	global $app_logging;
 	if ($app_logging) {
-		$fp = fopen( 'wp-app.log', 'a+');
+		$fp = fopen( '/home/blowery/logs/wp-app.log', 'a+');
 		$date = gmdate( 'Y-m-d H:i:s' );
 		fwrite($fp, "\n\n$date - $label\n$msg\n");
 		fclose($fp);
@@ -1432,7 +1432,7 @@ EOD;
 			status_header('200');
 			$xml = '<?xml version="1.0" encoding="' . strtolower(get_option('blog_charset')) . '"?>'."\n".$xml;
 			header('Connection: close');
-			header('Content-Length: '. strlen($xml));
+			/*header('Content-Length: '. strlen($xml));*/
 			header('Content-Type: ' . $ctype);
 			header('Content-Disposition: attachment; filename=atom.xml');
 			header('Date: '. date('r'));
