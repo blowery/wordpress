@@ -118,7 +118,7 @@ function get_search_form() {
 	if ( '' != locate_template(array('searchform.php'), true) )
 		return;
 
-	$form = '<form method="get" id="searchform" action="' . get_option('home') . '/" >
+	$form = '<form role="search" method="get" id="searchform" action="' . get_option('home') . '/" >
 	<div><label class="hidden" for="s">' . __('Search for:') . '</label>
 	<input type="text" value="' . attribute_escape(apply_filters('the_search_query', get_search_query())) . '" name="s" id="s" />
 	<input type="submit" id="searchsubmit" value="'.attribute_escape(__('Search')).'" />
@@ -154,14 +154,20 @@ function wp_loginout() {
  * @since 2.7
  * @uses wp_nonce_url() To protect against CSRF
  * @uses site_url() To generate the log in URL
+ * @uses apply_filters() calls 'logout_url' hook on final logout url
  *
  * @param string $redirect Path to redirect to on logout.
  */
 function wp_logout_url($redirect = '') {
-	if ( strlen($redirect) )
-		$redirect = "&redirect_to=$redirect";
+	$args = array( 'action' => 'logout' );
+	if ( !empty($redirect) ) {
+		$args['redirect_to'] = $redirect;
+	}
 
-	return wp_nonce_url( site_url("wp-login.php?action=logout$redirect", 'login'), 'log-out' );
+	$logout_url = add_query_arg($args, site_url('wp-login.php', 'login'));
+	$logout_url = wp_nonce_url( $logout_url, 'log-out' );
+
+	return apply_filters('logout_url', $logout_url, $redirect);
 }
 
 /**
@@ -171,14 +177,18 @@ function wp_logout_url($redirect = '') {
  *
  * @since 2.7
  * @uses site_url() To generate the log in URL
+ * @uses apply_filters() calls 'login_url' hook on final login url
  *
  * @param string $redirect Path to redirect to on login.
  */
 function wp_login_url($redirect = '') {
-	if ( strlen($redirect) )
-		$redirect = "?redirect_to=$redirect";
+	$login_url = site_url('wp-login.php', 'login');
 
-	return site_url("wp-login.php$redirect", 'login');
+	if ( !empty($redirect) ) {
+		$login_url = add_query_arg('redirect_to', $redirect, $login_url);
+	}
+
+	return apply_filters('login_url', $login_url, $redirect);
 }
 
 /**
@@ -457,7 +467,7 @@ function wp_title($sep = '&raquo;', $display = true, $seplocation = '') {
 		$term = $term->name;
 		$title = "$tax$t_sep$term";
 	}
-	
+
 	//If it's a search
 	if ( is_search() ) {
 		$title = sprintf(__('Search Results %s %s'), $t_sep, strip_tags($search));
@@ -984,8 +994,10 @@ function get_calendar($initial = true) {
 			ORDER	BY post_date ASC
 			LIMIT 1");
 
+	/* translators: Calendar caption: 1: month name, 2: 4-digit year */
+	$calendar_caption = _x('%1$s %2$s', 'calendar caption');
 	echo '<table id="wp-calendar" summary="' . __('Calendar') . '">
-	<caption>' . sprintf(_c('%1$s %2$s|Used as a calendar caption'), $wp_locale->get_month($thismonth), date('Y', $unixmonth)) . '</caption>
+	<caption>' . sprintf($calendar_caption, $wp_locale->get_month($thismonth), date('Y', $unixmonth)) . '</caption>
 	<thead>
 	<tr>';
 
@@ -1412,7 +1424,8 @@ function automatic_feed_links( $add = true ) {
  */
 function feed_links( $args ) {
 	$defaults = array(
-		'seperator' => _c('&raquo;|Seperator character for feed titles in theme head'),
+		/* translators: Separator between blog name and feed type in feed links */
+		'separator'   => _x('&raquo;', 'feed link'),
 		'feedtitle' => __('%s Feed'),
 		'comstitle' => __('%s Comments Feed'),
 	);
@@ -1432,11 +1445,17 @@ function feed_links( $args ) {
  */
 function feed_links_extra( $args ) {
 	$defaults = array(
-		'seperator'   => _c('&raquo;|Seperator character for feed titles in theme head'),
+		/* translators: Separator between blog name and feed type in feed links */
+		'separator'   => _x('&raquo;', 'feed link'),
+		/* translators: 1: blog name, 2: separator(raquo), 3: post title */
 		'singletitle' => __('%1$s %2$s %3$s Comments Feed'),
+		/* translators: 1: blog name, 2: separator(raquo), 3: category name */
 		'cattitle'    => __('%1$s %2$s %3$s Category Feed'),
+		/* translators: 1: blog name, 2: separator(raquo), 3: tag name */
 		'tagtitle'    => __('%1$s %2$s %3$s Tag Feed'),
+		/* translators: 1: blog name, 2: separator(raquo), 3: author name  */
 		'authortitle' => __('%1$s %2$s Posts by %3$s Feed'),
+		/* translators: 1: blog name, 2: separator(raquo), 3: search phrase */
 		'searchtitle' => __('%1$s %2$s Search Results for &quot;%3$s&quot; Feed'),
 	);
 
@@ -1444,29 +1463,34 @@ function feed_links_extra( $args ) {
 
 	if ( is_single() || is_page() ) {
 		$post = &get_post( $id = 0 );
-		if ( comments_open() || pings_open() || $post->comment_count > 0 )
-			echo '<link rel="alternate" type="' . feed_content_type() . '" title="' . attribute_escape(sprintf( $args['singletitle'], get_bloginfo('name'), $args['seperator'], wp_specialchars( get_the_title() ) )) . '" href="' . get_post_comments_feed_link( $post->ID ) . "\" />\n";
-	}
 
-	elseif ( is_category() ) {
+		if ( comments_open() || pings_open() || $post->comment_count > 0 ) {
+			$title = attribute_escape(sprintf( $args['singletitle'], get_bloginfo('name'), $args['separator'], wp_specialchars( get_the_title() ) ));
+			$href = get_post_comments_feed_link( $post->ID );
+		}
+	} elseif ( is_category() ) {
 		$cat_id = intval( get_query_var('cat') );
-		echo '<link rel="alternate" type="' . feed_content_type() . '" title="' . attribute_escape(sprintf( $args['cattitle'], get_bloginfo('name'), $args['seperator'], get_cat_name( $cat_id ) )) . '" href="' . get_category_feed_link( $cat_id ) . "\" />\n";
-	}
 
-	elseif ( is_tag() ) {
+		$title = attribute_escape(sprintf( $args['cattitle'], get_bloginfo('name'), $args['separator'], get_cat_name( $cat_id ) ));
+		$href = get_category_feed_link( $cat_id );
+	} elseif ( is_tag() ) {
 		$tag_id = intval( get_query_var('tag_id') );
 		$tag = get_tag( $tag_id );
-		echo '<link rel="alternate" type="' . feed_content_type() . '" title="' . attribute_escape(sprintf( $args['tagtitle'], get_bloginfo('name'), $args['seperator'], $tag->name )) . '" href="' . get_tag_feed_link( $tag_id ) . "\" />\n";
-	}
 
-	elseif ( is_author() ) {
+		$title = attribute_escape(sprintf( $args['tagtitle'], get_bloginfo('name'), $args['separator'], $tag->name ));
+		$href = get_tag_feed_link( $tag_id );
+	} elseif ( is_author() ) {
 		$author_id = intval( get_query_var('author') );
-		echo '<link rel="alternate" type="' . feed_content_type() . '" title="' . attribute_escape(sprintf( $args['authortitle'], get_bloginfo('name'), $args['seperator'], get_author_name( $author_id ) )) . '" href="' . get_author_feed_link( $author_id ) . "\" />\n";
+
+		$title = attribute_escape(sprintf( $args['authortitle'], get_bloginfo('name'), $args['separator'], get_author_name( $author_id ) ));
+		$href = get_author_feed_link( $author_id );
+	} elseif ( is_search() ) {
+		$title = attribute_escape(sprintf( $args['searchtitle'], get_bloginfo('name'), $args['separator'], get_search_query() ));
+		$href = get_search_feed_link();
 	}
 
-	elseif ( is_search() ) {
-		echo '<link rel="alternate" type="' . feed_content_type() . '" title="' . attribute_escape(sprintf( $args['searchtitle'], get_bloginfo('name'), $args['seperator'], get_search_query() )) . '" href="' . get_search_feed_link() . "\" />\n";
-	}
+	if ( isset($title) && isset($href) )
+		echo '<link rel="alternate" type="' . feed_content_type() . '" title="' . $title . '" href="' . $href . '" />' . "\n";
 }
 
 /**

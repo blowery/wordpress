@@ -368,8 +368,8 @@ function link_cat_row( $category, $name_override = false ) {
  * Outputs the html checked attribute.
  *
  * Compares the first two arguments and if identical marks as checked
- * 
- * @since unknown
+ *
+ * @since 2.8
  *
  * @param any $checked One of the values to compare
  * @param any $current (true) The other value to compare if not just true
@@ -381,12 +381,12 @@ function checked( $checked, $current = true, $echo = true) {
 
 /**
  * Outputs the html selected attribute.
- * 
+ *
  * Compares the first two arguments and if identical marks as selected
  *
- * @since unknown
+ * @since 2.8
  *
- * @param any $checked One of the values to compare
+ * @param any selected One of the values to compare
  * @param any $current (true) The other value to compare if not just true
  * @param bool $echo Whether or not to echo or just return the string
  */
@@ -396,13 +396,13 @@ function selected( $selected, $current = true, $echo = true) {
 
 /**
  * Private helper function for checked and selected.
- * 
+ *
  * Compares the first two arguments and if identical marks as $type
  *
- * @since unknown
+ * @since 2.8
  * @access private
  *
- * @param any $checked One of the values to compare
+ * @param any $helper One of the values to compare
  * @param any $current (true) The other value to compare if not just true
  * @param bool $echo Whether or not to echo or just return the string
  * @param string $type The type of checked|selected we are doing.
@@ -412,10 +412,10 @@ function __checked_selected_helper( $helper, $current, $echo, $type) {
 		$result = " $type='$type'";
 	else
 		$result = '';
-	
+
 	if ($echo)
 		echo $result;
-	
+
 	return $result;
 }
 
@@ -668,6 +668,9 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					$out .= '<div class="name">' . $qe_data->name . '</div>';
 					$out .= '<div class="slug">' . $qe_data->slug . '</div></div></td>';
 					break;
+				case 'description':
+					$out .= "<td $attributes>$tag->description</td>";
+					break;
 				case 'slug':
 					$out .= "<td $attributes>$tag->slug</td>";
 					break;
@@ -763,7 +766,7 @@ function wp_manage_media_columns() {
 	/* translators: column name */
 	$posts_columns['media'] = _x('File', 'column name');
 	$posts_columns['author'] = __('Author');
-	//$posts_columns['tags'] = _c('Tags|media column header');
+	//$posts_columns['tags'] = _x('Tags', 'column name');
 	/* translators: column name */
 	$posts_columns['parent'] = _x('Attached to', 'column name');
 	$posts_columns['comments'] = '<div class="vers"><img alt="Comments" src="images/comment-grey-bubble.png" /></div>';
@@ -840,7 +843,7 @@ function get_column_headers($page) {
 				'name' => __('Name'),
 				'url' => __('URL'),
 				'categories' => __('Categories'),
-				'rel' => __('rel'),
+				'rel' => __('Relationship'),
 				'visible' => __('Visible')
 			);
 
@@ -872,6 +875,7 @@ function get_column_headers($page) {
 			$_wp_column_headers[$page] = array(
 				'cb' => '<input type="checkbox" />',
 				'name' => __('Name'),
+				'description' => __('Description'),
 				'slug' => __('Slug'),
 				'posts' => __('Posts')
 			);
@@ -1496,7 +1500,7 @@ function _post_row($a_post, $pending_comments, $mode) {
 			$pending_phrase = sprintf( __('%s pending'), number_format( $pending_comments ) );
 			if ( $pending_comments )
 				echo '<strong>';
-				comments_number("<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('0') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('1') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('%') . '</span></a>');
+				comments_number("<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link */ _x('0', 'comment count') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link */ _x('1', 'comment count') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link: % will be substituted by comment count */ _x('%', 'comment count') . '</span></a>');
 				if ( $pending_comments )
 				echo '</strong>';
 		?>
@@ -1560,6 +1564,23 @@ function display_page_row( $page, $level = 0 ) {
 	$post = $page;
 	setup_postdata($page);
 
+	if ( 0 == $level && (int)$page->post_parent > 0 ) {
+		//sent level 0 by accident, by default, or because we don't know the actual level
+		$find_main_page = (int)$page->post_parent;
+		while ( $find_main_page > 0 ) {
+			$parent = get_page($find_main_page);
+			
+			if ( is_null($parent) )
+				break;
+			
+			$level++;
+			$find_main_page = (int)$parent->post_parent;
+			
+			if ( !isset($parent_name) )
+				$parent_name = $parent->post_title;
+		}
+	}
+
 	$page->post_title = wp_specialchars( $page->post_title );
 	$pad = str_repeat( '&#8212; ', $level );
 	$id = (int) $page->ID;
@@ -1622,7 +1643,7 @@ foreach ($posts_columns as $column_name=>$column_display_name) {
 		$attributes = 'class="post-title page-title column-title"' . $style;
 		$edit_link = get_edit_post_link( $page->ID );
 		?>
-		<td <?php echo $attributes ?>><strong><?php if ( current_user_can( 'edit_post', $page->ID ) ) { ?><a class="row-title" href="<?php echo $edit_link; ?>" title="<?php echo attribute_escape(sprintf(__('Edit "%s"'), $title)); ?>"><?php echo $pad; echo $title ?></a><?php } else { echo $pad; echo $title; }; _post_states($page); ?></strong>
+		<td <?php echo $attributes ?>><strong><?php if ( current_user_can( 'edit_post', $page->ID ) ) { ?><a class="row-title" href="<?php echo $edit_link; ?>" title="<?php echo attribute_escape(sprintf(__('Edit "%s"'), $title)); ?>"><?php echo $pad; echo $title ?></a><?php } else { echo $pad; echo $title; }; _post_states($page); echo isset($parent_name) ? ' | ' . __('Parent Page: ') . wp_specialchars($parent_name) : ''; ?></strong>
 		<?php
 		$actions = array();
 		if ( current_user_can('edit_page', $page->ID) ) {
@@ -1660,7 +1681,7 @@ foreach ($posts_columns as $column_name=>$column_display_name) {
 		$pending_phrase = sprintf( __('%s pending'), number_format( $left ) );
 		if ( $left )
 			echo '<strong>';
-		comments_number("<a href='edit-comments.php?p=$id' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('0') . '</span></a>', "<a href='edit-comments.php?p=$id' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('1') . '</span></a>', "<a href='edit-comments.php?p=$id' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('%') . '</span></a>');
+		comments_number("<a href='edit-comments.php?p=$id' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link */ _x('0', 'comment count') . '</span></a>', "<a href='edit-comments.php?p=$id' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link */ _x('1', 'comment count') . '</span></a>', "<a href='edit-comments.php?p=$id' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link: % will be substituted by comment count */ _x('%', 'comment count') . '</span></a>');
 		if ( $left )
 			echo '</strong>';
 		?>
@@ -1892,7 +1913,7 @@ function user_row( $user_object, $style = '', $role = '' ) {
 	} else {
 		$edit = '<strong>' . $user_object->user_login . '</strong>';
 	}
-	$role_name = isset($wp_roles->role_names[$role]) ? translate_with_context($wp_roles->role_names[$role]) : __('None');
+	$role_name = isset($wp_roles->role_names[$role]) ? translate_user_role($wp_roles->role_names[$role] ) : __('None');
 	$r = "<tr id='user-$user_object->ID'$style>";
 	$columns = get_column_headers('users');
 	$hidden = get_hidden_columns('users');
@@ -2044,6 +2065,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 	$comment = get_comment( $comment_id );
 	$post = get_post($comment->comment_post_ID);
 	$the_comment_status = wp_get_comment_status($comment->comment_ID);
+	$user_can = current_user_can('edit_post', $post->ID);
 
 	$author_url = get_comment_author_url();
 	if ( 'http://' == $author_url )
@@ -2081,7 +2103,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 			case 'cb':
 				if ( !$checkbox ) break;
 				echo '<th scope="row" class="check-column">';
-				if ( current_user_can('edit_post', $post->ID) ) echo "<input type='checkbox' name='delete_comments[]' value='$comment->comment_ID' />";
+				if ( $user_can ) echo "<input type='checkbox' name='delete_comments[]' value='$comment->comment_ID' />";
 				echo '</th>';
 				break;
 			case 'comment':
@@ -2092,15 +2114,15 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 				comment_text(); ?>
 				<div id="inline-<?php echo $comment->comment_ID; ?>" class="hidden">
 				<textarea class="comment" rows="3" cols="10"><?php echo $comment->comment_content; ?></textarea>
-				<div class="author-email"><?php echo attribute_escape( $comment->comment_author_email ); ?></div>
-				<div class="author"><?php echo attribute_escape( $comment->comment_author ); ?></div>
+				<div class="author-email"><?php if ( $user_can ) echo attribute_escape( $comment->comment_author_email ); ?></div>
+				<div class="author"><?php if ( $user_can ) echo attribute_escape( $comment->comment_author ); ?></div>
 				<div class="author-url"><?php echo attribute_escape( $comment->comment_author_url ); ?></div>
 				<div class="comment_status"><?php echo $comment->comment_approved; ?></div>
 				</div>
 				<?php
 				$actions = array();
 
-				if ( current_user_can('edit_post', $post->ID) ) {
+				if ( $user_can ) {
 					$actions['approve'] = "<a href='$approve_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=approved vim-a' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
 					$actions['unapprove'] = "<a href='$unapprove_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=unapproved vim-u' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
 					if ( $comment_status ) { // not looking at all comments
@@ -2143,7 +2165,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 				echo "<td $attributes><strong>"; comment_author(); echo '</strong><br />';
 				if ( !empty($author_url) )
 					echo "<a title='$author_url' href='$author_url'>$author_url_display</a><br />";
-				if ( current_user_can( 'edit_post', $post->ID ) ) {
+				if ( $user_can ) {
 					if ( !empty($comment->comment_author_email) ) {
 						comment_author_email_link();
 						echo '<br />';
@@ -2170,7 +2192,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 						$_comment_pending_count_temp = (array) get_pending_comments_num( array( $post->ID ) );
 						$pending_comments = $_comment_pending_count[$post->ID] = $_comment_pending_count_temp[$post->ID];
 					}
-					if ( current_user_can( 'edit_post', $post->ID ) ) {
+					if ( $user_can ) {
 						$post_link = "<a href='" . get_edit_post_link($post->ID) . "'>";
 						$post_link .= get_the_title($post->ID) . '</a>';
 					} else {
@@ -2183,13 +2205,19 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 					$pending_phrase = sprintf( __('%s pending'), number_format( $pending_comments ) );
 					if ( $pending_comments )
 						echo '<strong>';
-					comments_number("<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('0') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('1') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . __('%') . '</span></a>');
+					comments_number("<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link */ _x('0', 'comment count') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link */ _x('1', 'comment count') . '</span></a>', "<a href='edit-comments.php?p=$post->ID' title='$pending_phrase' class='post-com-count'><span class='comment-count'>" . /* translators: comment count link: % will be substituted by comment count */ _x('%', 'comment count') . '</span></a>');
 					if ( $pending_comments )
 						echo '</strong>';
 					echo '</span> ';
 					echo "<a href='" . get_permalink( $post->ID ) . "'>#</a>";
 					echo '</div></td>';
 				}
+				break;
+			default:
+				echo "<td $attributes>\n";
+				do_action( 'manage_comments_custom_column', $column_name, $comment->comment_ID );
+				echo "</td>\n";
+				break;
 		}
 	}
 	echo "</tr>\n";
@@ -2419,7 +2447,7 @@ function meta_form() {
 		FROM $wpdb->postmeta
 		WHERE meta_key NOT LIKE '\_%'
 		GROUP BY meta_key
-		ORDER BY meta_id DESC
+		ORDER BY meta_key
 		LIMIT $limit" );
 	if ( $keys )
 		natcasesort($keys);
@@ -2532,8 +2560,6 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 		echo '<input type="hidden" id="'. $cur_timeunit . '" name="'. $cur_timeunit . '" value="' . $$cur_timeunit . '" />' . "\n";
 	}
 ?>
-
-<input type="hidden" id="ss" name="ss" value="<?php echo $ss ?>" size="2" maxlength="2" />
 
 <p>
 <a href="#edit_timestamp" class="save-timestamp hide-if-no-js button"><?php _e('OK'); ?></a>
@@ -2679,7 +2705,7 @@ function wp_dropdown_roles( $selected = false ) {
 	$editable_roles = get_editable_roles();
 
 	foreach( $editable_roles as $role => $details ) {
-		$name = translate_with_context($details['name']);
+		$name = translate_user_role($details['name'] );
 		if ( $selected == $role ) // Make default first in list
 			$p = "\n\t<option selected='selected' value='$role'>$name</option>";
 		else
@@ -2751,8 +2777,8 @@ function wp_import_upload_form( $action ) {
 	$upload_dir = wp_upload_dir();
 	if ( ! empty( $upload_dir['error'] ) ) :
 		?><div class="error"><p><?php _e('Before you can upload your import file, you will need to fix the following error:'); ?></p>
-		<p><strong><?php echo $upload_dir['error']; ?></strong></p></div><?php 
-	else : 
+		<p><strong><?php echo $upload_dir['error']; ?></strong></p></div><?php
+	else :
 ?>
 <form enctype="multipart/form-data" id="import-upload-form" method="post" action="<?php echo attribute_escape($action) ?>">
 <p>
@@ -3122,7 +3148,7 @@ function find_posts_div($found_action = '') {
 				<input type="hidden" name="affected" id="affected" value="" />
 				<?php wp_nonce_field( 'find-posts', '_ajax_nonce', false ); ?>
 				<label class="hidden" for="find-posts-input"><?php _e( 'Search' ); ?></label>
-				<input type="text" id="find-posts-input" class="search-input" name="ps" value="" />
+				<input type="text" id="find-posts-input" name="ps" value="" />
 				<input type="button" onclick="findPosts.send();" value="<?php _e( 'Search' ); ?>" class="button" /><br />
 
 				<input type="radio" name="find-posts-what" id="find-posts-posts" checked="checked" value="posts" />
@@ -3133,8 +3159,8 @@ function find_posts_div($found_action = '') {
 			<div id="find-posts-response"></div>
 		</div>
 		<div class="find-box-buttons">
-			<input type="button" class="button" onclick="findPosts.close();" value="<?php _e('Close'); ?>" />
-			<input id="find-posts-submit" type="submit" class="button" value="<?php _e('Select'); ?>" />
+			<input type="button" class="button alignleft" onclick="findPosts.close();" value="<?php _e('Close'); ?>" />
+			<input id="find-posts-submit" type="submit" class="button-primary alignright" value="<?php _e('Select'); ?>" />
 		</div>
 	</div>
 <?php
@@ -3243,13 +3269,14 @@ function iframe_header( $title = '', $limit_styles = false) {
 <title><?php bloginfo('name') ?> &rsaquo; <?php echo $title ?> &#8212; <?php _e('WordPress'); ?></title>
 <?php
 wp_enqueue_style( 'global' );
-wp_enqueue_style( 'colors' );
 if ( ! $limit_styles )
 	wp_enqueue_style( 'wp-admin' );
+wp_enqueue_style( 'colors' );
 ?>
 <script type="text/javascript">
 //<![CDATA[
-function addLoadEvent(func) {if ( typeof wpOnload!='function'){wpOnload=func;}else{ var oldonload=wpOnload;wpOnload=function(){oldonload();func();}}}
+addLoadEvent = function(func){if(typeof jQuery!="undefined")jQuery(document).ready(func);else if(typeof wpOnload!='function'){wpOnload=func;}else{var oldonload=wpOnload;wpOnload=function(){oldonload();func();}}};
+function tb_close(){var win=window.dialogArguments||opener||parent||top;win.tb_remove();}
 //]]>
 </script>
 <?php
@@ -3270,6 +3297,7 @@ do_action('admin_head');
  */
 function iframe_footer() {
 	echo '
+	<script type="text/javascript">if(typeof wpOnload=="function")wpOnload();</script>
 	</body>
 </html>';
 }
@@ -3323,30 +3351,6 @@ function screen_meta($screen) {
 	$show_screen = false;
 	if ( !empty($wp_meta_boxes[$screen]) || !empty($column_screens) )
 		$show_screen = true;
-?>
-<div id="screen-meta">
-<?php
-	if ( $show_screen ) :
-?>
-<div id="screen-options-wrap" class="hidden">
-	<h5><?php _e('Show on screen') ?></h5>
-	<form id="adv-settings" action="" method="get">
-	<div class="metabox-prefs">
-<?php
-	if ( !meta_box_prefs($screen) && isset($column_screens) ) {
-		manage_columns_prefs($screen);
-		wp_nonce_field( 'hiddencolumns', 'hiddencolumnsnonce', false );
-	}
-?>
-	<br class="clear" />
-	</div></form>
-<?php echo screen_layout($screen); ?>
-</div>
-
-<?php
-	endif;
-
-	global $title;
 
 	if ( !isset($_wp_contextual_help) )
 		$_wp_contextual_help = array();
@@ -3380,9 +3384,42 @@ function screen_meta($screen) {
 			break;
 		case 'options-general':
 			if ( !isset($_wp_contextual_help['options-general']) )
-				$_wp_contextual_help['options-general'] =  __('<a href="http://codex.wordpress.org/Settings_General_SubPanel" target="_blank">General Settings</a>');
+				$_wp_contextual_help['options-general'] = __('<a href="http://codex.wordpress.org/Settings_General_SubPanel" target="_blank">General Settings</a>');
+			break;
+		case 'theme-install':
+		case 'plugin-install':
+			if ( ( !isset($_GET['tab']) || 'dashboard' == $_GET['tab'] ) && !isset($_wp_contextual_help[$screen]) ) {
+				$help = plugins_search_help();
+				$_wp_contextual_help[$screen] = $help;
+			}
 			break;
 	}
+?>
+<div id="screen-meta">
+<?php
+	if ( $show_screen ) :
+?>
+<div id="screen-options-wrap" class="hidden">
+	<form id="adv-settings" action="" method="post">
+	<h5><?php _e('Show on screen') ?></h5>
+	<div class="metabox-prefs">
+<?php
+	if ( !meta_box_prefs($screen) && isset($column_screens) ) {
+		manage_columns_prefs($screen);
+	}
+?>
+	<br class="clear" />
+	</div>
+<?php echo screen_layout($screen); ?>
+<?php echo screen_options($screen); ?>
+<div><?php wp_nonce_field( 'screen-options-nonce', 'screenoptionnonce', false ); ?></div>
+</form>
+</div>
+
+<?php
+	endif;
+
+	global $title;
 
 	$_wp_contextual_help = apply_filters('contextual_help_list', $_wp_contextual_help, $screen);
 	?>
@@ -3448,23 +3485,41 @@ function drag_drop_help() {
 ';
 }
 
+function plugins_search_help() {
+	return '
+	<p><strong>' . __('Search help') . '</strong></p>' .
+	'<p>' . __('You may search based on 3 criteria:') . '<br />' .
+	__('<strong>Term:</strong> Searches theme names and descriptions for the specified term.') . '<br />' .
+	__('<strong>Tag:</strong> Searches for themes tagged as such.') . '<br />' .
+	__('<strong>Author:</strong> Searches for themes created by the Author, or which the Author contributed to.') . '</p>
+';
+}
 
 function screen_layout($screen) {
 	global $screen_layout_columns;
 
-	if ( 'dashboard' == $screen ) {
-		$screen_layout_columns = get_user_option('screen_layout_dashboard');
-		$num = 4;
-/* add to the write pages?
-	} elseif ( in_array( $screen, array('post', 'page', 'link') ) ) {
-		$screen_layout_columns = get_user_option('screen_layout_write');
-		$num = 2;
-*/
-	} else {
-		$screen_layout_columns = 0;
-		return '';
+	switch ( $screen ) {
+		case 'dashboard':
+			$screen_layout_columns = get_user_option('screen_layout_dashboard');
+			$num = 4;
+			break;
+		case 'post':
+			$screen_layout_columns = get_user_option('screen_layout_post');
+			$num = 2;
+			break;
+		case 'page':
+			$screen_layout_columns = get_user_option('screen_layout_page');
+			$num = 2;
+			break;
+		case 'link':
+			$screen_layout_columns = get_user_option('screen_layout_link');
+			$num = 2;
+			break;
+		default:
+			$screen_layout_columns = 0;
+			return '';
 	}
-	
+
 	if ( ! $screen_layout_columns )
 			$screen_layout_columns = 2;
 
@@ -3474,6 +3529,45 @@ function screen_layout($screen) {
 		$return .= "<label><input type='radio' name='screen_columns' value='$i'" . ( ($screen_layout_columns == $i) ? " checked='checked'" : "" ) . " /> $i</label>\n";
 		++$i;
 	}
+	$return .= "</div>\n";
+	return $return;
+}
+
+function screen_options($screen) {
+	switch ( $screen ) {
+		case 'edit':
+			$per_page_label = __('Posts per page:');
+			break;
+		case 'edit-pages':
+			$per_page_label = __('Pages per page:');
+			break;
+		case 'edit-comments':
+			$per_page_label = __('Comments per page:');
+			break;
+		case 'upload':
+			$per_page_label = __('Media items per page:');
+			break;
+		case 'categories':
+			$per_page_label = __('Categories per page:');
+			break;
+		case 'edit-tags':
+			$per_page_label = __('Tags per page:');
+			break;
+		default:
+			return '';
+	}
+
+	$option = str_replace('-', '_', "${screen}_per_page");
+	$per_page = get_user_option($option);
+	if ( empty($per_page) )
+		$per_page = 20;
+
+	$return = '<h5>' . __('Options') . "</h5>\n";
+	$return .= "<div class='screen-options'>\n";
+	if ( !empty($per_page_label) )
+		$return .= "<label for='$option'>$per_page_label</label> <input type='text' class='screen-per-page' name='wp_screen_options[value]' id='$option' maxlength='3' value='$per_page' />\n";
+		$return .= "<input type='submit' class='button' value='" . __('Apply') . "' />";
+		$return .= "<input type='hidden' name='wp_screen_options[option]' value='$option' />";
 	$return .= "</div>\n";
 	return $return;
 }

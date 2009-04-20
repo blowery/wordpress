@@ -30,7 +30,7 @@ function wp_version_check() {
 	if ( ! is_object($current) )
 		$current = new stdClass;
 
-	$locale = get_locale();
+	$locale = apply_filters( 'core_version_check_locale', get_locale() );
 
 	// Update last_checked for current to prevent multiple blocking requests if request hangs
 	$current->last_checked = time();
@@ -243,6 +243,7 @@ function _maybe_update_core() {
 
 	if ( isset( $current->last_checked ) &&
 		43200 > ( time() - $current->last_checked ) &&
+		isset( $current->version_checked ) &&
 		$current->version_checked == $wp_version )
 		return;
 

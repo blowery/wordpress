@@ -21,7 +21,7 @@ $form_extra = "' />\n<input type='hidden' name='comment_ID' value='" . $comment-
 <?php screen_icon(); ?>
 <h2><?php _e('Edit Comment'); ?></h2>
 
-<div id="poststuff" class="metabox-holder">
+<div id="poststuff" class="metabox-holder has-right-sidebar">
 <input type="hidden" name="user_ID" value="<?php echo (int) $user_ID ?>" />
 <input type="hidden" name="action" value='<?php echo $form_action . $form_extra ?>' />
 <?php
@@ -69,7 +69,7 @@ $date = date_i18n( $datef, strtotime( $comment->comment_date ) );
 
 <div id="major-publishing-actions">
 <div id="delete-action">
-<a class='submitdelete deletion' href='<?php echo wp_nonce_url("comment.php?action=deletecomment&amp;c=$comment->comment_ID&amp;_wp_original_http_referer=" . wp_get_referer(), 'delete-comment_' . $comment->comment_ID) . "' onclick=\"if ( confirm('" . js_escape(__("You are about to delete this comment. \n  'Cancel' to stop, 'OK' to delete.")) . "') ) { return true;}return false;\">" . __('Delete'); ?></a>
+<?php echo "<a class='submitdelete deletion' href='" . wp_nonce_url("comment.php?action=deletecomment&amp;c=$comment->comment_ID&amp;_wp_original_http_referer=" . wp_get_referer(), 'delete-comment_' . $comment->comment_ID) . "' onclick=\"if ( confirm('" . js_escape(__("You are about to delete this comment. \n  'Cancel' to stop, 'OK' to delete.")) . "') ){return true;}return false;\">" . __('Delete') . "</a>\n"; ?>
 </div>
 <div id="publishing-action">
 <input type="submit" name="save" value="<?php _e('Update Comment'); ?>" tabindex="4" class="button-primary" />
@@ -81,13 +81,12 @@ $date = date_i18n( $datef, strtotime( $comment->comment_date ) );
 </div>
 </div>
 
-<div id="post-body" class="has-sidebar">
-<div id="post-body-content" class="has-sidebar-content">
-
+<div id="post-body">
+<div id="post-body-content">
 <div id="namediv" class="stuffbox">
 <h3><label for="name"><?php _e( 'Author' ) ?></label></h3>
 <div class="inside">
-<table class="form-table">
+<table class="form-table editcomment">
 <tbody>
 <tr valign="top">
 	<td class="first"><?php _e( 'Name:' ); ?></td>
@@ -114,7 +113,7 @@ $date = date_i18n( $datef, strtotime( $comment->comment_date ) );
 		} else {
 			_e( 'URL:' );
 		} ?></td>
-	<td><input type="text" id="newcomment_author_url" name="newcomment_author_url" size="30" value="<?php echo $url; ?>" tabindex="3" /></td>
+	<td><input type="text" id="newcomment_author_url" name="newcomment_author_url" size="30" class="code" value="<?php echo $url; ?>" tabindex="3" /></td>
 </tr>
 </tbody>
 </table>

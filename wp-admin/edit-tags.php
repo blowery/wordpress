@@ -52,7 +52,14 @@ case 'delete':
 
 	wp_delete_term( $tag_ID, $taxonomy);
 
-	wp_redirect('edit-tags.php?message=2');
+	$location = 'edit-tags.php';
+	if ( $referer = wp_get_referer() ) {
+		if ( false !== strpos($referer, 'edit-tags.php') )
+			$location = $referer;
+	}
+
+	$location = add_query_arg('message', 2, $location);
+	wp_redirect($location);
 	exit;
 
 break;
@@ -152,7 +159,7 @@ endif; ?>
 <form class="search-form" action="" method="get">
 <p class="search-box">
 	<label class="hidden" for="tag-search-input"><?php _e( 'Search Tags' ); ?>:</label>
-	<input type="text" class="search-input" id="tag-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="text" id="tag-search-input" name="s" value="<?php _admin_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Tags' ); ?>" class="button" />
 </p>
 </form>
@@ -170,14 +177,18 @@ $pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
 if ( empty($pagenum) )
 	$pagenum = 1;
 
-$tagsperpage = apply_filters("tagsperpage",20);
+$tags_per_page = get_user_option('edit_tags_per_page');
+if ( empty($tags_per_page) )
+	$tags_per_page = 20;
+$tags_per_page = apply_filters('edit_tags_per_page', $tags_per_page);
+$tags_per_page = apply_filters('tagsperpage', $tags_per_page); // Old filter
 
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
 	'prev_text' => __('&laquo;'),
 	'next_text' => __('&raquo;'),
-	'total' => ceil(wp_count_terms($taxonomy) / $tagsperpage),
+	'total' => ceil(wp_count_terms($taxonomy) / $tags_per_page),
 	'current' => $pagenum
 ));
 
@@ -217,7 +228,7 @@ if ( $page_links )
 
 $searchterms = isset( $_GET['s'] ) ? trim( $_GET['s'] ) : '';
 
-$count = tag_rows( $pagenum, $tagsperpage, $searchterms, $taxonomy );
+$count = tag_rows( $pagenum, $tags_per_page, $searchterms, $taxonomy );
 ?>
 	</tbody>
 </table>
@@ -271,13 +282,19 @@ else
 <div class="form-field form-required">
 	<label for="name"><?php _e('Tag name') ?></label>
 	<input name="name" id="name" type="text" value="" size="40" aria-required="true" />
-    <p><?php _e('The name is how the tag appears on your site.'); ?></p>
+	<p><?php _e('The name is how the tag appears on your site.'); ?></p>
 </div>
 
 <div class="form-field">
 	<label for="slug"><?php _e('Tag slug') ?></label>
 	<input name="slug" id="slug" type="text" value="" size="40" />
-    <p><?php _e('The &#8220;slug&#8221; is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens.'); ?></p>
+	<p><?php _e('The &#8220;slug&#8221; is the URL-friendly version of the name. It is usually all lowercase and contains only letters, numbers, and hyphens.'); ?></p>
+</div>
+
+<div class="form-field">
+	<label for="description"><?php _e('Description') ?></label>
+	<textarea name="description" id="description" rows="5" cols="40"></textarea>
+    <p><?php _e('The description is not prominent by default, however some themes may show it.'); ?></p>
 </div>
 
 <p class="submit"><input type="submit" class="button" name="submit" value="<?php _e('Add Tag'); ?>" /></p>

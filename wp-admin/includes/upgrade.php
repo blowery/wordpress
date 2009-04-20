@@ -94,15 +94,17 @@ function wp_install_defaults($user_id) {
 
 	// Default category
 	$cat_name = __('Uncategorized');
-	$cat_slug = sanitize_title(_c('Uncategorized|Default category slug'));
-	
+	/* translators: Default category slug */
+	$cat_slug = sanitize_title(_x('Uncategorized', 'Default category slug'));
+
 	$wpdb->insert( $wpdb->terms, array('name' => $cat_name, 'slug' => $cat_slug, 'term_group' => 0) );
 	$wpdb->insert( $wpdb->term_taxonomy, array('term_id' => '1', 'taxonomy' => 'category', 'description' => '', 'parent' => 0, 'count' => 1));
 
 	// Default link category
 	$cat_name = __('Blogroll');
-	$cat_slug = sanitize_title(_c('Blogroll|Default link category slug'));
-	
+	/* translators: Default link category slug */
+	$cat_slug = sanitize_title(_x('Blogroll', 'Default link category slug'));
+
 	$wpdb->insert( $wpdb->terms, array('name' => $cat_name, 'slug' => $cat_slug, 'term_group' => 0) );
 	$wpdb->insert( $wpdb->term_taxonomy, array('term_id' => '2', 'taxonomy' => 'link_category', 'description' => '', 'parent' => 0, 'count' => 7));
 
@@ -110,47 +112,40 @@ function wp_install_defaults($user_id) {
 	$default_links = array();
 	$default_links[] = array(	'link_url' => 'http://codex.wordpress.org/',
 								'link_name' => 'Documentation',
-								'link_category' => 0,
 								'link_rss' => '',
 								'link_notes' => '');
 
 	$default_links[] = array(	'link_url' => 'http://wordpress.org/development/',
-								'link_name' => 'Development Blog', 
-								'link_category' => 0,
+								'link_name' => 'Development Blog',
 								'link_rss' => 'http://wordpress.org/development/feed/',
 								'link_notes' => '');
 
 	$default_links[] = array(	'link_url' => 'http://wordpress.org/extend/ideas/',
 								'link_name' => 'Suggest Ideas',
-								'link_category' => 0,
 								'link_rss' => '',
 								'link_notes' =>'');
 
 	$default_links[] = array(	'link_url' => 'http://wordpress.org/support/',
 								'link_name' => 'Support Forum',
-								'link_category' => 0,
 								'link_rss' => '',
 								'link_notes' =>'');
 
 	$default_links[] = array(	'link_url' => 'http://wordpress.org/extend/plugins/',
 								'link_name' => 'Plugins',
-								'link_category' => 0,
 								'link_rss' => '',
 								'link_notes' =>'');
 
 	$default_links[] = array(	'link_url' => 'http://wordpress.org/extend/themes/',
 								'link_name' => 'Themes',
-								'link_category' => 0,
 								'link_rss' => '',
 								'link_notes' =>'');
 
 	$default_links[] = array(	'link_url' => 'http://planet.wordpress.org/',
 								'link_name' => 'WordPress Planet',
-								'link_category' => 0,
 								'link_rss' => '',
 								'link_notes' =>'');
 
-	foreach ( default_links as $link ) {
+	foreach ( $default_links as $link ) {
 		$wpdb->insert( $wpdb->links, $link);
 		$wpdb->insert( $wpdb->term_relationships, array('term_taxonomy_id' => 2, 'object_id' => $wpdb->insert_id) );
 	}
@@ -159,7 +154,7 @@ function wp_install_defaults($user_id) {
 	$now = date('Y-m-d H:i:s');
 	$now_gmt = gmdate('Y-m-d H:i:s');
 	$first_post_guid = get_option('home') . '/?p=1';
-	
+
 	$wpdb->insert( $wpdb->posts, array(
 								'post_author' => $user_id,
 								'post_date' => $now,
@@ -167,13 +162,13 @@ function wp_install_defaults($user_id) {
 								'post_content' => __('Welcome to WordPress. This is your first post. Edit or delete it, then start blogging!'),
 								'post_excerpt' => '',
 								'post_title' => __('Hello world!'),
-								'post_category' => 0,
-								'post_name' => _c('hello-world|Default post slug'),
+								/* translators: Default post slug */
+								'post_name' => _x('hello-world', 'Default post slug'),
 								'post_modified' => $now,
 								'post_modified_gmt' => $now_gmt,
 								'guid' => $first_post_guid,
 								'comment_count' => 1,
-								'to_ping' => '', 
+								'to_ping' => '',
 								'pinged' => '',
 								'post_content_filtered' => ''
 								));
@@ -198,13 +193,13 @@ function wp_install_defaults($user_id) {
 								'post_content' => __('This is an example of a WordPress page, you could edit this to put information about yourself or your site so readers know where you are coming from. You can create as many pages like this one or sub-pages as you like and manage all of your content inside of WordPress.'),
 								'post_excerpt' => '',
 								'post_title' => __('About'),
-								'post_category' => '',
-								'post_name' => _c('about|Default page slug'),
+								/* translators: Default page slug */
+								'post_name' => _x('about', 'Default page slug'),
 								'post_modified' => $now,
 								'post_modified_gmt' => $now_gmt,
 								'guid' => $first_post_guid,
 								'post_type' => 'page',
-								'to_ping' => '', 
+								'to_ping' => '',
 								'pinged' => '',
 								'post_content_filtered' => ''
 								));
@@ -514,7 +509,7 @@ function upgrade_130() {
 		foreach($comments as $comment) {
 			$comment_content = deslash($comment->comment_content);
 			$comment_author = deslash($comment->comment_author);
-			
+
 			$wpdb->update($wpdb->comments, compact('comment_content', 'comment_author'), array('comment_ID' => $comment->comment_ID) );
 		}
 	}
@@ -525,7 +520,7 @@ function upgrade_130() {
 		foreach($links as $link) {
 			$link_name = deslash($link->link_name);
 			$link_description = deslash($link->link_description);
-			
+
 			$wpdb->update( $wpdb->links, compact('link_name', 'link_description'), array('link_id' => $link->link_id) );
 		}
 	}
@@ -637,7 +632,7 @@ function upgrade_160() {
 		$objects = $wpdb->get_results("SELECT ID, post_type FROM $wpdb->posts WHERE post_status = 'object'");
 		foreach ($objects as $object) {
 			$wpdb->update( $wpdb->posts, array(	'post_status' => 'attachment',
-												'post_mime_type' => $object->post_type, 
+												'post_mime_type' => $object->post_type,
 												'post_type' => ''),
 										 array( 'ID' => $object->ID ) );
 
@@ -1190,7 +1185,7 @@ function dbDelta($queries, $execute = true) {
 	// Create a tablename index for an array ($cqueries) of queries
 	foreach($queries as $qry) {
 		if(preg_match("|CREATE TABLE ([^ ]*)|", $qry, $matches)) {
-			$cqueries[strtolower($matches[1])] = $qry;
+			$cqueries[trim( strtolower($matches[1]), '`' )] = $qry;
 			$for_update[$matches[1]] = 'Created table '.$matches[1];
 		}
 		else if(preg_match("|CREATE DATABASE ([^ ]*)|", $qry, $matches)) {
@@ -1229,7 +1224,7 @@ function dbDelta($queries, $execute = true) {
 				foreach($flds as $fld) {
 					// Extract the field name
 					preg_match("|^([^ ]*)|", trim($fld), $fvals);
-					$fieldname = $fvals[1];
+					$fieldname = trim( $fvals[1], '`' );
 
 					// Verify the found field name
 					$validfield = true;

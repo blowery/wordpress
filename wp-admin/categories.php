@@ -40,7 +40,7 @@ case 'delete':
 	if ( !current_user_can('manage_categories') )
 		wp_die(__('Cheatin&#8217; uh?'));
 
-	$cat_name = get_catname($cat_ID);
+	$cat_name = get_cat_name($cat_ID);
 
 	// Don't delete the default cats.
 	if ( $cat_ID == get_option('default_category') )
@@ -60,7 +60,7 @@ case 'bulk-delete':
 		wp_die( __('You are not allowed to delete categories.') );
 
 	foreach ( (array) $_GET['delete'] as $cat_ID ) {
-		$cat_name = get_catname($cat_ID);
+		$cat_name = get_cat_name($cat_ID);
 
 		// Don't delete the default cats.
 		if ( $cat_ID == get_option('default_category') )
@@ -143,7 +143,7 @@ endif; ?>
 <form class="search-form topmargin" action="" method="get">
 <p class="search-box">
 	<label class="hidden" for="category-search-input"><?php _e('Search Categories'); ?>:</label>
-	<input type="text" class="search-input" id="category-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="text" id="category-search-input" name="s" value="<?php _admin_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Categories' ); ?>" class="button" />
 </p>
 </form>
@@ -160,15 +160,18 @@ endif; ?>
 $pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
 if ( empty($pagenum) )
 	$pagenum = 1;
-if( ! isset( $catsperpage ) || $catsperpage < 0 )
-	$catsperpage = 20;
+
+$cats_per_page = get_user_option('categories_per_page');
+if ( empty($cats_per_page) )
+	$cats_per_page = 20;
+$cats_per_page = apply_filters('edit_categories_per_page', $cats_per_page);
 
 $page_links = paginate_links( array(
 	'base' => add_query_arg( 'pagenum', '%#%' ),
 	'format' => '',
 	'prev_text' => __('&laquo;'),
 	'next_text' => __('&raquo;'),
-	'total' => ceil(wp_count_terms('category') / $catsperpage),
+	'total' => ceil(wp_count_terms('category') / $cats_per_page),
 	'current' => $pagenum
 ));
 
@@ -205,7 +208,7 @@ if ( $page_links )
 
 	<tbody id="the-list" class="list:cat">
 <?php
-cat_rows(0, 0, 0, $pagenum, $catsperpage);
+cat_rows(0, 0, 0, $pagenum, $cats_per_page);
 ?>
 	</tbody>
 </table>
@@ -231,7 +234,7 @@ if ( $page_links )
 </form>
 
 <div class="form-wrap">
-<p><?php printf(__('<strong>Note:</strong><br />Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category <strong>%s</strong>.'), apply_filters('the_category', get_catname(get_option('default_category')))) ?></p>
+<p><?php printf(__('<strong>Note:</strong><br />Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category <strong>%s</strong>.'), apply_filters('the_category', get_cat_name(get_option('default_category')))) ?></p>
 <p><?php printf(__('Categories can be selectively converted to tags using the <a href="%s">category to tag converter</a>.'), 'admin.php?import=wp-cat2tag') ?></p>
 </div>
 

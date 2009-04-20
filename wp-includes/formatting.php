@@ -44,9 +44,9 @@ function wptexturize($text) {
 		$cockneyreplace = array("&#8217;tain&#8217;t","&#8217;twere","&#8217;twas","&#8217;tis","&#8217;twill","&#8217;til","&#8217;bout","&#8217;nuff","&#8217;round","&#8217;cause");
 	}
 
-	$static_characters = array_merge(array('---', ' -- ', '--', 'xn&#8211;', '...', '``', '\'s', '\'\'', ' (tm)'), $cockney);
-	$static_replacements = array_merge(array('&#8212;', ' &#8212; ', '&#8211;', 'xn--', '&#8230;', '&#8220;', '&#8217;s', '&#8221;', ' &#8482;'), $cockneyreplace);
-
+	$static_characters = array_merge(array('---', ' -- ', '--', ' - ', 'xn&#8211;', '...', '``', '\'s', '\'\'', ' (tm)'), $cockney);
+	$static_replacements = array_merge(array('&#8212;', ' &#8212; ', '&#8211;', ' &#8211; ', 'xn--', '&#8230;', '&#8220;', '&#8217;s', '&#8221;', ' &#8482;'), $cockneyreplace);
+	
 	$dynamic_characters = array('/\'(\d\d(?:&#8217;|\')?s)/', '/(\s|\A|")\'/', '/(\d+)"/', '/(\d+)\'/', '/(\S)\'([^\'\s])/', '/(\s|\A)"(?!\s)/', '/"(\s|\S|\Z)/', '/\'([\s.]|\Z)/', '/(\d+)x(\d+)/');
 	$dynamic_replacements = array('&#8217;$1','$1&#8216;', '$1&#8243;', '$1&#8242;', '$1&#8217;$2', '$1&#8220;$2', '&#8221;$1', '&#8217;$1', '$1&#215;$2');
 
@@ -636,8 +636,9 @@ function sanitize_user( $username, $strict = false ) {
  * @return string The sanitized string.
  */
 function sanitize_title($title, $fallback_title = '') {
+	$raw_title = $title;
 	$title = strip_tags($title);
-	$title = apply_filters('sanitize_title', $title);
+	$title = apply_filters('sanitize_title', $title, $raw_title);
 
 	if ( '' === $title || false === $title )
 		$title = $fallback_title;
@@ -675,6 +676,7 @@ function sanitize_title_with_dashes($title) {
 
 	$title = strtolower($title);
 	$title = preg_replace('/&.+?;/', '', $title); // kill entities
+	$title = str_replace('.', '-', $title);
 	$title = preg_replace('/[^%a-z0-9 _-]/', '', $title);
 	$title = preg_replace('/\s+/', '-', $title);
 	$title = preg_replace('|-+|', '-', $title);
@@ -1186,8 +1188,8 @@ function _make_email_clickable_cb($matches) {
 function make_clickable($ret) {
 	$ret = ' ' . $ret;
 	// in testing, using arrays here was found to be faster
-	$ret = preg_replace_callback('#(?<=[\s>])(\()?([\w]+?://(?:[\w\\x80-\\xff\#$%&~/\-=?@\[\](+]|[.,;:](?![\s<])|(?(1)\)(?![\s<])|\)))*)#is', '_make_url_clickable_cb', $ret);
-	$ret = preg_replace_callback('#([\s>])((www|ftp)\.[\w\\x80-\\xff\#$%&~/.\-;:=,?@\[\]+]*)#is', '_make_web_ftp_clickable_cb', $ret);
+	$ret = preg_replace_callback('#(?<=[\s>])(\()?([\w]+?://(?:[\w\\x80-\\xff\#$%&~/\-=?@\[\](+]|[.,;:](?![\s<])|(?(1)\)(?![\s<])|\)))+)#is', '_make_url_clickable_cb', $ret);
+	$ret = preg_replace_callback('#([\s>])((www|ftp)\.[\w\\x80-\\xff\#$%&~/.\-;:=,?@\[\]+]+)#is', '_make_web_ftp_clickable_cb', $ret);
 	$ret = preg_replace_callback('#([\s>])([.0-9a-z_+-]+)@(([0-9a-z-]+\.)+[0-9a-z]{2,})#i', '_make_email_clickable_cb', $ret);
 	// this one is not in an array because we need it to run last, for cleanup of accidental links within links
 	$ret = preg_replace("#(<a( [^>]+?>|>))<a [^>]+?>([^>]+?)</a></a>#i", "$1$3</a>", $ret);
@@ -1293,24 +1295,76 @@ function convert_smilies($text) {
 }
 
 /**
- * Checks to see if the text is a valid email address.
+ * Verifies that an email is valid.
+ *
+ * Does not grok i18n domains. Not RFC compliant.
  *
  * @since 0.71
  *
- * @param string $user_email The email address to be checked.
- * @return bool Returns true if valid, otherwise false.
+ * @param string $email Email address to verify.
+ * @param boolean $check_dns Whether to check the DNS for the domain using checkdnsrr().
+ * @return string|bool Either false or the valid email address.
  */
-function is_email($user_email) {
-	$chars = "/^([a-z0-9+_]|\\-|\\.)+@(([a-z0-9_]|\\-)+\\.)+[a-z]{2,6}\$/i";
-	if (strpos($user_email, '@') !== false && strpos($user_email, '.') !== false) {
-		if (preg_match($chars, $user_email)) {
-			return true;
-		} else {
-			return false;
-		}
-	} else {
-		return false;
+function is_email( $email, $check_dns = false ) {
+	// Test for the minimum length the email can be
+	if ( strlen( $email ) < 3 ) {
+		return apply_filters( 'is_email', false, $email, 'email_too_short' );
 	}
+
+	// Test for an @ character after the first position
+	if ( strpos( $email, '@', 1 ) === false ) {
+		return apply_filters( 'is_email', false, $email, 'email_no_at' );
+	}
+
+	// Split out the local and domain parts
+	list( $local, $domain ) = explode( '@', $email, 2 );
+
+	// LOCAL PART
+	// Test for invalid characters
+	if ( !preg_match( '/^[a-zA-Z0-9!#$%&\'*+\/=?^_`{|}~\.-]+$/', $local ) ) {
+		return apply_filters( 'is_email', false, $email, 'local_invalid_chars' );
+	}
+
+	// DOMAIN PART
+	// Test for sequences of periods
+	if ( preg_match( '/\.{2,}/', $domain ) ) {
+		return apply_filters( 'is_email', false, $email, 'domain_period_sequence' );
+	}
+
+	// Test for leading and trailing periods and whitespace
+	if ( trim( $domain, " \t\n\r\0\x0B." ) !== $domain ) {
+		return apply_filters( 'is_email', false, $email, 'domain_period_limits' );
+	}
+
+	// Split the domain into subs
+	$subs = explode( '.', $domain );
+
+	// Assume the domain will have at least two subs
+	if ( 2 > count( $subs ) ) {
+		return apply_filters( 'is_email', false, $email, 'domain_no_periods' );
+	}
+
+	// Loop through each sub
+	foreach ( $subs as $sub ) {
+		// Test for leading and trailing hyphens and whitespace
+		if ( trim( $sub, " \t\n\r\0\x0B-" ) !== $sub ) {
+			return apply_filters( 'is_email', false, $email, 'sub_hyphen_limits' );
+		}
+
+		// Test for invalid characters
+		if ( !preg_match('/^[a-z0-9-]+$/i', $sub ) ) {
+			return apply_filters( 'is_email', false, $email, 'sub_invalid_chars' );
+		}
+	}
+
+	// DNS
+	// Check the domain has a valid MX and A resource record
+	if ( $check_dns && function_exists( 'checkdnsrr' ) && !( checkdnsrr( $domain . '.', 'MX' ) || checkdnsrr( $domain . '.', 'A' ) ) ) {
+		return apply_filters( 'is_email', false, $email, 'dns_no_rr' );
+	}
+
+	// Congratulations your email made it!
+	return apply_filters( 'is_email', $email, $email, null );
 }
 
 /**
@@ -1448,8 +1502,78 @@ function popuplinks($text) {
  * @param string $email Email address to filter.
  * @return string Filtered email address.
  */
-function sanitize_email($email) {
-	return preg_replace('/[^a-z0-9+_.@-]/i', '', $email);
+function sanitize_email( $email ) {
+	// Test for the minimum length the email can be
+	if ( strlen( $email ) < 3 ) {
+		return apply_filters( 'sanitize_email', '', $email, 'email_too_short' );
+	}
+
+	// Test for an @ character after the first position
+	if ( strpos( $email, '@', 1 ) === false ) {
+		return apply_filters( 'sanitize_email', '', $email, 'email_no_at' );
+	}
+
+	// Split out the local and domain parts
+	list( $local, $domain ) = explode( '@', $email, 2 );
+
+	// LOCAL PART
+	// Test for invalid characters
+	$local = preg_replace( '/[^a-zA-Z0-9!#$%&\'*+\/=?^_`{|}~\.-]/', '', $local );
+	if ( '' === $local ) {
+		return apply_filters( 'sanitize_email', '', $email, 'local_invalid_chars' );
+	}
+
+	// DOMAIN PART
+	// Test for sequences of periods
+	$domain = preg_replace( '/\.{2,}/', '', $domain );
+	if ( '' === $domain ) {
+		return apply_filters( 'sanitize_email', '', $email, 'domain_period_sequence' );
+	}
+
+	// Test for leading and trailing periods and whitespace
+	$domain = trim( $domain, " \t\n\r\0\x0B." );
+	if ( '' === $domain ) {
+		return apply_filters( 'sanitize_email', '', $email, 'domain_period_limits' );
+	}
+
+	// Split the domain into subs
+	$subs = explode( '.', $domain );
+
+	// Assume the domain will have at least two subs
+	if ( 2 > count( $subs ) ) {
+		return apply_filters( 'sanitize_email', '', $email, 'domain_no_periods' );
+	}
+
+	// Create an array that will contain valid subs
+	$new_subs = array();
+
+	// Loop through each sub
+	foreach ( $subs as $sub ) {
+		// Test for leading and trailing hyphens
+		$sub = trim( $sub, " \t\n\r\0\x0B-" );
+
+		// Test for invalid characters
+		$sub = preg_replace( '/^[^a-z0-9-]+$/i', '', $sub );
+
+		// If there's anything left, add it to the valid subs
+		if ( '' !== $sub ) {
+			$new_subs[] = $sub;
+		}
+	}
+
+	// If there aren't 2 or more valid subs
+	if ( 2 > count( $new_subs ) ) {
+		return apply_filters( 'sanitize_email', '', $email, 'domain_no_valid_subs' );
+	}
+
+	// Join valid subs into the new domain
+	$domain = join( '.', $new_subs );
+
+	// Put the email back together
+	$email = $local . '@' . $domain;
+
+	// Congratulations your email made it!
+	return apply_filters( 'sanitize_email', $email, $email, null );
 }
 
 /**
@@ -1503,6 +1627,7 @@ function human_time_diff( $from, $to = '' ) {
  * @return string The excerpt.
  */
 function wp_trim_excerpt($text) {
+	$raw_excerpt = $text;
 	if ( '' == $text ) {
 		$text = get_the_content('');
 
@@ -1519,7 +1644,7 @@ function wp_trim_excerpt($text) {
 			$text = implode(' ', $words);
 		}
 	}
-	return $text;
+	return apply_filters('wp_trim_excerpt', $text, $raw_excerpt);
 }
 
 /**
@@ -2214,9 +2339,12 @@ function wp_sprintf_l($pattern, $args) {
 
 	// Translate and filter the delimiter set (avoid ampersands and entities here)
 	$l = apply_filters('wp_sprintf_l', array(
-		'between'          => _c(', |between list items'),
-		'between_last_two' => _c(', and |between last two list items'),
-		'between_only_two' => _c(' and |between only two list items'),
+		/* translators: used between list items, there is a space after the coma */
+		'between'          => __(', '),
+		/* translators: used between list items, there is a space after the and */
+		'between_last_two' => __(', and '),
+		/* translators: used between only two list items, there is a space after the and */
+		'between_only_two' => __(' and '),
 		));
 
 	$args = (array) $args;

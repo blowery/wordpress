@@ -276,8 +276,9 @@ foreach ( $wp_roles->get_names() as $this_role => $name ) {
 		$class = ' class="current"';
 	}
 
-	$name = translate_with_context($name);
-	$name = sprintf( _c('%1$s <span class="count">(%2$s)</span>|user role with count'), $name, $avail_roles[$this_role] );
+	$name = translate_user_role( $name );
+	/* translators: User role name with count */
+	$name = sprintf( __('%1$s <span class="count">(%2$s)</span>'), $name, $avail_roles[$this_role] );
 	$role_links[] = "<li><a href='users.php?role=$this_role'$class>$name</a>";
 }
 echo implode( " |</li>\n", $role_links) . '</li>';
@@ -290,7 +291,7 @@ unset($role_links);
 <form class="search-form" action="" method="get">
 <p class="search-box">
 	<label class="hidden" for="user-search-input"><?php _e( 'Search Users' ); ?>:</label>
-	<input type="text" class="search-input" id="user-search-input" name="usersearch" value="<?php echo attribute_escape($wp_user_search->search_term); ?>" />
+	<input type="text" id="user-search-input" name="usersearch" value="<?php echo attribute_escape($wp_user_search->search_term); ?>" />
 	<input type="submit" value="<?php _e( 'Search Users' ); ?>" class="button" />
 </p>
 </form>

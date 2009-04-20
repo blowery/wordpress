@@ -17,9 +17,15 @@
  * @global array $wp_taxonomies
  */
 $wp_taxonomies = array();
-$wp_taxonomies['category'] = (object) array('name' => 'category', 'object_type' => 'post', 'hierarchical' => true, 'update_count_callback' => '_update_post_term_count', 'label' => __('Categories'));
-$wp_taxonomies['post_tag'] = (object) array('name' => 'post_tag', 'object_type' => 'post', 'hierarchical' => false, 'update_count_callback' => '_update_post_term_count', 'label' => __('Post Tags'));
-$wp_taxonomies['link_category'] = (object) array('name' => 'link_category', 'object_type' => 'link', 'hierarchical' => false);
+
+function create_initial_taxonomies() {
+	global $wp_taxonomies;
+	$wp_taxonomies['category'] = (object) array('name' => 'category', 'object_type' => 'post', 'hierarchical' => true, 'update_count_callback' => '_update_post_term_count', 'label' => __('Categories'));
+	$wp_taxonomies['post_tag'] = (object) array('name' => 'post_tag', 'object_type' => 'post', 'hierarchical' => false, 'update_count_callback' => '_update_post_term_count', 'label' => __('Post Tags'));
+	$wp_taxonomies['link_category'] = (object) array('name' => 'link_category', 'object_type' => 'link', 'hierarchical' => false);
+	
+}
+add_action( 'init', 'create_initial_taxonomies' );
 
 /**
  * Return all of the taxonomy names that are of $object_type.
@@ -535,7 +541,7 @@ function get_term_to_edit( $id, $taxonomy ) {
  * 'exclude' is ignored.
  *
  * exclude_tree - A comma- or space-delimited string of term ids to exclude
- * from the return array, along with all of their descendant terms according to 
+ * from the return array, along with all of their descendant terms according to
  * the primary taxonomy.  If 'include' is non-empty, 'exclude_tree' is ignored.
  *
  * include - Default is an empty string.  A comma- or space-delimited string
@@ -692,7 +698,7 @@ function &get_terms($taxonomies, $args = '') {
 	if ( ! empty( $exclude_tree ) ) {
 		$excluded_trunks = preg_split('/[\s,]+/',$exclude_tree);
 		foreach( (array) $excluded_trunks as $extrunk ) {
-			$excluded_children = (array) get_terms($taxonomies[0], array('child_of' => intval($extrunk), 'fields' => 'ids'));	
+			$excluded_children = (array) get_terms($taxonomies[0], array('child_of' => intval($extrunk), 'fields' => 'ids'));
 			$excluded_children[] = $extrunk;
 			foreach( (array) $excluded_children as $exterm ) {
 				if ( empty($exclusions) )
@@ -736,7 +742,7 @@ function &get_terms($taxonomies, $args = '') {
 	if ( $hide_empty && !$hierarchical )
 		$where .= ' AND tt.count > 0';
 
-	// don't limit the query results when we have to descend the family tree 
+	// don't limit the query results when we have to descend the family tree
 	if ( ! empty($number) && ! $hierarchical && empty( $child_of ) && '' == $parent ) {
 		if( $offset )
 			$limit = 'LIMIT ' . $offset . ',' . $number;
@@ -834,9 +840,10 @@ function &get_terms($taxonomies, $args = '') {
  *
  * @param int|string $term The term to check
  * @param string $taxonomy The taxonomy name to use
+ * @param int $parent ID of parent term under which to confine the exists search.
  * @return mixed Get the term id or Term Object, if exists.
  */
-function is_term($term, $taxonomy = '') {
+function is_term($term, $taxonomy = '', $parent = 0) {
 	global $wpdb;
 
 	$select = "SELECT term_id FROM $wpdb->terms as t WHERE ";
@@ -857,18 +864,30 @@ function is_term($term, $taxonomy = '') {
 
 	$where = 't.slug = %s';
 	$else_where = 't.name = %s';
-
+	$where_fields = array($slug);
+	$else_where_fields = array($term);
 	if ( !empty($taxonomy) ) {
-		if ( $result = $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $slug, $taxonomy), ARRAY_A) )
+		$parent = (int) $parent;
+		if ( $parent > 0 ) {
+			$where_fields[] = $parent;
+			$else_where_fields[] = $parent;
+			$where .= ' AND tt.parent = %d';
+			$else_where .= ' AND tt.parent = %d';
+		}
+
+		$where_fields[] = $taxonomy;
+		$else_where_fields[] = $taxonomy;
+
+		if ( $result = $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $where_fields), ARRAY_A) )
 			return $result;
 
-		return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $else_where AND tt.taxonomy = %s", $term, $taxonomy), ARRAY_A);
+		return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $else_where AND tt.taxonomy = %s", $else_where_fields), ARRAY_A);
 	}
 
-	if ( $result = $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $where", $slug) ) )
+	if ( $result = $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $where", $where_fields) ) )
 		return $result;
 
-	return $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $else_where", $term) );
+	return $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $else_where", $else_where_fields) );
 }
 
 /**
@@ -1059,7 +1078,9 @@ function wp_delete_object_term_relationships( $object_id, $taxonomies ) {
  *
  * The $args 'default' will only override the terms found, if there is only one
  * term found. Any other and the found terms are used.
- *
+ * 
+ * The $args 'force_default' will force the term supplied as default to be
+ * assigned even if the object was not going to be termless
  * @package WordPress
  * @subpackage Taxonomy
  * @since 2.3.0
@@ -1110,10 +1131,13 @@ function wp_delete_term( $term, $taxonomy, $args = array() ) {
 
 	foreach ( (array) $objects as $object ) {
 		$terms = wp_get_object_terms($object, $taxonomy, 'fields=ids');
-		if ( 1 == count($terms) && isset($default) )
+		if ( 1 == count($terms) && isset($default) ) {
 			$terms = array($default);
-		else
+		} else {
 			$terms = array_diff($terms, array($term));
+			if (isset($default) && isset($force_default) && $force_default)
+				$terms = array_merge($terms, array($default));
+		}
 		$terms = array_map('intval', $terms);
 		wp_set_object_terms($object, $terms, $taxonomy);
 	}
@@ -1389,7 +1413,8 @@ function wp_insert_term( $term, $taxonomy, $args = array() ) {
  * @uses $wpdb
  *
  * @param int $object_id The object to relate to.
- * @param array|int|string $term The slug or id of the term.
+ * @param array|int|string $term The slug or id of the term, will replace all existing 
+ * related terms in this taxonomy.
  * @param array|string $taxonomy The context in which to relate the term to the object.
  * @param bool $append If false will delete difference of terms.
  * @return array|WP_Error Affected Term IDs
@@ -1561,6 +1586,9 @@ function wp_update_term( $term, $taxonomy, $args = array() ) {
 
 	// First, get all of the original args
 	$term = get_term ($term_id, $taxonomy, ARRAY_A);
+
+	if ( is_wp_error( $term ) )
+		return $term;
 
 	// Escape data pulled from DB.
 	$term = add_magic_quotes($term);

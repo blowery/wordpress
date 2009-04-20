@@ -478,6 +478,8 @@ EOD;
 		// this could affect our ability to send back the right headers
 		@wp_set_post_categories($postID, $post_category);
 
+		do_action( 'atompub_create_post', $postID, $entry );
+
 		$output = $this->get_entry($postID);
 
 		log_app('function',"create_post($postID)");
@@ -555,6 +557,8 @@ EOD;
 		if (!$result) {
 			$this->internal_error(__('For some strange yet very annoying reason, this post could not be edited.'));
 		}
+
+		do_action( 'atompub_put_post', $ID, $parsed );
 
 		log_app('function',"put_post($postID)");
 		$this->ok();
@@ -701,7 +705,7 @@ EOD;
 		extract($entry);
 
 		$post_title = $parsed->title[1];
-		$post_content = $parsed->content[1];
+		$post_content = $parsed->summary[1];
 		$pubtimes = $this->get_publish_time($parsed->updated);
 		$post_modified = $pubtimes[0];
 		$post_modified_gmt = $pubtimes[1];
@@ -1488,12 +1492,13 @@ EOD;
 		// If Basic Auth is working...
 		if(isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
 			log_app("Basic Auth",$_SERVER['PHP_AUTH_USER']);
-			$user = wp_authenticate($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
-			if ( $user && !is_wp_error($user) ) {
-				wp_set_current_user($user->ID);
-				log_app("authenticate()", $_SERVER['PHP_AUTH_USER']);
-				return true;
-			}
+		}
+
+		$user = wp_authenticate($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+		if ( $user && !is_wp_error($user) ) {
+			wp_set_current_user($user->ID);
+			log_app("authenticate()", $user->user_login);
+			return true;
 		}
 
 		return false;

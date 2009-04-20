@@ -21,7 +21,7 @@ if ( isset($_GET['message']) )
 $messages[1] = sprintf( __( 'Page updated. Continue editing below or <a href="%s">go back</a>.' ), attribute_escape( stripslashes( ( isset( $_GET['_wp_original_http_referer'] ) ? $_GET['_wp_original_http_referer'] : '') ) ) );
 $messages[2] = __('Custom field updated.');
 $messages[3] = __('Custom field deleted.');
-$messages[4] = __('Page updated.');
+$messages[4] = sprintf(__('Page updated. <a href="%s">View page</a>'), get_permalink($post_ID));
 $messages[5] = sprintf(__('Page published. <a href="%s">View page</a>'), get_permalink($post_ID));
 $messages[6] = sprintf(__('Page submitted. <a href="%s">Preview page</a>'), add_query_arg( 'preview', 'true', get_permalink($post_ID) ) );
 
@@ -426,7 +426,7 @@ if (isset($mode) && 'bookmarklet' == $mode)
 <input name="referredby" type="hidden" id="referredby" value="<?php echo clean_url(stripslashes(wp_get_referer())); ?>" />
 <?php if ( 'draft' != $post->post_status ) wp_original_referer_field(true, 'previous'); ?>
 
-<div id="poststuff" class="metabox-holder">
+<div id="poststuff" class="metabox-holder<?php echo 2 == $screen_layout_columns ? ' has-right-sidebar' : ''; ?>">
 
 <div id="side-info-column" class="inner-sidebar">
 
@@ -438,12 +438,11 @@ $side_meta_boxes = do_meta_boxes('page', 'side', $post);
 ?>
 </div>
 
-<div id="post-body" class="<?php echo $side_meta_boxes ? 'has-sidebar' : ''; ?>">
-<div id="post-body-content" class="has-sidebar-content">
-
+<div id="post-body">
+<div id="post-body-content">
 <div id="titlediv">
 <div id="titlewrap">
-  <input type="text" name="post_title" size="30" tabindex="1" value="<?php echo attribute_escape( $post->post_title ); ?>" id="title" autocomplete="off" />
+  <input type="text" name="post_title" size="30" tabindex="1" value="<?php echo attribute_escape( htmlspecialchars( $post->post_title ) ); ?>" id="title" autocomplete="off" />
 </div>
 <div class="inside">
 <?php $sample_permalink_html = get_sample_permalink_html($post->ID); ?>
@@ -458,9 +457,9 @@ endif; ?>
 <div id="<?php echo user_can_richedit() ? 'postdivrich' : 'postdiv'; ?>" class="postarea">
 
 <?php the_editor($post->post_content); ?>
-<div id="post-status-info">
-	<span id="wp-word-count" class="alignleft"></span>
-	<span class="alignright">
+<table id="post-status-info" cellspacing="0"><tbody><tr>
+	<td id="wp-word-count"></td>
+	<td class="autosave-info">
 	<span id="autosave">&nbsp;</span>
 
 <?php
@@ -473,9 +472,8 @@ endif; ?>
 		}
 	}
 ?>
-	</span>
-	<br class="clear" />
-</div>
+	</td>
+</tr></tbody></table>
 
 <?php wp_nonce_field( 'autosave', 'autosavenonce', false ); ?>
 <?php wp_nonce_field( 'closedpostboxes', 'closedpostboxesnonce', false ); ?>

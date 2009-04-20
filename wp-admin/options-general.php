@@ -11,6 +11,8 @@ require_once('./admin.php');
 
 $title = __('General Settings');
 $parent_file = 'options-general.php';
+/* translators: date and time format for exact current time, mainly about timezones, see http://php.net/date */
+$timezone_format = _x('Y-m-d G:i:s', 'timezone date format');
 
 /**
  * Display JavaScript on the page.
@@ -76,7 +78,7 @@ include('./admin-header.php');
 </tr>
 <tr valign="top">
 <th scope="row"><label for="admin_email"><?php _e('E-mail address') ?> </label></th>
-<td><input name="admin_email" type="text" id="admin_email" value="<?php form_option('admin_email'); ?>" class="regular-text code" />
+<td><input name="admin_email" type="text" id="admin_email" value="<?php form_option('admin_email'); ?>" class="regular-text" />
 <span class="setting-description"><?php _e('This address is used for admin purposes, like new user notification.') ?></span></td>
 </tr>
 <tr valign="top">
@@ -93,6 +95,9 @@ include('./admin-header.php');
 </td>
 </tr>
 <tr>
+<?php
+if (!wp_timezone_supported()) : // no magic timezone support here
+?>
 <th scope="row"><label for="gmt_offset"><?php _e('Timezone') ?> </label></th>
 <td>
 <select name="gmt_offset" id="gmt_offset">
@@ -120,13 +125,74 @@ foreach ( $offset_range as $offset ) {
 ?>
 </select>
 <?php _e('hours') ?>
-<span id="utc-time"><?php printf(__('<abbr title="Coordinated Universal Time">UTC</abbr> time is <code>%s</code>'), date_i18n(__('Y-m-d G:i:s'), false, 'gmt')); ?></span>
+<span id="utc-time"><?php printf(__('<abbr title="Coordinated Universal Time">UTC</abbr> time is <code>%s</code>'), date_i18n( $time_format, false, 'gmt')); ?></span>
 <?php if ($current_offset) : ?>
-	<span id="local-time"><?php printf(__('UTC %1$s is <code>%2$s</code>'), $current_offset_name, date_i18n(__('Y-m-d G:i:s'))); ?></span>
+	<span id="local-time"><?php printf(__('UTC %1$s is <code>%2$s</code>'), $current_offset_name, date_i18n($time_format)); ?></span>
 <?php endif; ?>
 <br/>
 <span class="setting-description"><?php _e('Unfortunately, you have to manually update this for Daylight Savings Time. Lame, we know, but will be fixed in the future.'); ?></span>
 </td>
+<?php
+else: // looks like we can do nice timezone selection!
+$current_offset = get_option('gmt_offset');
+$tzstring = get_option('timezone_string');
+if (empty($tzstring)) { // set the Etc zone if no timezone string exists
+	if ($current_offset < 0) $offnum = - ceil($current_offset);
+	else $offnum = - floor($current_offset);
+	$tzstring = 'Etc/GMT' . (($offnum >= 0) ? '+' : '') . $offnum;
+}
+?>
+<th scope="row"><label for="timezone_string"><?php _e('Timezone') ?></label></th>
+<td>
+
+<select id="timezone_string" name="timezone_string">
+<?php echo wp_timezone_choice($tzstring); ?>
+</select>
+
+    <span id="utc-time"><?php printf(__('<abbr title="Coordinated Universal Time">UTC</abbr> time is <code>%s</code>'), date_i18n($timezone_format, false, 'gmt')); ?></span>
+<?php if (get_option('timezone_string')) : ?>
+	<span id="local-time"><?php printf(__('Local time is <code>%1$s</code>'), date_i18n($timezone_format)); ?></span>
+<?php endif; ?>
+<br/>
+<span class="setting-description"><?php _e('Choose a city in the same timezone as you.'); ?></span>
+<br />
+<span>
+<?php if (get_option('timezone_string')) : ?>
+	<?php
+	$now = localtime(time(),true);
+	if ($now['tm_isdst']) _e('This timezone is currently in daylight savings time.');
+	else _e('This timezone is currently in standard time.');
+	?>
+	<br />
+	<?php
+	if (function_exists('timezone_transitions_get') && $tzstring) {
+		$dateTimeZoneSelected = new DateTimeZone($tzstring);
+		foreach (timezone_transitions_get($dateTimeZoneSelected) as $tr) {
+			if ($tr['ts'] > time()) {
+			    	$found = true;
+				break;
+			}
+		}
+
+		if ( isset($found) && $found === true ) {
+			echo ' ';
+			$message = $tr['isdst'] ?
+				__('Daylight savings time begins on: <code>%s</code>.') :
+				__('Standard time begins  on: <code>%s</code>.');
+			$tz = new DateTimeZone($tzstring);
+			$d = new DateTime( "@{$tr['ts']}" );
+			$d->setTimezone($tz);
+			printf( $message, date_i18n(get_option('date_format').' '.get_option('time_format'), $d->format('U') ) );
+		} else {
+			_e('This timezone does not observe daylight savings time.');
+		}
+	}
+	?>
+	</span>
+<?php endif; ?>
+</td>
+
+<?php endif; ?>
 </tr>
 <tr>
 <th scope="row"><?php _e('Date Format') ?></th>
@@ -156,7 +222,7 @@ foreach ( $offset_range as $offset ) {
 	checked( $custom );
 	echo '/> ' . __('Custom:') . ' </label><input type="text" name="date_format_custom" value="' . attribute_escape( get_option('date_format') ) . '" class="small-text" /> ' . date_i18n( get_option('date_format') ) . "\n";
 
-	echo "\t<p>" . __('<a href="http://codex.wordpress.org/Formatting_Date_and_Time">Documentation on date formatting</a>. Click "Save Changes" to update sample output.') . "</p>\n";
+	echo "\t<p>" . __('<a href="http://codex.wordpress.org/Formatting_Date_and_Time">Documentation on date formatting</a>. Click &quot;Save Changes&quot; to update sample output.') . "</p>\n";
 ?>
 	</fieldset>
 </td>
