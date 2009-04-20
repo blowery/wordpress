@@ -45,7 +45,7 @@ if ( ! $is_opera ) {
 	<p><?php
 
 	if ( $is_chrome )
-		_e('Gears is installed and enabled on this computer. You can disable it from your browser&#8217;s Options, Under the Hood menu.');
+		_e('Gears is installed and enabled on this computer. You can disable it from the Under the Hood tab in Chrome&#8217;s Options menu.');
 	elseif ( $is_safari )
 		_e('Gears is installed and enabled on this computer. You can disable it from the Safari menu.');
 	else
@@ -77,7 +77,7 @@ if ( ! $is_opera ) {
 } ?>
 </div>
 
-<?php if ( current_user_can('publish_posts') ) : ?>
+<?php if ( current_user_can('edit_posts') ) : ?>
 <div class="tool-box">
 	<h3 class="title"><?php _e('Press This') ?></h3>
 	<p><?php _e('Press This is a bookmarklet: a little app that runs in your browser and lets you grab bits of the web.');?></p>

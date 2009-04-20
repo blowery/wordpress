@@ -168,6 +168,10 @@ add_action('wp_head', 'wp_enqueue_scripts', 1);
 add_action('wp_head', 'feed_links_extra', 3);
 add_action('wp_head', 'rsd_link');
 add_action('wp_head', 'wlwmanifest_link');
+add_action('wp_head', 'index_rel_link');
+add_action('wp_head', 'parent_post_rel_link', 10, 0);
+add_action('wp_head', 'start_post_rel_link', 10, 0);
+add_action('wp_head', 'adjacent_posts_rel_link', 10, 0);
 add_action('wp_head', 'locale_stylesheet');
 add_action('publish_future_post', 'check_and_publish_future_post', 10, 1);
 add_action('wp_head', 'noindex', 1);
@@ -202,5 +206,7 @@ add_action('template_redirect', 'wp_old_slug_redirect');
 add_action('edit_post', 'wp_check_for_changed_slugs');
 add_action('edit_form_advanced', 'wp_remember_old_slug');
 add_action('init', '_show_post_preview');
+
+add_filter('pre_option_gmt_offset','wp_timezone_override_offset');
 
 ?>

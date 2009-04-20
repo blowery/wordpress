@@ -183,6 +183,7 @@ function get_the_content($more_link_text = null, $stripteaser = 0, $more_file = 
 		$more_link_text = __( '(more...)' );
 
 	$output = '';
+	$hasTeaser = false;
 
 	// If post password required and it doesn't match the cookie.
 	if ( post_password_required($post) ) {
@@ -203,13 +204,15 @@ function get_the_content($more_link_text = null, $stripteaser = 0, $more_file = 
 		$content = explode($matches[0], $content, 2);
 		if ( !empty($matches[1]) && !empty($more_link_text) )
 			$more_link_text = strip_tags(wp_kses_no_null(trim($matches[1])));
+
+		$hasTeaser = true;
 	} else {
 		$content = array($content);
 	}
 	if ( (false !== strpos($post->post_content, '<!--noteaser-->') && ((!$multipage) || ($page==1))) )
 		$stripteaser = 1;
 	$teaser = $content[0];
-	if ( ($more) && ($stripteaser) )
+	if ( ($more) && ($stripteaser) && ($hasTeaser) )
 		$teaser = '';
 	$output .= $teaser;
 	if ( count($content) > 1 ) {
@@ -360,12 +363,12 @@ function body_class( $class = '' ) {
  */
 function get_body_class( $class = '' ) {
 	global $wp_query, $current_user;
-	
+
 	$classes = array();
-	
+
 	if ( 'rtl' == get_bloginfo('text_direction') )
 		$classes[] = 'rtl';
-	
+
 	if ( is_front_page() )
 		$classes[] = 'home';
 	if ( is_home() )
@@ -382,20 +385,19 @@ function get_body_class( $class = '' ) {
 		$classes[] = 'attachment';
 	if ( is_404() )
 		$classes[] = 'error404';
-	
+
 	if ( is_single() ) {
-		the_post();
-		
+		$wp_query->post = $wp_query->posts[0];
+		setup_postdata($wp_query->post);
+
 		$postID = $wp_query->post->ID;
 		$classes[] = 'single postid-' . $postID;
-		
+
 		if ( is_attachment() ) {
 			$mime_type = get_post_mime_type();
 			$mime_prefix = array( 'application/', 'image/', 'text/', 'audio/', 'video/', 'music/' );
 			$classes[] = 'attachmentid-' . $postID . ' attachment-' . str_replace( $mime_prefix, "", "$mime_type" );
 		}
-		
-		rewind_posts();
 	} elseif ( is_archive() ) {
 		if ( is_author() ) {
 			$author = $wp_query->get_queried_object();
@@ -411,43 +413,40 @@ function get_body_class( $class = '' ) {
 			$classes[] = 'tag-' . $tags->slug;
 		}
 	} elseif ( is_page() ) {
-		the_post();
+		$classes[] = 'page';
 		
+		$wp_query->post = $wp_query->posts[0];
+		setup_postdata($wp_query->post);
+
 		$pageID = $wp_query->post->ID;
 		$page_children = wp_list_pages("child_of=$pageID&echo=0");
-		
+
 		if ( $page_children )
 			$classes[] = 'page-parent';
-		
+
 		if ( $wp_query->post->post_parent )
 			$classes[] = 'page-child parent-pageid-' . $wp_query->post->post_parent;
-		
+
 		if ( is_page_template() )
 			$classes[] = 'page-template page-template-' . str_replace( '.php', '-php', get_post_meta( $pageID, '_wp_page_template', true ) );
-		
-		rewind_posts();
 	} elseif ( is_search() ) {
-		the_post();
-		
-		if ( have_posts() )
+		if ( !empty($wp_query->posts) )
 			$classes[] = 'search-results';
 		else
 			$classes[] = 'search-no-results';
-		
-		rewind_posts();
 	}
-	
+
 	if ( is_user_logged_in() )
 		$classes[] = 'logged-in';
-	
+
 	$page = $wp_query->get('page');
-	
+
 	if ( !$page || $page < 2)
 		$page = $wp_query->get('paged');
-	
+
 	if ( $page && $page > 1 ) {
 		$classes[] = 'paged-' . $page;
-		
+
 		if ( is_single() )
 			$classes[] = 'single-paged-' . $page;
 		elseif ( is_page() )
@@ -463,13 +462,13 @@ function get_body_class( $class = '' ) {
 		elseif ( is_search() )
 			$classes[] = 'search-paged-' . $page;
 	}
-	
+
 	if ( !empty($class) ) {
 		if ( !is_array( $class ) )
 			$class = preg_split('#\s+#', $class);
 		$classes = array_merge($classes, $class);
 	}
-	
+
 	return apply_filters('body_class', $classes, $class);
 }
 
@@ -756,7 +755,7 @@ function wp_list_pages($args = '') {
 			$output .= '<li class="pagenav">' . $r['title_li'] . '<ul>';
 
 		global $wp_query;
-		if ( is_page() || $wp_query->is_posts_page )
+		if ( is_page() || is_attachment() || $wp_query->is_posts_page )
 			$current_page = $wp_query->get_queried_object_id();
 		$output .= walk_page_tree($pages, $r['depth'], $current_page, $r);
 
@@ -854,7 +853,7 @@ function wp_page_menu( $args = array() ) {
  * @see Walker_Page::walk() for parameters and return description.
  */
 function walk_page_tree($pages, $depth, $current_page, $r) {
-	if ( empty($r['walker']) ) 
+	if ( empty($r['walker']) )
 		$walker = new Walker_Page;
 	else
 		$walker = $r['walker'];
@@ -925,7 +924,7 @@ function wp_get_attachment_link($id = 0, $size = 'thumbnail', $permalink = false
 		$url = get_attachment_link($_post->ID);
 
 	$post_title = attribute_escape($_post->post_title);
-	
+
 	if ( $text ) {
 		$link_text = attribute_escape($text);
 	} elseif ( ( is_int($size) && $size != 0 ) or ( is_string($size) && $size != 'none' ) or $size != false ) {
@@ -934,7 +933,7 @@ function wp_get_attachment_link($id = 0, $size = 'thumbnail', $permalink = false
 
 	if( trim($link_text) == '' )
 		$link_text = $_post->post_title;
-	
+
 	return apply_filters( 'wp_get_attachment_link', "<a href='$url' title='$post_title'>$link_text</a>", $id, $size, $permalink, $icon, $text );
 }
 
@@ -1193,9 +1192,12 @@ function wp_post_revision_title( $revision, $link = true ) {
 	if ( !in_array( $revision->post_type, array( 'post', 'page', 'revision' ) ) )
 		return false;
 
-	$datef = _c( 'j F, Y @ G:i|revision date format');
-	$autosavef = __( '%s [Autosave]' );
-	$currentf  = __( '%s [Current Revision]' );
+	/* translators: revision date format, see http://php.net/date */
+	$datef = _x( 'j F, Y @ G:i', 'revision date format');
+	/* translators: 1: date */
+	$autosavef = __( '%1$s [Autosave]' );
+	/* translators: 1: date */
+	$currentf  = __( '%1$s [Current Revision]' );
 
 	$date = date_i18n( $datef, strtotime( $revision->post_modified_gmt . ' +0000' ) );
 	if ( $link && current_user_can( 'edit_post', $revision->ID ) && $link = get_edit_post_link( $revision->ID ) )
@@ -1260,7 +1262,8 @@ function wp_list_post_revisions( $post_id = 0, $args = null ) {
 		break;
 	}
 
-	$titlef = _c( '%1$s by %2$s|post revision 1:datetime, 2:name' );
+	/* translators: post revision: 1: when, 2: author name */
+	$titlef = _x( '%1$s by %2$s', 'post revision' );
 
 	if ( $parent )
 		array_unshift( $revisions, $post );

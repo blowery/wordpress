@@ -206,17 +206,28 @@ function fileDialogComplete(num_files_queued) {
 	}
 }
 
+function switchUploader(s) {
+	var f = document.getElementById(swfu.customSettings.swfupload_element_id), h = document.getElementById(swfu.customSettings.degraded_element_id);
+	if ( s ) {
+		f.style.display = 'block';
+		h.style.display = 'none';
+	} else {
+		f.style.display = 'none';
+		h.style.display = 'block';
+	}
+}
+
 function swfuploadPreLoad() {
-	var swfupload_element = jQuery('#'+swfu.customSettings.swfupload_element_id).get(0);
-	jQuery('#' + swfu.customSettings.degraded_element_id).hide();
-	// Doing this directly because jQuery().show() seems to have timing problems
-	if ( swfupload_element && ! swfupload_element.style.display )
-			swfupload_element.style.display = 'block';
+	if ( !uploaderMode ) {
+		switchUploader(1);
+	} else {
+		switchUploader(0);
+	}
 }
 
 function swfuploadLoadFailed() {
-	jQuery('#' + swfu.customSettings.swfupload_element_id).hide();
-	jQuery('#' + swfu.customSettings.degraded_element_id).show();
+	switchUploader(0);
+	jQuery('.upload-html-bypass').hide();
 }
 
 function uploadError(fileObj, error_code, message) {

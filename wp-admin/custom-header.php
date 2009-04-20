@@ -79,7 +79,7 @@ class Custom_Image_Header {
 		if ( 1 == $step )
 			wp_enqueue_script('farbtastic');
 		elseif ( 2 == $step )
-			wp_enqueue_script('cropper');
+			wp_enqueue_script('jcrop');
 	}
 
 	/**
@@ -90,9 +90,10 @@ class Custom_Image_Header {
 	function css_includes() {
 		$step = $this->step();
 
-		if ( 1 == $step ) {
+		if ( 1 == $step )
 			wp_enqueue_style('farbtastic');
-		}
+		elseif ( 2 == $step )
+			wp_enqueue_style('jcrop');
 	}
 
 	/**
@@ -215,13 +216,13 @@ class Custom_Image_Header {
 	 */
 	function js_2() { ?>
 <script type="text/javascript">
-	function onEndCrop( coords, dimensions ) {
-		jQuery( '#x1' ).val(coords.x1);
-		jQuery( '#y1' ).val(coords.y1);
+	function onEndCrop( coords ) {
+		jQuery( '#x1' ).val(coords.x);
+		jQuery( '#y1' ).val(coords.y);
 		jQuery( '#x2' ).val(coords.x2);
 		jQuery( '#y2' ).val(coords.y2);
-		jQuery( '#width' ).val(dimensions.width);
-		jQuery( '#height' ).val(dimensions.height);
+		jQuery( '#width' ).val(coords.w);
+		jQuery( '#height' ).val(coords.h);
 	}
 
 	// with a supplied ratio
@@ -231,6 +232,15 @@ class Custom_Image_Header {
 		var ratio = xinit / yinit;
 		var ximg = jQuery('#upload').width();
 		var yimg = jQuery('#upload').height();
+		
+		//set up default values
+		jQuery( '#x1' ).val(0);
+		jQuery( '#y1' ).val(0);
+		jQuery( '#x2' ).val(xinit);
+		jQuery( '#y2' ).val(yinit);
+		jQuery( '#width' ).val(xinit);
+		jQuery( '#height' ).val(yinit);
+		
 		if ( yimg < yinit || ximg < xinit ) {
 			if ( ximg / yimg > ratio ) {
 				yinit = yimg;
@@ -240,14 +250,12 @@ class Custom_Image_Header {
 				yinit = xinit / ratio;
 			}
 		}
-		new Cropper.Img(
-			'upload',
-			{
-				ratioDim: { x: xinit, y: yinit },
-				displayOnInit: true,
-				onEndCrop: onEndCrop
-			}
-		)
+
+		jQuery('#upload').Jcrop({
+			aspectRatio: ratio,
+			setSelect: [ 0, 0, xinit, yinit ],
+			onSelect: onEndCrop
+		});
 	});
 </script>
 <?php
@@ -276,10 +284,10 @@ class Custom_Image_Header {
 </div>
 <?php if ( !defined( 'NO_HEADER_TEXT' ) ) { ?>
 <form method="post" action="<?php echo admin_url('themes.php?page=custom-header&amp;updated=true') ?>">
-<input type="button" value="<?php _e('Hide Text'); ?>" onclick="hide_text()" id="hidetext" />
-<input type="button" value="<?php _e('Select a Text Color'); ?>" id="pickcolor" /><input type="button" value="<?php _e('Use Original Color'); ?>" onclick="colorDefault()" id="defaultcolor" />
+<input type="button" class="button" value="<?php _e('Hide Text'); ?>" onclick="hide_text()" id="hidetext" />
+<input type="button" class="button" value="<?php _e('Select a Text Color'); ?>" id="pickcolor" /><input type="button" class="button" value="<?php _e('Use Original Color'); ?>" onclick="colorDefault()" id="defaultcolor" />
 <?php wp_nonce_field('custom-header') ?>
-<input type="hidden" name="textcolor" id="textcolor" value="#<?php attribute_escape(header_textcolor()) ?>" /><input name="submit" type="submit" value="<?php _e('Save Changes'); ?>" /></form>
+<input type="hidden" name="textcolor" id="textcolor" value="#<?php attribute_escape(header_textcolor()) ?>" /><input name="submit" type="submit" class="button" value="<?php _e('Save Changes'); ?>" /></form>
 <?php } ?>
 
 <div id="colorPickerDiv" style="z-index: 100;background:#eee;border:1px solid #ccc;position:absolute;display:none;"> </div>
@@ -305,7 +313,7 @@ class Custom_Image_Header {
 <p><?php _e('This will restore the original header image and color. You will not be able to retrieve any customizations.') ?></p>
 <form method="post" action="<?php echo attribute_escape(add_query_arg('step', 1)) ?>">
 <?php wp_nonce_field('custom-header'); ?>
-<input type="submit" name="resetheader" value="<?php _e('Restore Original Header'); ?>" />
+<input type="submit" class="button" name="resetheader" value="<?php _e('Restore Original Header'); ?>" />
 </form>
 </div>
 		<?php endif;

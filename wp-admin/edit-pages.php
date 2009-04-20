@@ -75,11 +75,11 @@ $parent_file = 'edit-pages.php';
 wp_enqueue_script('inline-edit-post');
 
 $post_stati  = array(	//	array( adj, noun )
-		'publish' => array(__('Published|page'), __('Published pages'), _n_noop('Published <span class="count">(%s)</span>|page', 'Published <span class="count">(%s)</span>')),
-		'future' => array(__('Scheduled|page'), __('Scheduled pages'), _n_noop('Scheduled <span class="count">(%s)</span>|page', 'Scheduled <span class="count">(%s)</span>')),
-		'pending' => array(__('Pending Review|page'), __('Pending pages'), _n_noop('Pending Review <span class="count">(%s)</span>|page', 'Pending Review <span class="count">(%s)</span>')),
-		'draft' => array(__('Draft|page'), _c('Drafts|manage posts header'), _n_noop('Draft <span class="count">(%s)</span>|page', 'Drafts <span class="count">(%s)</span>')),
-		'private' => array(__('Private|page'), __('Private pages'), _n_noop('Private <span class="count">(%s)</span>|page', 'Private <span class="count">(%s)</span>'))
+		'publish' => array(_x('Published', 'page'), __('Published pages'), _nx_noop('Published <span class="count">(%s)</span>', 'Published <span class="count">(%s)</span>', 'page')),
+		'future' => array(_x('Scheduled', 'page'), __('Scheduled pages'), _nx_noop('Scheduled <span class="count">(%s)</span>', 'Scheduled <span class="count">(%s)</span>', 'page')),
+		'pending' => array(_x('Pending Review', 'page'), __('Pending pages'), _n_noop('Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>', 'page')),
+		'draft' => array(_x('Draft', 'page'), _x('Drafts', 'manage posts header'), _nx_noop('Draft <span class="count">(%s)</span>', 'Drafts <span class="count">(%s)</span>', 'page')),
+		'private' => array(_x('Private', 'page'), __('Private pages'), _nx_noop('Private <span class="count">(%s)</span>', 'Private <span class="count">(%s)</span>', 'page'))
 	);
 
 $query = array('post_type' => 'page', 'orderby' => 'menu_order title', 'what_to_show' => 'posts',
@@ -160,7 +160,7 @@ foreach ( $post_stati as $status => $label ) {
 	if ( isset( $_GET['post_status'] ) && $status == $_GET['post_status'] )
 		$class = ' class="current"';
 
-	$status_links[] = "<li><a href='edit-pages.php?post_status=$status'$class>" . sprintf( _nc( $label[2][0], $label[2][1], $num_posts->$status ), number_format_i18n( $num_posts->$status ) ) . '</a>';
+	$status_links[] = "<li><a href='edit-pages.php?post_status=$status'$class>" . sprintf( _nx( $label[2][0], $label[2][1], $num_posts->$status, $label[2][2] ), number_format_i18n( $num_posts->$status ) ) . '</a>';
 }
 echo implode( " |</li>\n", $status_links ) . '</li>';
 unset($status_links);
@@ -170,7 +170,7 @@ endif;
 
 <p class="search-box">
 	<label class="hidden" for="page-search-input"><?php _e( 'Search Pages' ); ?>:</label>
-	<input type="text" class="search-input" id="page-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="text" id="page-search-input" name="s" value="<?php _admin_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Pages' ); ?>" class="button" />
 </p>
 
@@ -186,7 +186,8 @@ endif;
 $pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
 if ( empty($pagenum) )
 	$pagenum = 1;
-if( ! isset( $per_page ) || $per_page < 0 )
+$per_page = get_user_option('edit_pages_per_page');
+if ( empty( $per_page ) || $per_page < 0 )
 	$per_page = 20;
 
 $num_pages = ceil($wp_query->post_count / $per_page);

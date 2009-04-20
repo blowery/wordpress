@@ -445,7 +445,7 @@ case 'add-cat' : // From Manage->Categories
 		$x->send();
 	}
 
-	if ( category_exists( trim( $_POST['cat_name'] ) ) ) {
+	if ( category_exists( trim( $_POST['cat_name'] ), $_POST['category_parent'] ) ) {
 		$x = new WP_Ajax_Response( array(
 			'what' => 'cat',
 			'id' => new WP_Error( 'cat_exists', __('The category you are trying to create already exists.'), array( 'form-field' => 'cat_name' ) ),
@@ -564,7 +564,7 @@ case 'add-tag' : // From Manage->Tags
 	$x->send();
 	break;
 case 'get-tagcloud' :
-	if ( !current_user_can( 'manage_categories' ) )
+	if ( !current_user_can( 'edit_posts' ) )
 		die('-1');
 
 	if ( isset($_POST['tax']) )
@@ -770,7 +770,7 @@ case 'add-meta' :
 	if ( isset($_POST['metakeyselect']) || isset($_POST['metakeyinput']) ) {
 		if ( !current_user_can( 'edit_post', $pid ) )
 			die('-1');
-		if ( '#NONE#' == $_POST['metakeyselect'] && empty($_POST['metakeyinput']) )
+		if ( isset($_POST['metakeyselect']) && '#NONE#' == $_POST['metakeyselect'] && empty($_POST['metakeyinput']) )
 			die('1');
 		if ( $pid < 0 ) {
 			$now = current_time('timestamp', 1);
@@ -784,12 +784,13 @@ case 'add-meta' :
 					) );
 					$x->send();
 				}
-				$mid = add_meta( $pid );
+				if ( !$mid = add_meta( $pid ) )
+					die(__('Please provide a custom field value.'));
 			} else {
 				die('0');
 			}
 		} else if ( !$mid = add_meta( $pid ) ) {
-			die('0');
+			die(__('Please provide a custom field value.'));
 		}
 
 		$meta = get_post_meta_by_id( $mid );
@@ -811,7 +812,8 @@ case 'add-meta' :
 		if ( !current_user_can( 'edit_post', $meta->post_id ) )
 			die('-1');
 		if ( !$u = update_meta( $mid, $key, $value ) )
-			die('1'); // We know meta exists; we also know it's unchanged (or DB error, in which case there are bigger problems).
+			die('0'); // We know meta exists; we also know it's unchanged (or DB error, in which case there are bigger problems).
+
 		$key = stripslashes($key);
 		$value = stripslashes($value);
 		$x = new WP_Ajax_Response( array(
@@ -869,7 +871,9 @@ case 'autosave' : // The name of this action is hardcoded in edit_post()
 	$do_lock = true;
 
 	$data = '';
-	$message = sprintf( __('Draft Saved at %s.'), date_i18n( __('g:i:s a') ) );
+	/* translators: draft saved date format, see http://php.net/date */
+	$draft_saved_date_format = __('g:i:s a');
+	$message = sprintf( __('Draft Saved at %s.'), date_i18n( $draft_saved_date_format ) );
 
 	$supplemental = array();
 
@@ -979,13 +983,15 @@ case 'closed-postboxes' :
 	if ( is_array($closed) )
 		update_usermeta($user->ID, 'closedpostboxes_'.$page, $closed);
 
-	if ( is_array($hidden) )
+	if ( is_array($hidden) ) {
+		$hidden = array_diff( $hidden, array('submitdiv', 'pagesubmitdiv', 'linksubmitdiv') ); // postboxes that are always shown
 		update_usermeta($user->ID, 'meta-box-hidden_'.$page, $hidden);
+	}
 
 	die('1');
 	break;
 case 'hidden-columns' :
-	check_ajax_referer( 'hiddencolumns', 'hiddencolumnsnonce' );
+	check_ajax_referer( 'screen-options-nonce', 'screenoptionnonce' );
 	$hidden = isset( $_POST['hidden'] ) ? $_POST['hidden'] : '';
 	$hidden = explode( ',', $_POST['hidden'] );
 	$page = isset( $_POST['page'] ) ? $_POST['page'] : '';
@@ -1136,6 +1142,9 @@ case 'inline-save-tax':
 			else
 				$taxonomy = 'post_tag';
 
+			$tag = get_term( $id, $taxonomy );
+			$_POST['description'] = $tag->description;
+
 			$updated = wp_update_term($id, $taxonomy, $_POST);
 			if ( $updated && !is_wp_error($updated) ) {
 				$tag = get_term( $updated['term_id'], $taxonomy );
@@ -1178,7 +1187,7 @@ case 'find_posts':
 	if ( ! $posts )
 		exit( __('No posts found.') );
 
-	$html = '<table class="widefat"><thead><tr><th class="found-radio"><br /></th><th>'.__('Title').'</th><th>'.__('Time').'</th><th>'.__('Status').'</th></tr></thead><tbody>';
+	$html = '<table class="widefat" cellspacing="0"><thead><tr><th class="found-radio"><br /></th><th>'.__('Title').'</th><th>'.__('Time').'</th><th>'.__('Status').'</th></tr></thead><tbody>';
 	foreach ( $posts as $post ) {
 
 		switch ( $post->post_status ) {
@@ -1200,6 +1209,7 @@ case 'find_posts':
 		if ( '0000-00-00 00:00:00' == $post->post_date ) {
 			$time = '';
 		} else {
+			/* translators: date format in table columns, see http://php.net/date */
 			$time = mysql2date(__('Y/m/d'), $post->post_date);
 		}
 
@@ -1228,6 +1238,107 @@ case 'lj-importer' :
 	if ( is_wp_error( $result ) )
 		echo $result->get_error_message();
 	die;
+	break;
+case 'widgets-order' :
+	check_ajax_referer( 'save-sidebar-widgets', 'savewidgets' );
+
+	if ( !current_user_can('switch_themes') )
+		die('-1');
+
+	unset( $_POST['savewidgets'], $_POST['action'] );
+
+	// save widgets order for all sidebars
+	if ( is_array($_POST['sidebars']) ) {
+		$sidebars = array();
+		foreach ( $_POST['sidebars'] as $key => $val ) {
+			$sb = array();
+			if ( !empty($val) ) {
+				$val = explode(',', $val);
+				foreach ( $val as $k => $v ) {
+					if ( strpos($v, 'widget-') === false )
+						continue;
+
+					$sb[$k] = substr($v, strpos($v, '_') + 1);
+				}
+			}
+			$sidebars[$key] = $sb;
+		}
+		wp_set_sidebars_widgets($sidebars);
+		die('1');
+	}
+
+	die('-1');
+	break;
+case 'save-widget' :
+	check_ajax_referer( 'save-sidebar-widgets', 'savewidgets' );
+
+	if ( !current_user_can('switch_themes') || !isset($_POST['id_base']) )
+		die('-1');
+
+	unset( $_POST['savewidgets'], $_POST['action'] );
+
+	$id_base = $_POST['id_base'];
+	$number = isset($_POST['widget_number']) ? $_POST['widget_number'] : '';
+	$sidebar_id = $_POST['sidebar'];
+	$sidebars = wp_get_sidebars_widgets();
+	$sidebar = isset($sidebars[$sidebar_id]) ? $sidebars[$sidebar_id] : array();
+
+	// delete
+	if ( isset($_POST['delete_widget']) && $_POST['delete_widget'] ) {
+		$del_id = $_POST['widget-id'];
+		$widget = isset($wp_registered_widgets[$del_id]) ? $wp_registered_widgets[$del_id] : false;
+
+		if ( !in_array($del_id, $sidebar, true) )
+			die('-1');
+
+		if ( $widget ) {
+			$option = str_replace( '-', '_', 'widget_' . $id_base );
+			$data = get_option($option);
+
+			if ( isset($widget['params'][0]['number']) ) {
+				$number = $widget['params'][0]['number'];
+				if ( is_array($data) && isset($data[$number]) ) {
+					unset( $data[$number] );
+					update_option($option, $data);
+				}
+			} else {
+				if ( $data ) {
+					$data = array();
+					update_option($option, $data);
+				}
+			}
+		}
+
+		$sidebar = array_diff( $sidebar, array($del_id) );
+		$sidebars[$sidebar_id] = $sidebar;
+		wp_set_sidebars_widgets($sidebars);
+
+		echo "deleted:$del_id";
+		die();
+	}
+
+	// save
+	foreach ( (array) $wp_registered_widget_updates as $name => $control ) {
+		if ( $name == $id_base ) {
+			if ( !is_callable( $control['callback'] ) )
+				continue;
+
+			if ( $number ) {
+				// don't delete other instances of the same multi-widget
+				foreach ( $sidebar as $_widget_id ) {
+					if ( isset($wp_registered_widgets[$_widget_id]['params'][0]['number']) )
+						unset($wp_registered_widgets[$_widget_id]['params'][0]['number']);
+				}
+			}
+
+			ob_start();
+				call_user_func_array( $control['callback'], $control['params'] );
+			ob_end_clean();
+			break;
+		}
+	}
+
+	die('1');
 	break;
 default :
 	do_action( 'wp_ajax_' . $_POST['action'] );

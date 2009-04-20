@@ -1,8 +1,15 @@
 <?php
 
+/** 
+ * Disable error reporting
+ * 
+ * Set this to error_reporting( E_ALL ) or error_reporting( E_ALL | E_STRICT ) for debugging
+ */
+error_reporting(0);
+
 /** Set ABSPATH for execution */
-define( 'ABSPATH', dirname(dirname(__FILE__)) );
-define( 'WPINC', '/wp-includes' );
+define( 'ABSPATH', dirname(dirname(__FILE__)) . '/' );
+define( 'WPINC', 'wp-includes' );
 
 /**
  * @ignore
@@ -13,6 +20,12 @@ function __() {}
  * @ignore
  */
 function _c() {}
+
+/**
+ * @ignore
+ */
+function _x() {}
+
 
 /**
  * @ignore

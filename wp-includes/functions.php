@@ -96,7 +96,11 @@ function date_i18n( $dateformatstring, $unixtimestamp = false, $gmt = false ) {
 		// specially computed timestamp
 		$gmt = true;
 	}
-
+	
+	// store original value for language with untypical grammars
+	// see http://core.trac.wordpress.org/ticket/9396
+	$req_format = $dateformatstring;
+	
 	$datefunc = $gmt? 'gmdate' : 'date';
 
 	if ( ( !empty( $wp_locale->month ) ) && ( !empty( $wp_locale->weekday ) ) ) {
@@ -117,6 +121,8 @@ function date_i18n( $dateformatstring, $unixtimestamp = false, $gmt = false ) {
 		$dateformatstring = substr( $dateformatstring, 1, strlen( $dateformatstring ) -1 );
 	}
 	$j = @$datefunc( $dateformatstring, $i );
+	// allow plugins to redo this entirely for languages with untypical grammars
+	$j = apply_filters('date_i18n', $j, $req_format, $unixtimestamp, $gmt);
 	return $j;
 }
 
@@ -220,8 +226,7 @@ function get_weekstartend( $mysqlstring, $start_of_week = '' ) {
  */
 function maybe_unserialize( $original ) {
 	if ( is_serialized( $original ) ) // don't attempt to unserialize data that wasn't serialized going in
-		if ( false !== $gm = @unserialize( $original ) )
-			return $gm;
+		return @unserialize( $original );
 	return $original;
 }
 
@@ -651,7 +656,7 @@ function delete_transient($transient) {
  *
  * If the transient does not exist or does not have a value, then the return value
  * will be false.
- * 
+ *
  * @since 2.8.0
  * @package WordPress
  * @subpackage Transient
@@ -661,6 +666,10 @@ function delete_transient($transient) {
  */
 function get_transient($transient) {
 	global $_wp_using_ext_object_cache, $wpdb;
+
+	$pre = apply_filters( 'pre_transient_' . $transient, false );
+	if ( false !== $pre )
+		return $pre;
 
 	if ( $_wp_using_ext_object_cache ) {
 		$value = wp_cache_get($transient, 'transient');
@@ -710,7 +719,7 @@ function set_transient($transient, $value, $expiration = 0) {
 		if ( false === get_option( $safe_transient ) ) {
 			$autoload = 'yes';
 			if ( 0 != $expiration ) {
-				$autoload = 'no'; 
+				$autoload = 'no';
 				add_option($transient_timeout, time() + $expiration, '', 'no');
 			}
 			return add_option($transient, $value, '', $autoload);
@@ -1382,6 +1391,7 @@ function get_status_header_desc( $code ) {
 		$wp_header_to_desc = array(
 			100 => 'Continue',
 			101 => 'Switching Protocols',
+			102 => 'Processing',
 
 			200 => 'OK',
 			201 => 'Created',
@@ -1390,6 +1400,8 @@ function get_status_header_desc( $code ) {
 			204 => 'No Content',
 			205 => 'Reset Content',
 			206 => 'Partial Content',
+			207 => 'Multi-Status',
+			226 => 'IM Used',
 
 			300 => 'Multiple Choices',
 			301 => 'Moved Permanently',
@@ -1397,10 +1409,12 @@ function get_status_header_desc( $code ) {
 			303 => 'See Other',
 			304 => 'Not Modified',
 			305 => 'Use Proxy',
+			306 => 'Reserved',
 			307 => 'Temporary Redirect',
 
 			400 => 'Bad Request',
 			401 => 'Unauthorized',
+			402 => 'Payment Required',
 			403 => 'Forbidden',
 			404 => 'Not Found',
 			405 => 'Method Not Allowed',
@@ -1416,13 +1430,20 @@ function get_status_header_desc( $code ) {
 			415 => 'Unsupported Media Type',
 			416 => 'Requested Range Not Satisfiable',
 			417 => 'Expectation Failed',
+			422 => 'Unprocessable Entity',
+			423 => 'Locked',
+			424 => 'Failed Dependency',
+			426 => 'Upgrade Required',
 
 			500 => 'Internal Server Error',
 			501 => 'Not Implemented',
 			502 => 'Bad Gateway',
 			503 => 'Service Unavailable',
 			504 => 'Gateway Timeout',
-			505 => 'HTTP Version Not Supported'
+			505 => 'HTTP Version Not Supported',
+			506 => 'Variant Also Negotiates',
+			507 => 'Insufficient Storage',
+			510 => 'Not Extended'
 		);
 	}
 
@@ -1477,7 +1498,7 @@ function wp_get_nocache_headers() {
 		'Cache-Control' => 'no-cache, must-revalidate, max-age=0',
 		'Pragma' => 'no-cache',
 	);
-	
+
 	if ( function_exists('apply_filters') ) {
 		$headers = apply_filters('nocache_headers', $headers);
 	}
@@ -1495,8 +1516,8 @@ function wp_get_nocache_headers() {
  */
 function nocache_headers() {
 	$headers = wp_get_nocache_headers();
-	foreach( (array) $headers as $name => $field_value ) 
-		@header("{$name}: {$field_value}");		
+	foreach( (array) $headers as $name => $field_value )
+		@header("{$name}: {$field_value}");
 }
 
 /**
@@ -1654,15 +1675,20 @@ function is_blog_installed() {
 	global $wpdb;
 
 	// Check cache first. If options table goes away and we have true cached, oh well.
-	if ( wp_cache_get('is_blog_installed') )
+	if ( wp_cache_get( 'is_blog_installed' ) )
 		return true;
 
 	$suppress = $wpdb->suppress_errors();
-	$installed = $wpdb->get_var( "SELECT option_value FROM $wpdb->options WHERE option_name = 'siteurl'" );
-	$wpdb->suppress_errors($suppress);
+	$alloptions = wp_load_alloptions();
+	// If siteurl is not set to autoload, check it specifically
+	if ( !isset( $alloptions['siteurl'] ) )
+		$installed = $wpdb->get_var( "SELECT option_value FROM $wpdb->options WHERE option_name = 'siteurl'" );
+	else 
+		$installed = $alloptions['siteurl'];
+	$wpdb->suppress_errors( $suppress );
 
-	$installed = !empty( $installed ) ? true : false;
-	wp_cache_set('is_blog_installed', $installed);
+	$installed = !empty( $installed );
+	wp_cache_set( 'is_blog_installed', $installed );
 
 	return $installed;
 }
@@ -2096,7 +2122,7 @@ function wp_upload_bits( $name, $deprecated, $bits, $time = null ) {
 function wp_ext2type( $ext ) {
 	$ext2type = apply_filters('ext2type', array(
 		'audio' => array('aac','ac3','aif','aiff','mp1','mp2','mp3','m3a','m4a','m4b','ogg','ram','wav','wma'),
-		'video' => array('asf','avi','divx','dv','mov','mpg','mpeg','mp4','mpv','ogm','qt','rm','vob','wmv'),
+		'video' => array('asf','avi','divx','dv','mov','mpg','mpeg','mp4','mpv','ogm','qt','rm','vob','wmv', 'm4v'),
 		'document' => array('doc','docx','pages','odt','rtf','pdf'),
 		'spreadsheet' => array('xls','xlsx','numbers','ods'),
 		'interactive' => array('ppt','pptx','key','odp','swf'),
@@ -2133,12 +2159,13 @@ function wp_check_filetype( $filename, $mimes = null ) {
 		'avi' => 'video/avi',
 		'divx' => 'video/divx',
 		'mov|qt' => 'video/quicktime',
-		'mpeg|mpg|mpe|mp4' => 'video/mpeg',
+		'mpeg|mpg|mpe' => 'video/mpeg',
 		'txt|c|cc|h' => 'text/plain',
 		'rtx' => 'text/richtext',
 		'css' => 'text/css',
 		'htm|html' => 'text/html',
 		'mp3|m4a' => 'audio/mpeg',
+		'mp4|m4v' => 'video/mp4',
 		'ra|ram' => 'audio/x-realaudio',
 		'wav' => 'audio/wav',
 		'ogg' => 'audio/ogg',
@@ -2217,8 +2244,8 @@ function wp_explain_nonce( $action ) {
 		$trans['update']['attachment'] = array( __( 'Your attempt to edit this attachment: &quot;%s&quot; has failed.' ), 'get_the_title' );
 
 		$trans['add']['category']      = array( __( 'Your attempt to add this category has failed.' ), false );
-		$trans['delete']['category']   = array( __( 'Your attempt to delete this category: &quot;%s&quot; has failed.' ), 'get_catname' );
-		$trans['update']['category']   = array( __( 'Your attempt to edit this category: &quot;%s&quot; has failed.' ), 'get_catname' );
+		$trans['delete']['category']   = array( __( 'Your attempt to delete this category: &quot;%s&quot; has failed.' ), 'get_cat_name' );
+		$trans['update']['category']   = array( __( 'Your attempt to edit this category: &quot;%s&quot; has failed.' ), 'get_cat_name' );
 
 		$trans['delete']['comment']    = array( __( 'Your attempt to delete this comment: &quot;%s&quot; has failed.' ), 'use_id' );
 		$trans['unapprove']['comment'] = array( __( 'Your attempt to unapprove this comment: &quot;%s&quot; has failed.' ), 'use_id' );
@@ -2270,9 +2297,11 @@ function wp_explain_nonce( $action ) {
 				return $trans[$verb][$noun][0];
 			}
 		}
-	}
 
-	return apply_filters( 'explain_nonce_' . $verb . '-' . $noun, __( 'Are you sure you want to do this?' ), $matches[4] );
+		return apply_filters( 'explain_nonce_' . $verb . '-' . $noun, __( 'Are you sure you want to do this?' ), $matches[4] );
+	} else {
+		return apply_filters( 'explain_nonce_' . $action, __( 'Are you sure you want to do this?' ) );
+	}
 }
 
 /**
@@ -2293,7 +2322,7 @@ function wp_nonce_ays( $action ) {
 	if ( wp_get_referer() )
 		$html .= "</p><p><a href='" . remove_query_arg( 'updated', clean_url( wp_get_referer() ) ) . "'>" . __( 'Please try again.' ) . "</a>";
 	elseif ( 'log-out' == $action )
-		$html .= "</p><p>" . sprintf( __( "Do you really want to <a href='%s'>log out</a>?"), wp_nonce_url( site_url('wp-login.php?action=logout', 'login'), 'log-out' ) );
+		$html .= "</p><p>" . sprintf( __( "Do you really want to <a href='%s'>log out</a>?"), wp_logout_url() );
 
 	wp_die( $html, $title);
 }
@@ -2602,10 +2631,10 @@ function wp_parse_args( $args, $defaults = '' ) {
  * @uses add_action() Calls '_admin_menu' hook with 'wp_widgets_add_menu' value.
  */
 function wp_maybe_load_widgets() {
-	if ( !function_exists( 'dynamic_sidebar' ) ) {
-		require_once( ABSPATH . WPINC . '/widgets.php' );
-		add_action( '_admin_menu', 'wp_widgets_add_menu' );
-	}
+	if ( ! apply_filters('load_default_widgets', true) )
+		return;
+	require_once( ABSPATH . WPINC . '/default-widgets.php' );
+	add_action( '_admin_menu', 'wp_widgets_add_menu' );
 }
 
 /**
@@ -2731,6 +2760,7 @@ function url_is_accessable_via_ssl($url)
 		curl_setopt($ch, CURLOPT_FAILONERROR, true);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
 
 		curl_exec($ch);
 
@@ -3005,24 +3035,6 @@ function wp_suspend_cache_invalidation($suspend = true) {
 	return $current_suspend;
 }
 
-/**
- * Copy an object.
- *
- * Returns a cloned copy of an object.
- *
- * @since 2.7.0
- *
- * @param object $object The object to clone
- * @return object The cloned object
- */
-function wp_clone( $object ) {
-	static $can_clone;
-	if ( !isset( $can_clone ) ) {
-		$can_clone = version_compare( phpversion(), '5.0', '>=' );
-	}
-	return $can_clone ? clone( $object ) : $object;
-}
-
 function get_site_option( $key, $default = false, $use_cache = true ) {
 	return get_option($key, $default);
 }
@@ -3035,6 +3047,101 @@ function add_site_option( $key, $value ) {
 // expects $key, $value not to be SQL escaped
 function update_site_option( $key, $value ) {
 	return update_option($key, $value);
+}
+
+/**
+ * gmt_offset modification for smart timezone handling
+ *
+ * Overrides the gmt_offset option if we have a timezone_string available
+ */
+function wp_timezone_override_offset() {
+	if (!wp_timezone_supported()) return false;
+
+	$tz = get_option('timezone_string');
+	if (empty($tz)) return false;
+
+	@date_default_timezone_set($tz);
+
+	$dateTimeZoneSelected = timezone_open($tz);
+	$dateTimeServer = date_create();
+	if ($dateTimeZoneSelected === false || $dateTimeServer === false) return false;
+
+	$timeOffset = timezone_offset_get($dateTimeZoneSelected, $dateTimeServer);
+	$timeOffset = $timeOffset / 3600;
+
+	return $timeOffset;
+}
+
+/**
+ * Check for PHP timezone support
+ *
+ */
+function wp_timezone_supported() {
+	if (function_exists('date_default_timezone_set')
+		&& function_exists('timezone_identifiers_list')
+		&& function_exists('timezone_open')
+		&& function_exists('timezone_offset_get')
+		)
+		return true;
+
+	return false;
+}
+
+/**
+ * Gives a nicely formatted list of timezone strings // temporary! Not in final
+ *
+ * @param string $selectedzone - which zone should be the selected one
+ *
+ */
+function wp_timezone_choice($selectedzone) {
+	$continents = array('Africa', 'America', 'Antarctica', 'Arctic', 'Asia', 'Atlantic', 'Australia', 'Europe', 'Indian', 'Pacific', 'Etc');
+
+	$all = timezone_identifiers_list();
+
+	$i = 0;
+	foreach ( $all as $zone ) {
+		$zone = explode('/',$zone);
+		if ( ! in_array($zone[0], $continents) )
+			continue;
+		$zonen[$i]['continent'] = isset($zone[0]) ? $zone[0] : '';
+		$zonen[$i]['city'] = isset($zone[1]) ? $zone[1] : '';
+		$zonen[$i]['subcity'] = isset($zone[2]) ? $zone[2] : '';
+		$i++;
+	}
+
+	asort($zonen);
+	$structure = '';
+	$pad = '&nbsp;&nbsp;&nbsp;';
+
+	if ( empty($selectedzone) )
+		$structure .= '<option selected="selected" value="">' . __('Select a city') . "</option>\n";
+	foreach ( $zonen as $zone ) {
+		extract($zone);
+		if ( empty($selectcontinent) && !empty($city) ) {
+			$selectcontinent = $continent;
+			$structure .= '<optgroup label="'.$continent.'">' . "\n"; // continent
+		} elseif ( !empty($selectcontinent) && $selectcontinent != $continent ) {
+			$structure .= "</optgroup>\n";
+			$selectcontinent = '';
+			if ( !empty($city) ) {
+				$selectcontinent = $continent;
+				$structure .= '<optgroup label="'.$continent.'">' . "\n"; // continent
+			}
+		}
+
+		if ( !empty($city) ) {
+			if ( !empty($subcity) ) {
+				$city = $city . '/'. $subcity;
+			}
+			$structure .= "\t<option ".((($continent.'/'.$city)==$selectedzone)?'selected="selected"':'')." value=\"".($continent.'/'.$city)."\">$pad".str_replace('_',' ',$city)."</option>\n"; //Timezone
+		} else {
+			$structure .= "<option ".(($continent==$selectedzone)?'selected="selected"':'')." value=\"".$continent."\">".$continent."</option>\n"; //Timezone
+		}
+	}
+
+	if ( !empty($selectcontinent) )
+		$structure .= "</optgroup>\n";
+	return $structure;
 }
 
 

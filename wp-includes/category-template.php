@@ -293,11 +293,7 @@ function the_category( $separator = '', $parents='', $post_id = false ) {
  * @return string Category description, available.
  */
 function category_description( $category = 0 ) {
-	global $cat;
-	if ( !$category )
-		$category = $cat;
-
-	return get_term_field( 'description', $category, 'category' );
+	return term_description( $category, 'category' );
 }
 
 /**
@@ -526,7 +522,7 @@ function wp_tag_cloud( $args = '' ) {
 	$defaults = array(
 		'smallest' => 8, 'largest' => 22, 'unit' => 'pt', 'number' => 45,
 		'format' => 'flat', 'orderby' => 'name', 'order' => 'ASC',
-		'exclude' => '', 'include' => '', 'link' => 'view', 'taxonomy' => 'post_tag'
+		'exclude' => '', 'include' => '', 'link' => 'view', 'taxonomy' => 'post_tag', 'echo' => true
 	);
 	$args = wp_parse_args( $args, $defaults );
 
@@ -551,7 +547,7 @@ function wp_tag_cloud( $args = '' ) {
 
 	$return = apply_filters( 'wp_tag_cloud', $return, $args );
 
-	if ( 'array' == $args['format'] )
+	if ( 'array' == $args['format'] || empty($args['echo']) )
 		return $return;
 
 	echo $return;
@@ -779,7 +775,7 @@ function get_the_tags( $id = 0 ) {
  * @return string
  */
 function get_the_tag_list( $before = '', $sep = '', $after = '' ) {
-	return apply_filters( 'the_tags', get_the_term_list( 0, 'post_tag', $before, $sep, $after ) );
+	return apply_filters( 'the_tags', get_the_term_list( 0, 'post_tag', $before, $sep, $after ), $before, $sep, $after);
 }
 
 /**
@@ -792,8 +788,40 @@ function get_the_tag_list( $before = '', $sep = '', $after = '' ) {
  * @param string $after Optional. After list.
  * @return string
  */
-function the_tags( $before = 'Tags: ', $sep = ', ', $after = '' ) {
-	return the_terms( 0, 'post_tag', $before, $sep, $after );
+function the_tags( $before = null, $sep = ', ', $after = '' ) {
+	if ( null === $before )
+		$before = __('Tags: ');
+	echo get_the_tag_list($before, $sep, $after);
+}
+
+/**
+ * Retrieve tag description.
+ *
+ * @since 2.8
+ *
+ * @param int $tag Optional. Tag ID. Will use global tag ID by default.
+ * @return string Tag description, available.
+ */
+function tag_description( $tag = 0 ) {
+	return term_description( $tag );
+}
+
+/**
+ * Retrieve term description.
+ *
+ * @since 2.8
+ *
+ * @param int $term Optional. Term ID. Will use global term ID by default.
+ * @return string Term description, available.
+ */
+function term_description( $term = 0, $taxonomy = 'post_tag' ) {
+	if ( !$term && ( is_tax() || is_tag() || is_category() ) ) {
+		global $wp_query;
+		$term = $wp_query->get_queried_object();
+		$taxonomy = $term->taxonomy;
+		$term = $term->term_id;
+	}
+	return get_term_field( 'description', $term, $taxonomy );
 }
 
 /**

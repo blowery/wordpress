@@ -598,7 +598,7 @@ function WP_Filesystem( $args = false ) {
 
 	$wp_filesystem = new $method($args);
 
-	if ( $wp_filesystem->errors->get_error_code() )
+	if ( is_wp_error($wp_filesystem->errors) && $wp_filesystem->errors->get_error_code() )
 		return false;
 
 	if ( !$wp_filesystem->connect() )
@@ -713,12 +713,13 @@ jQuery(function($){
 	jQuery("#ftp, #ftps").click(function () {
 		jQuery("#ssh_keys").hide();
 	});
-	jQuery('form input[value=""]:first').focus(); 
+	jQuery('form input[value=""]:first').focus();
 });
 -->
 </script>
 <form action="<?php echo $form_post ?>" method="post">
 <div class="wrap">
+<?php screen_icon(); ?>
 <h2><?php _e('Connection Information') ?></h2>
 <p><?php _e('To perform the requested action, connection information is required.') ?></p>
 

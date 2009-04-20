@@ -1398,8 +1398,10 @@ class WP_Query {
 
 			if ( empty($qv['taxonomy']) || empty($qv['term']) ) {
 				$this->is_tax = false;
-				foreach ( $GLOBALS['wp_taxonomies'] as $t ) {
+				foreach ( $GLOBALS['wp_taxonomies'] as $taxonomy => $t ) {
 					if ( isset($t->query_var) && isset($qv[$t->query_var]) && '' != $qv[$t->query_var] ) {
+						$qv['taxonomy'] = $taxonomy;
+						$qv['term'] = $qv[$t->query_var];
 						$this->is_tax = true;
 						break;
 					}
@@ -1451,7 +1453,7 @@ class WP_Query {
 		if ( $this->is_feed && ( !empty($qv['withcomments']) || ( empty($qv['withoutcomments']) && $this->is_singular ) ) )
 			$this->is_comment_feed = true;
 
-		if ( !( $this->is_singular || $this->is_archive || $this->is_search || $this->is_feed || $this->is_trackback || $this->is_404 || $this->is_admin || $this->is_comments_popup ) )
+		if ( !( $this->is_singular || $this->is_archive || $this->is_search || $this->is_feed || $this->is_trackback || $this->is_404 || $this->is_admin || $this->is_comments_popup || $this->is_robots ) )
 			$this->is_home = true;
 
 		// Correct is_* for page_on_front and page_for_posts
@@ -1813,6 +1815,7 @@ class WP_Query {
 
 		// Category stuff for nice URLs
 		if ( '' != $q['category_name'] && !$this->is_singular ) {
+			$q['category_name'] = sanitize_title($q['category_name']);
 			$reqcat = get_category_by_path($q['category_name']);
 			$q['category_name'] = str_replace('%2F', '/', urlencode(urldecode($q['category_name'])));
 			$cat_paths = '/' . trim($q['category_name'], '/');
@@ -2001,6 +2004,9 @@ class WP_Query {
 			}
 			$q['author_name'] = sanitize_title($q['author_name']);
 			$q['author'] = $wpdb->get_var("SELECT ID FROM $wpdb->users WHERE user_nicename='".$q['author_name']."'");
+			$q['author'] = get_user_by('slug', $q['author_name']);
+			if ( $q['author'] )
+				$q['author'] = $q['author']->ID; 
 			$whichauthor .= " AND ($wpdb->posts.post_author = ".absint($q['author']).')';
 		}
 
@@ -2019,7 +2025,7 @@ class WP_Query {
 			$q['orderby'] = "$wpdb->posts.post_date ".$q['order'];
 		} else {
 			// Used to filter values
-			$allowed_keys = array('author', 'date', 'category', 'title', 'modified', 'menu_order', 'parent', 'ID', 'rand');
+			$allowed_keys = array('author', 'date', 'title', 'modified', 'menu_order', 'parent', 'ID', 'rand');
 			if ( !empty($q['meta_key']) ) {
 				$allowed_keys[] = $q['meta_key'];
 				$allowed_keys[] = 'meta_value';

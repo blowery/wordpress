@@ -10,7 +10,7 @@
  * Creates a new user from the "Users" form using $_POST information.
  *
  * It seems that the first half is for backwards compatibility, but only
- * has the ability to alter the user's role. Wordpress core seems to 
+ * has the ability to alter the user's role. Wordpress core seems to
  * use this function only in the second way, running edit_user() with
  * no id so as to create a new user.
  *
@@ -31,7 +31,7 @@ function add_user() {
 				$editable_roles = get_editable_roles();
 				if (!$editable_roles[$_POST['role']])
 					wp_die(__('You can&#8217;t give users that role.'));
-				
+
 				$user = new WP_User( $user_id );
 				$user->set_role( $_POST['role'] );
 			}
@@ -77,7 +77,7 @@ function edit_user( $user_id = 0 ) {
 
 		// Don't let anyone with 'edit_users' (admins) edit their own role to something without it.
 		if( $user_id != $current_user->id || $wp_roles->role_objects[$_POST['role']]->has_cap( 'edit_users' ))
-			$user->role = $_POST['role']; 
+			$user->role = $_POST['role'];
 
 		// If the new role isn't editable by the logged-in user die with error
 		$editable_roles = get_editable_roles();
@@ -167,11 +167,12 @@ function edit_user( $user_id = 0 ) {
 
 	/* checking e-mail address */
 	if ( empty ( $user->user_email ) ) {
-		$errors->add( 'user_email', __( '<strong>ERROR</strong>: Please enter an e-mail address.' ), array( 'form-field' => 'email' ) );
-	} else
-		if (!is_email( $user->user_email ) ) {
-			$errors->add( 'user_email', __( "<strong>ERROR</strong>: The e-mail address isn't correct." ), array( 'form-field' => 'email' ) );
-		}
+		$errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please enter an e-mail address.' ), array( 'form-field' => 'email' ) );
+	} elseif (!is_email( $user->user_email ) ) {
+		$errors->add( 'invalid_email', __( "<strong>ERROR</strong>: The e-mail address isn't correct." ), array( 'form-field' => 'email' ) );
+	} elseif ( ( $owner_id = email_exists($user->user_email) ) && $owner_id != $user->ID ) {
+		$errors->add( 'email_exists', __('<strong>ERROR</strong>: This email is already registered, please choose another one.'), array( 'form-field' => 'email' ) );
+	}
 
 	if ( $errors->get_error_codes() )
 		return $errors;
@@ -258,16 +259,16 @@ function get_editable_user_ids( $user_id, $exclude_zeros = true, $post_type = 'p
 }
 
 /**
- * Fetch a filtered list of user roles that the current user is 
- * allowed to edit. 
+ * Fetch a filtered list of user roles that the current user is
+ * allowed to edit.
  *
- * Simple function who's main purpose is to allow filtering of the 
+ * Simple function who's main purpose is to allow filtering of the
  * list of roles in the $wp_roles object so that plugins can remove
  * innappropriate ones depending on the situation or user making edits.
  * Specifically because without filtering anyone with the edit_users
  * capability can edit others to be administrators, even if they are
  * only editors or authors. This filter allows admins to delegate
- * user management. 
+ * user management.
  *
  * @since 2.8
  *
@@ -277,8 +278,8 @@ function get_editable_roles() {
 	global $wp_roles;
 
 	$all_roles = $wp_roles->roles;
-	$editable_roles = apply_filters('editable_roles', $all_roles);	
-	
+	$editable_roles = apply_filters('editable_roles', $all_roles);
+
 	return $editable_roles;
 }
 
@@ -411,6 +412,10 @@ function wp_delete_user($id, $reassign = 'novalue') {
 	global $wpdb;
 
 	$id = (int) $id;
+	$user = new WP_User($id);	
+
+	// allow for transaction statement
+	do_action('delete_user', $id);
 
 	if ($reassign == 'novalue') {
 		$post_ids = $wpdb->get_col( $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_author = %d", $id) );
@@ -421,7 +426,13 @@ function wp_delete_user($id, $reassign = 'novalue') {
 		}
 
 		// Clean links
-		$wpdb->query( $wpdb->prepare("DELETE FROM $wpdb->links WHERE link_owner = %d", $id) );
+		$link_ids = $wpdb->get_col( $wpdb->prepare("SELECT link_id FROM $wpdb->links WHERE link_owner = %d", $id) );
+
+		if ( $link_ids ) {
+			foreach ( $link_ids as $link_id )
+				wp_delete_link($link_id);
+		}
+
 	} else {
 		$reassign = (int) $reassign;
 		$wpdb->query( $wpdb->prepare("UPDATE $wpdb->posts SET post_author = %d WHERE post_author = %d", $reassign, $id) );
@@ -429,14 +440,17 @@ function wp_delete_user($id, $reassign = 'novalue') {
 	}
 
 	// FINALLY, delete user
-	do_action('delete_user', $id);
 
-	$wpdb->query( $wpdb->prepare("DELETE FROM $wpdb->users WHERE ID = %d", $id) );
 	$wpdb->query( $wpdb->prepare("DELETE FROM $wpdb->usermeta WHERE user_id = %d", $id) );
+	$wpdb->query( $wpdb->prepare("DELETE FROM $wpdb->users WHERE ID = %d", $id) );
 
 	wp_cache_delete($id, 'users');
 	wp_cache_delete($user->user_login, 'userlogins');
 	wp_cache_delete($user->user_email, 'useremail');
+	wp_cache_delete($user->user_nicename, 'userslugs');
+	
+	// allow for commit transaction
+	do_action('deleted_user', $id);
 
 	return true;
 }

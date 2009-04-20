@@ -177,12 +177,15 @@ unset($status_links);
 
 <p class="search-box">
 	<label class="hidden" for="comment-search-input"><?php _e( 'Search Comments' ); ?>:</label>
-	<input type="text" class="search-input" id="comment-search-input" name="s" value="<?php _admin_search_query(); ?>" />
+	<input type="text" id="comment-search-input" name="s" value="<?php _admin_search_query(); ?>" />
 	<input type="submit" value="<?php _e( 'Search Comments' ); ?>" class="button" />
 </p>
 
 <?php
-$comments_per_page = apply_filters('comments_per_page', 20, $comment_status);
+$comments_per_page = get_user_option('edit_comments_per_page');
+if ( empty($comments_per_page) )
+	$comments_per_page = 20;
+$comments_per_page = apply_filters('comments_per_page', $comments_per_page, $comment_status);
 
 if ( isset( $_GET['apage'] ) )
 	$page = abs( (int) $_GET['apage'] );
@@ -278,7 +281,7 @@ $page_links = paginate_links( array(
 <?php }
 
 if ( 'spam' == $comment_status ) {
-	wp_nonce_field('bulk-spam-delete', '_spam_nonce'); 
+	wp_nonce_field('bulk-spam-delete', '_spam_nonce');
         if ( current_user_can ('moderate_comments')) { ?>
 		<input type="submit" name="delete_all_spam" value="<?php _e('Delete All Spam'); ?>" class="button-secondary apply" />
 <?php	}
@@ -365,7 +368,7 @@ if ( $page_links )
 
 <div id="ajax-response"></div>
 
-<?php } elseif ( 'moderated' == $_GET['comment_status'] ) { ?>
+<?php } elseif ( isset($_GET['comment_status']) && 'moderated' == $_GET['comment_status'] ) { ?>
 <p><?php _e('No comments awaiting moderation&hellip; yet.') ?></p>
 </form>
 

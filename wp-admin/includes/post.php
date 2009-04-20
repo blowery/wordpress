@@ -411,7 +411,7 @@ function post_exists($title, $content = '', $date = '') {
 	global $wpdb;
 
 	$post_title = stripslashes( sanitize_post_field( 'post_title', $title, 0, 'db' ) );
-	$post_content = stripslashes( sanitize_post_field( 'post_content', $content, 0, 'db' ) );    
+	$post_content = stripslashes( sanitize_post_field( 'post_content', $content, 0, 'db' ) );
 	$post_date = stripslashes( sanitize_post_field( 'post_date', $date, 0, 'db' ) );
 
 	$query = "SELECT ID FROM $wpdb->posts WHERE 1=1";
@@ -431,7 +431,7 @@ function post_exists($title, $content = '', $date = '') {
 		$query .= 'AND post_content = %s';
 		$args[] = $post_content;
 	}
-    
+
 	if ( !empty ( $args ) )
 		return $wpdb->get_var( $wpdb->prepare($query, $args) );
 
@@ -677,10 +677,13 @@ function update_meta( $meta_id, $meta_key, $meta_value ) {
 	if ( in_array($meta_key, $protected) )
 		return false;
 
+	if ( '' === trim( $meta_value ) )
+		return false;
+
 	$post_id = $wpdb->get_var( $wpdb->prepare("SELECT post_id FROM $wpdb->postmeta WHERE meta_id = %d", $meta_id) );
 	wp_cache_delete($post_id, 'post_meta');
 
-	$meta_value = maybe_serialize( stripslashes( $meta_value ));
+	$meta_value = maybe_serialize( stripslashes( $meta_value ) );
 	$meta_id = (int) $meta_id;
 
 	$data  = compact( 'meta_key', 'meta_value' );
@@ -787,11 +790,11 @@ function wp_edit_posts_query( $q = false ) {
 	$q['m']   = isset($q['m']) ? (int) $q['m'] : 0;
 	$q['cat'] = isset($q['cat']) ? (int) $q['cat'] : 0;
 	$post_stati  = array(	//	array( adj, noun )
-				'publish' => array(__('Published'), __('Published posts'), _n_noop('Published <span class="count">(%s)</span>', 'Published <span class="count">(%s)</span>')),
-				'future' => array(__('Scheduled'), __('Scheduled posts'), _n_noop('Scheduled <span class="count">(%s)</span>', 'Scheduled <span class="count">(%s)</span>')),
-				'pending' => array(__('Pending Review'), __('Pending posts'), _n_noop('Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>')),
-				'draft' => array(__('Draft'), _c('Drafts|manage posts header'), _n_noop('Draft <span class="count">(%s)</span>', 'Drafts <span class="count">(%s)</span>')),
-				'private' => array(__('Private'), __('Private posts'), _n_noop('Private <span class="count">(%s)</span>', 'Private <span class="count">(%s)</span>')),
+				'publish' => array(_x('Published', 'post'), __('Published posts'), _n_noop('Published <span class="count">(%s)</span>', 'Published <span class="count">(%s)</span>')),
+				'future' => array(_x('Scheduled', 'post'), __('Scheduled posts'), _n_noop('Scheduled <span class="count">(%s)</span>', 'Scheduled <span class="count">(%s)</span>')),
+				'pending' => array(_x('Pending Review', 'post'), __('Pending posts'), _n_noop('Pending Review <span class="count">(%s)</span>', 'Pending Review <span class="count">(%s)</span>')),
+				'draft' => array(_x('Draft', 'post'), _x('Drafts', 'manage posts header'), _n_noop('Draft <span class="count">(%s)</span>', 'Drafts <span class="count">(%s)</span>')),
+				'private' => array(_x('Private', 'post'), __('Private posts'), _n_noop('Private <span class="count">(%s)</span>', 'Private <span class="count">(%s)</span>')),
 			);
 
 	$post_stati = apply_filters('post_stati', $post_stati);
@@ -815,7 +818,12 @@ function wp_edit_posts_query( $q = false ) {
 		$orderby = 'date';
 	}
 
-	wp("post_type=post&what_to_show=posts$post_status_q&posts_per_page=15&order=$order&orderby=$orderby");
+	$posts_per_page = get_user_option('edit_per_page');
+	if ( empty($posts_per_page) )
+		$posts_per_page = 15;
+	$posts_per_page = apply_filters('edit_posts_per_page', $posts_per_page);
+
+	wp("post_type=post&what_to_show=posts$post_status_q&posts_per_page=$posts_per_page&order=$order&orderby=$orderby");
 
 	return array($post_stati, $avail_post_stati);
 }
@@ -851,7 +859,10 @@ function wp_edit_attachments_query( $q = false ) {
 	$q['cat'] = isset( $q['cat'] ) ? (int) $q['cat'] : 0;
 	$q['post_type'] = 'attachment';
 	$q['post_status'] = 'any';
-	$q['posts_per_page'] = 15;
+	$media_per_page = get_user_option('upload_per_page');
+	if ( empty($media_per_page) )
+		$media_per_page = 20;
+	$q['posts_per_page'] = $media_per_page;
 	$post_mime_types = array(	//	array( adj, noun )
 				'image' => array(__('Images'), __('Manage Images'), _n_noop('Image <span class="count">(%s)</span>', 'Images <span class="count">(%s)</span>')),
 				'audio' => array(__('Audio'), __('Manage Audio'), _n_noop('Audio <span class="count">(%s)</span>', 'Audio <span class="count">(%s)</span>')),
@@ -922,7 +933,7 @@ function get_sample_permalink($id, $title=null, $name = null) {
 		$post->post_name = sanitize_title($name? $name : $title, $post->ID);
 	}
 
-	$post->filter = 'sample'; 
+	$post->filter = 'sample';
 
 	$permalink = get_permalink($post, true);
 
@@ -961,7 +972,7 @@ function get_sample_permalink_html( $id, $new_title = null, $new_slug = null ) {
 	list($permalink, $post_name) = get_sample_permalink($post->ID, $new_title, $new_slug);
 	if ( 'publish' == $post->post_status )
 		$view_post = 'post' == $post->post_type ? __('View Post') : __('View Page');
-	
+
 	if ( false === strpos($permalink, '%postname%') && false === strpos($permalink, '%pagename%') ) {
 		$return = '<strong>' . __('Permalink:') . "</strong>\n" . '<span id="sample-permalink">' . $permalink . "</span>\n";
 		$return .= '<span id="change-permalinks"><a href="options-permalink.php" class="button" target="_blank">' . __('Change Permalinks') . "</a></span>\n";
@@ -986,11 +997,12 @@ function get_sample_permalink_html( $id, $new_title = null, $new_slug = null ) {
 		}
 	}
 
-	$post_name_html = '<span id="editable-post-name" title="'.$title.'">'.$post_name_abridged.'</span><span id="editable-post-name-full">'.$post_name.'</span>';
+	$post_name_html = '<span id="editable-post-name" title="' . $title . '">' . $post_name_abridged . '</span>';
 	$display_link = str_replace(array('%pagename%','%postname%'), $post_name_html, $permalink);
 	$view_link = str_replace(array('%pagename%','%postname%'), $post_name, $permalink);
 	$return = '<strong>' . __('Permalink:') . "</strong>\n" . '<span id="sample-permalink">' . $display_link . "</span>\n";
 	$return .= '<span id="edit-slug-buttons"><a href="#post_name" class="edit-slug button" onclick="edit_permalink(' . $id . '); return false;">' . __('Edit') . "</a></span>\n";
+	$return .= '<span id="editable-post-name-full">' . $post_name . "</span>\n";
 	if ( isset($view_post) )
 		$return .= "<span id='view-post-btn'><a href='$view_link' class='button' target='_blank'>$view_post</a></span>\n";
 
@@ -1141,7 +1153,7 @@ function post_preview() {
  */
 function wp_tiny_mce( $teeny = false ) {
 	global $concatenate_scripts, $compress_scripts;
-	
+
 	if ( ! user_can_richedit() )
 		return;
 
@@ -1161,7 +1173,7 @@ function wp_tiny_mce( $teeny = false ) {
 		$plugins = apply_filters( 'teeny_mce_plugins', array('safari', 'inlinepopups', 'media', 'autosave', 'fullscreen') );
 		$ext_plugins = '';
 	} else {
-		$plugins = array( 'safari', 'inlinepopups', 'autosave', 'spellchecker', 'paste', 'wordpress', 'media', 'fullscreen', 'wpeditimage', 'wpgallery' );
+		$plugins = array( 'safari', 'inlinepopups', 'autosave', 'spellchecker', 'paste', 'wordpress', 'media', 'fullscreen', 'wpeditimage', 'wpgallery', 'tabfocus' );
 
 		/*
 		The following filter takes an associative array of external plugins for TinyMCE in the form 'plugin_name' => 'url'.
@@ -1293,7 +1305,8 @@ function wp_tiny_mce( $teeny = false ) {
 		'gecko_spellcheck' => true,
 		'entities' => '38,amp,60,lt,62,gt',
 		'accessibility_focus' => true,
-		'tab_focus' => ':prev,:next',
+		'tabfocus_elements' => 'major-publishing-actions',
+		'media_strict' => false,
 		'save_callback' => 'switchEditors.saveCallback',
 		'wpeditimage_disable_captions' => $no_captions,
 		'plugins' => "$plugins"

@@ -37,7 +37,7 @@ function wp_dashboard_setup() {
 		$widget_options['dashboard_incoming_links'] = array(
 			'home' => get_option('home'),
 			'link' => apply_filters( 'dashboard_incoming_links_link', 'http://blogsearch.google.com/blogsearch?hl=en&scoring=d&partner=wordpress&q=link:' . trailingslashit( get_option('home') ) ),
-			'url' => apply_filters( 'dashboard_incoming_links_feed', 'http://blogsearch.google.com/blogsearch_feeds?hl=en&scoring=d&ie=utf-8&num=10&output=rss&partner=wordpress&q=link:' . trailingslashit( get_option('home') ) ),
+			'url' => isset($widget_options['dashboard_incoming_links']['url']) ? apply_filters( 'dashboard_incoming_links_feed', $widget_options['dashboard_incoming_links']['url'] ) : apply_filters( 'dashboard_incoming_links_feed', 'http://blogsearch.google.com/blogsearch_feeds?hl=en&scoring=d&ie=utf-8&num=20&output=rss&partner=wordpress&q=link:' . trailingslashit( get_option('home') ) ),
 			'items' => isset($widget_options['dashboard_incoming_links']['items']) ? $widget_options['dashboard_incoming_links']['items'] : 10,
 			'show_date' => isset($widget_options['dashboard_incoming_links']['show_date']) ? $widget_options['dashboard_incoming_links']['show_date'] : false
 		);
@@ -167,7 +167,7 @@ function wp_dashboard() {
 <?php
 	echo "\t<div class='postbox-container' style='$width'>\n";
 	do_meta_boxes( 'dashboard', 'normal', '' );
-	
+
 	echo "\t</div><div class='postbox-container' style='{$hide2}$width'>\n";
 	do_meta_boxes( 'dashboard', 'side', '' );
 
@@ -603,6 +603,15 @@ function wp_dashboard_incoming_links_output() {
 	@extract( @$widgets['dashboard_incoming_links'], EXTR_SKIP );
 	$rss = fetch_feed( $url );
 
+	if ( is_wp_error($rss) ) {
+		if ( is_admin() || current_user_can('manage_options') ) {
+			echo '<p>';
+			printf(__('<strong>RSS Error</strong>: %s'), $rss->get_error_message());
+			echo '</p>';
+		}
+		return;
+	}
+
 	if ( !$rss->get_item_quantity() ) {
 		echo '<p>' . __('This dashboard widget queries <a href="http://blogsearch.google.com/">Google Blog Search</a> so that when another blog links to your site it will show up here. It has found no incoming links&hellip; yet. It&#8217;s okay &#8212; there is no rush.') . "</p>\n";
 		return;
@@ -734,12 +743,48 @@ function wp_dashboard_plugins_output() {
 	$new     = fetch_feed( 'http://wordpress.org/extend/plugins/rss/browse/new/' );
 	$updated = fetch_feed( 'http://wordpress.org/extend/plugins/rss/browse/updated/' );
 
+	if ( false === $plugin_slugs = get_transient( 'plugin_slugs' ) ) {
+		$plugin_slugs = array_keys( get_plugins() );
+		set_transient( 'plugin_slugs', $plugin_slugs, 86400 );
+	}
+
 	foreach ( array( 'popular' => __('Most Popular'), 'new' => __('Newest Plugins'), 'updated' => __('Recently Updated') ) as $feed => $label ) {
-		if ( !$$feed->get_item_quantity() )
+		if ( is_wp_error($$feed) || !$$feed->get_item_quantity() )
 			continue;
 
 		$items = $$feed->get_items(0, 5);
-		$item_key = array_rand($items);
+
+		// Pick a random, non-installed plugin
+		while ( true ) {
+			// Abort this foreach loop iteration if there's no plugins left of this type
+			if ( 0 == count($items) )
+				continue 2;
+
+			$item_key = array_rand($items);
+			$item = $items[$item_key];
+
+			list($link, $frag) = explode( '#', $item->get_link() );
+
+			$link = clean_url($link);
+			if ( preg_match( '|/([^/]+?)/?$|', $link, $matches ) )
+				$slug = $matches[1];
+			else {
+				unset( $items[$item_key] );
+				continue;
+			}
+
+			// Is this random plugin's slug already installed? If so, try again.
+			reset( $plugin_slugs );
+			foreach ( $plugin_slugs as $plugin_slug ) {
+				if ( $slug == substr( $plugin_slug, 0, strlen( $slug ) ) ) {
+					unset( $items[$item_key] );
+					continue 2;
+				}
+			}
+
+			// If we get to this point, then the random plugin isn't installed and we can stop the while().
+			break;
+		}
 
 		// Eliminate some common badly formed plugin descriptions
 		while ( ( null !== $item_key = array_rand($items) ) && false !== strpos( $items[$item_key]->get_description(), 'Plugin Name:' ) )
@@ -747,8 +792,6 @@ function wp_dashboard_plugins_output() {
 
 		if ( !isset($items[$item_key]) )
 			continue;
-
-		$item = $items[$item_key];
 
 		// current bbPress feed item titles are: user on "topic title"
 		if ( preg_match( '/&quot;(.*)&quot;/s', $item->get_title(), $matches ) )
@@ -758,14 +801,6 @@ function wp_dashboard_plugins_output() {
 		$title = wp_specialchars( $title );
 
 		$description = wp_specialchars( strip_tags(html_entity_decode($item->get_description(), ENT_QUOTES, get_option('blog_charset'))) );
-
-		list($link, $frag) = explode( '#', $item->get_link() );
-
-		$link = clean_url($link);
-		if( preg_match('|/([^/]+?)/?$|', $link, $matches) )
-			$slug = $matches[1];
-		else
-			$slug = '';
 
 		$ilink = wp_nonce_url('plugin-install.php?tab=plugin-information&plugin=' . $slug, 'install-plugin_' . $slug) .
 							'&amp;TB_iframe=true&amp;width=600&amp;height=800';
@@ -803,20 +838,14 @@ function wp_dashboard_cached_rss_widget( $widget_id, $callback, $check_urls = ar
 		$check_urls = array( $widgets[$widget_id]['url'] );
 	}
 
-
-	/* TODO Cache check here.
+	include_once ABSPATH . WPINC . '/class-feed.php';
 	foreach ( $check_urls as $check_url ) {
-
-		if ( 'HIT' !== $status ) {
+		$cache = new WP_Feed_Cache_Transient('', md5($check_url), '');
+		if ( ! $cache->load() ) {
 			echo $loading;
 			return false;
 		}
 	}
-	*/
-
-	// Always load async until above fixed.
-	echo $loading;
-	return false;
 
 	if ( $callback && is_callable( $callback ) ) {
 		$args = array_slice( func_get_args(), 2 );
@@ -872,7 +901,10 @@ function wp_dashboard_rss_control( $widget_id, $form_inputs = array() ) {
 		// title is optional.  If black, fill it if possible
 		if ( !$widget_options[$widget_id]['title'] && isset($_POST['widget-rss'][$number]['title']) ) {
 			$rss = fetch_feed($widget_options[$widget_id]['url']);
-			$widget_options[$widget_id]['title'] = htmlentities(strip_tags($rss->get_title()));
+			if ( ! is_wp_error($rss) )
+				$widget_options[$widget_id]['title'] = htmlentities(strip_tags($rss->get_title()));
+			else
+				$widget_options[$widget_id]['title'] = htmlentities(__('Unknown Feed'));
 		}
 		update_option( 'dashboard_widget_options', $widget_options );
 	}

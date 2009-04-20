@@ -179,9 +179,20 @@ function get_theme_data( $theme_file ) {
 
 	$theme_data = implode( '', file( $theme_file ) );
 	$theme_data = str_replace ( '\r', '\n', $theme_data );
-	preg_match( '|Theme Name:(.*)$|mi', $theme_data, $theme_name );
-	preg_match( '|Theme URI:(.*)$|mi', $theme_data, $theme_uri );
-	preg_match( '|Description:(.*)$|mi', $theme_data, $description );
+	if ( preg_match( '|Theme Name:(.*)$|mi', $theme_data, $theme_name ) )
+		$name = $theme = wp_kses( trim( $theme_name[1] ), $themes_allowed_tags );
+	else
+		$name = $theme = '';
+
+	if ( preg_match( '|Theme URI:(.*)$|mi', $theme_data, $theme_uri ) )
+		$theme_uri = clean_url( trim( $theme_uri[1] ) );
+	else 
+		$theme_uri = '';
+		
+	if ( preg_match( '|Description:(.*)$|mi', $theme_data, $description ) )
+		$description = wptexturize( wp_kses( trim( $description[1] ), $themes_allowed_tags ) );
+	else 
+		$description = '';
 
 	if ( preg_match( '|Author URI:(.*)$|mi', $theme_data, $author_uri ) )
 		$author_uri = clean_url( trim( $author_uri[1]) );
@@ -207,10 +218,6 @@ function get_theme_data( $theme_file ) {
 		$tags = array_map( 'trim', explode( ',', wp_kses( trim( $tags[1] ), array() ) ) );
 	else
 		$tags = array();
-
-	$name = $theme = wp_kses( trim( $theme_name[1] ), $themes_allowed_tags );
-	$theme_uri = clean_url( trim( $theme_uri[1] ) );
-	$description = wptexturize( wp_kses( trim( $description[1] ), $themes_allowed_tags ) );
 
 	if ( preg_match( '|Author:(.*)$|mi', $theme_data, $author_name ) ) {
 		if ( empty( $author_uri ) ) {
@@ -365,14 +372,28 @@ function get_themes() {
 						$template_files[] = "$theme_loc/$stylesheet/$file";
 				}
 			}
+			@ $stylesheet_dir->close();
 		}
-
+		
 		$template_dir = @ dir("$theme_root/$template");
 		if ( $template_dir ) {
-			while(($file = $template_dir->read()) !== false) {
-				if ( !preg_match('|^\.+$|', $file) && preg_match('|\.php$|', $file) )
+			while ( ($file = $template_dir->read()) !== false ) {
+				if ( preg_match('|^\.+$|', $file) )
+					continue;
+				if ( preg_match('|\.php$|', $file) ) {
 					$template_files[] = "$theme_loc/$template/$file";
+				} elseif ( is_dir("$theme_root/$template/$file") ) {
+					$template_subdir = @ dir("$theme_root/$template/$file");
+					while ( ($subfile = $template_subdir->read()) !== false ) {
+						if ( preg_match('|^\.+$|', $subfile) )
+							continue;
+						if ( preg_match('|\.php$|', $subfile) )
+							$template_files[] = "$theme_loc/$template/$file/$subfile";
+					}
+					@ $template_subdir->close();
+				}
 			}
+			@ $template_dir->close(); 
 		}
 
 		$template_dir = dirname($template_files[0]);
@@ -849,7 +870,7 @@ function preview_theme() {
 	if ( !current_user_can( 'switch_themes' ) )
 		return;
 
-	$_GET['template'] = preg_replace('|[^a-z0-9_.\-/]|i', '', $_GET['template']);
+	$_GET['template'] = preg_replace('|[^a-z0-9_./-]|i', '', $_GET['template']);
 
 	if ( validate_file($_GET['template']) )
 		return;
@@ -857,7 +878,7 @@ function preview_theme() {
 	add_filter('template', create_function('', "return '{$_GET['template']}';") );
 
 	if ( isset($_GET['stylesheet']) ) {
-		$_GET['stylesheet'] = preg_replace('|[^a-z0-9_.\-/]|i', '', $_GET['stylesheet']);
+		$_GET['stylesheet'] = preg_replace('|[^a-z0-9_./-]|i', '', $_GET['stylesheet']);
 		if ( validate_file($_GET['stylesheet']) )
 			return;
 		add_filter('stylesheet', create_function('', "return '{$_GET['stylesheet']}';") );
@@ -1108,6 +1129,29 @@ function add_custom_image_header($header_callback, $admin_header_callback) {
 	require_once(ABSPATH . 'wp-admin/custom-header.php');
 	$GLOBALS['custom_image_header'] =& new Custom_Image_Header($admin_header_callback);
 	add_action('admin_menu', array(&$GLOBALS['custom_image_header'], 'init'));
+}
+
+/**
+ * Get the basename of a theme.
+ *
+ * This method extracts the filename of a theme file from a path
+ *
+ * @package WordPress
+ * @subpackage Plugin
+ * @since 2.8.0
+ *
+ * @access private
+ *
+ * @param string $file The filename of a theme file
+ * @return string The filename relative to the themes folder
+ */
+function theme_basename($file) {
+	$file = str_replace('\\','/',$file); // sanitize for Win32 installs
+	$file = preg_replace('|/+|','/', $file); // remove any duplicate slash
+	$theme_dir = str_replace('\\','/', get_theme_root()); // sanitize for Win32 installs
+	$theme_dir = preg_replace('|/+|','/', $theme_dir); // remove any duplicate slash
+	$file = preg_replace('|^.*/themes/.*?/|','',$file); // get relative path from theme dir 
+	return $file;
 }
 
 ?>
