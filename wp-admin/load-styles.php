@@ -1,8 +1,8 @@
 <?php
 
-/** 
+/**
  * Disable error reporting
- * 
+ *
  * Set this to error_reporting( E_ALL ) or error_reporting( E_ALL | E_STRICT ) for debugging
  */
 error_reporting(0);
@@ -35,7 +35,7 @@ function add_filter() {}
 /**
  * @ignore
  */
-function attribute_escape() {}
+function esc_attr() {}
 
 /**
  * @ignore

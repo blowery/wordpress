@@ -77,8 +77,9 @@ default:
 	if ( !current_user_can('edit_themes') )
 		wp_die('<p>'.__('You do not have sufficient permissions to edit themes for this blog.').'</p>');
 
-	wp_enqueue_script( 'codepress' );
-	add_action( 'admin_print_footer_scripts', 'codepress_footer_js' );
+	if ( use_codepress() )
+		wp_enqueue_script( 'codepress' );
+
 	require_once('admin-header.php');
 
 	update_recently_edited($file);
@@ -94,9 +95,9 @@ default:
 			$functions = wp_doc_link_parse( $content );
 
 			$docs_select = '<select name="docs-list" id="docs-list">';
-			$docs_select .= '<option value="">' . __( 'Function Name...' ) . '</option>';
+			$docs_select .= '<option value="">' . esc_attr__( 'Function Name...' ) . '</option>';
 			foreach ( $functions as $function ) {
-				$docs_select .= '<option value="' . urlencode( $function ) . '">' . htmlspecialchars( $function ) . '()</option>';
+				$docs_select .= '<option value="' . esc_attr( urlencode( $function ) ) . '">' . htmlspecialchars( $function ) . '()</option>';
 			}
 			$docs_select .= '</select>';
 		}
@@ -115,7 +116,7 @@ $desc_header = ( $description != $file_show ) ? "<strong>$description</strong> (
 ?>
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2>
+<h2><?php echo esc_html( $title ); ?></h2>
 <div class="bordertitle">
 	<form id="themeselector" action="theme-editor.php" method="post">
 		<strong><label for="theme"><?php _e('Select theme to edit:'); ?> </label></strong>
@@ -125,12 +126,12 @@ $desc_header = ( $description != $file_show ) ? "<strong>$description</strong> (
 	$theme_name = $a_theme['Name'];
 	if ($theme_name == $theme) $selected = " selected='selected'";
 	else $selected = '';
-	$theme_name = attribute_escape($theme_name);
+	$theme_name = esc_attr($theme_name);
 	echo "\n\t<option value=\"$theme_name\" $selected>$theme_name</option>";
 }
 ?>
 		</select>
-		<input type="submit" name="Submit" value="<?php _e('Select') ?>" class="button" />
+		<input type="submit" name="Submit" value="<?php esc_attr_e('Select') ?>" class="button" />
 	</form>
 </div>
 <div class="tablenav">
@@ -199,14 +200,14 @@ if ($allowed_files) :
 	<?php wp_nonce_field('edit-theme_' . $file . $theme) ?>
 		 <div><textarea cols="70" rows="25" name="newcontent" id="newcontent" tabindex="1" class="codepress <?php echo $codepress_lang ?>"><?php echo $content ?></textarea>
 		 <input type="hidden" name="action" value="update" />
-		 <input type="hidden" name="file" value="<?php echo $file ?>" />
-		 <input type="hidden" name="theme" value="<?php echo $theme ?>" />
+		 <input type="hidden" name="file" value="<?php echo esc_attr($file) ?>" />
+		 <input type="hidden" name="theme" value="<?php echo esc_attr($theme) ?>" />
 		 </div>
 	<?php if ( isset($functions ) && count($functions) ) { ?>
 		<div id="documentation">
 		<label for="docs-list"><?php _e('Documentation:') ?></label>
 		<?php echo $docs_select; ?>
-		<input type="button" class="button" value=" <?php _e( 'Lookup' ); ?> " onclick="if ( '' != jQuery('#docs-list').val() ) { window.open( 'http://api.wordpress.org/core/handbook/1.0/?function=' + escape( jQuery( '#docs-list' ).val() ) + '&locale=<?php echo urlencode( get_locale() ) ?>&version=<?php echo urlencode( $wp_version ) ?>&redirect=true'); }" />
+		<input type="button" class="button" value=" <?php esc_attr_e( 'Lookup' ); ?> " onclick="if ( '' != jQuery('#docs-list').val() ) { window.open( 'http://api.wordpress.org/core/handbook/1.0/?function=' + escape( jQuery( '#docs-list' ).val() ) + '&locale=<?php echo urlencode( get_locale() ) ?>&version=<?php echo urlencode( $wp_version ) ?>&redirect=true'); }" />
 		</div>
 	<?php } ?>
 
@@ -214,7 +215,7 @@ if ($allowed_files) :
 <?php if ( is_writeable($real_file) ) : ?>
 			<p class="submit">
 <?php
-	echo "<input type='submit' name='submit' class='button-primary' value='" . __('Update File') . "' tabindex='2' />";
+	echo "<input type='submit' name='submit' class='button-primary' value='" . esc_attr__('Update File') . "' tabindex='2' />";
 ?>
 </p>
 <?php else : ?>

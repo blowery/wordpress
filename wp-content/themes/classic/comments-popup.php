@@ -63,21 +63,21 @@ if ( post_password_required($commentstatus) ) {  // and it doesn't match the coo
 <p><?php _e("Line and paragraph breaks automatic, e-mail address never displayed, <acronym title=\"Hypertext Markup Language\">HTML</acronym> allowed:"); ?> <code><?php echo allowed_tags(); ?></code></p>
 
 <form action="<?php echo get_option('siteurl'); ?>/wp-comments-post.php" method="post" id="commentform">
-<?php if ( $user_ID ) : ?>
-<p><?php printf(__('Logged in as %s.'), '<a href="'.get_option('siteurl').'/wp-admin/profile.php">'.$user_identity.'</a>'); ?> <a href="<?php echo wp_logout_url(); ?>" title="<?php echo attribute_escape(__('Log out of this account')); ?>"><?php _e('Log out &raquo;'); ?></a></p>
+<?php if ( is_user_logged_in() ) : ?>
+<p><?php printf(__('Logged in as %s.'), '<a href="'.get_option('siteurl').'/wp-admin/profile.php">'.$user_identity.'</a>'); ?> <a href="<?php echo wp_logout_url(); ?>" title="<?php echo esc_attr(__('Log out of this account')); ?>"><?php _e('Log out &raquo;'); ?></a></p>
 <?php else : ?>
 	<p>
-	  <input type="text" name="author" id="author" class="textarea" value="<?php echo $comment_author; ?>" size="28" tabindex="1" />
+	  <input type="text" name="author" id="author" class="textarea" value="<?php echo esc_attr($comment_author); ?>" size="28" tabindex="1" />
 	   <label for="author"><?php _e("Name"); ?></label>
 	</p>
 
 	<p>
-	  <input type="text" name="email" id="email" value="<?php echo $comment_author_email; ?>" size="28" tabindex="2" />
+	  <input type="text" name="email" id="email" value="<?php echo esc_attr($comment_author_email); ?>" size="28" tabindex="2" />
 	   <label for="email"><?php _e("E-mail"); ?></label>
 	</p>
 
 	<p>
-	  <input type="text" name="url" id="url" value="<?php echo $comment_author_url; ?>" size="28" tabindex="3" />
+	  <input type="text" name="url" id="url" value="<?php echo esc_attr($comment_author_url); ?>" size="28" tabindex="3" />
 	   <label for="url"><?php _e("<abbr title=\"Universal Resource Locator\">URL</abbr>"); ?></label>
 	</p>
 <?php endif; ?>
@@ -90,8 +90,8 @@ if ( post_password_required($commentstatus) ) {  // and it doesn't match the coo
 
 	<p>
 	  <input type="hidden" name="comment_post_ID" value="<?php echo $id; ?>" />
-	  <input type="hidden" name="redirect_to" value="<?php echo attribute_escape($_SERVER["REQUEST_URI"]); ?>" />
-	  <input name="submit" type="submit" tabindex="5" value="<?php _e("Say It!"); ?>" />
+	  <input type="hidden" name="redirect_to" value="<?php echo esc_attr($_SERVER["REQUEST_URI"]); ?>" />
+	  <input name="submit" type="submit" tabindex="5" value="<?php esc_attr_e("Say It!"); ?>" />
 	</p>
 	<?php do_action('comment_form', $post->ID); ?>
 </form>

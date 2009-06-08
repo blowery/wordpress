@@ -156,10 +156,10 @@ function install_theme_search_form() {
 	<select	name="type" id="typeselector">
 	<option value="term" <?php selected('term', $type) ?>><?php _e('Term'); ?></option>
 	<option value="author" <?php selected('author', $type) ?>><?php _e('Author'); ?></option>
-	<option value="tag" <?php selected('tag', $type) ?>><?php _e('Tag'); ?></option>
+	<option value="tag" <?php selected('tag', $type) ?>><?php echo _x('Tag', 'Theme Installer'); ?></option>
 	</select>
-	<input type="text" name="s" size="30" value="<?php echo attribute_escape($term) ?>" />
-	<input type="submit" name="search" value="<?php echo attribute_escape(__('Search')); ?>" class="button" />
+	<input type="text" name="s" size="30" value="<?php echo esc_attr($term) ?>" />
+	<input type="submit" name="search" value="<?php esc_attr_e('Search'); ?>" class="button" />
 </form>
 <?php
 }
@@ -193,7 +193,7 @@ function install_themes_dashboard() {
 	foreach ( (array) $feature_list as $feature_name => $features ) {
 		if ( isset($trans[$feature_name]) )
 			 $feature_name = $trans[$feature_name];
-		$feature_name = wp_specialchars( $feature_name );
+		$feature_name = esc_html( $feature_name );
 		echo '<div class="feature-name">' . $feature_name . '</div>';
 
 		echo '<ol style="float: left; width: 725px;" class="feature-group">';
@@ -201,8 +201,8 @@ function install_themes_dashboard() {
 			$feature_name = $feature;
 			if ( isset($trans[$feature]) )
 				$feature_name = $trans[$feature];
-			$feature_name = wp_specialchars( $feature_name );
-			$feature = attribute_escape($feature);
+			$feature_name = esc_html( $feature_name );
+			$feature = esc_attr($feature);
 ?>
 
 <li>
@@ -218,7 +218,7 @@ function install_themes_dashboard() {
 
 </div>
 <br class="clear" />
-<input type="submit" name="search" value="<?php echo attribute_escape(__('Find Themes')); ?>" class="button" />
+<p><input type="submit" name="search" value="<?php esc_attr_e('Find Themes'); ?>" class="button" /></p>
 </form>
 <?php
 }
@@ -281,7 +281,7 @@ function install_themes_upload($page = 1) {
 	<?php wp_nonce_field( 'theme-upload') ?>
 	<input type="file" name="themezip" />
 	<input type="submit"
-	class="button" value="<?php _e('Install Now') ?>" />
+	class="button" value="<?php esc_attr_e('Install Now') ?>" />
 </form>
 	<?php
 }
@@ -301,17 +301,17 @@ function display_theme($theme, $actions = null, $show_details = true) {
 	if ( !is_array($actions) ) {
 		$actions = array();
 		$actions[] = '<a href="' . admin_url('theme-install.php?tab=theme-information&amp;theme=' . $theme->slug .
-										'&amp;TB_iframe=true&amp;tbWidth=500&amp;tbHeight=350') . '" class="thickbox thickbox-preview onclick" title="' . attribute_escape(sprintf(__('Install "%s"'), $name)) . '">' . __('Install') . '</a>';
-		$actions[] = '<a href="' . $preview_link . '" class="thickbox thickbox-preview onclick previewlink" title="' . attribute_escape(sprintf(__('Preview "%s"'), $name)) . '">' . __('Preview') . '</a>';
+										'&amp;TB_iframe=true&amp;tbWidth=500&amp;tbHeight=350') . '" class="thickbox thickbox-preview onclick" title="' . esc_attr(sprintf(__('Install &#8220;%s&#8221;'), $name)) . '">' . __('Install') . '</a>';
+		$actions[] = '<a href="' . $preview_link . '" class="thickbox thickbox-preview onclick previewlink" title="' . esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $name)) . '">' . __('Preview') . '</a>';
 		$actions = apply_filters('theme_install_action_links', $actions, $theme);
 	}
 
 	$actions = implode ( ' | ', $actions );
 	?>
 <a class='thickbox thickbox-preview screenshot'
-	href='<? echo clean_url($preview_link); ?>'
-	title='<?php echo attribute_escape(sprintf(__('Preview "%s"'), $name)); ?>'>
-<img src='<?php echo clean_url($theme->screenshot_url); ?>' width='150' />
+	href='<?php echo esc_url($preview_link); ?>'
+	title='<?php echo esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $name)); ?>'>
+<img src='<?php echo esc_url($theme->screenshot_url); ?>' width='150' />
 </a>
 <h3><?php echo $name ?></h3>
 <span class='action-links'><?php echo $actions ?></span>
@@ -331,7 +331,7 @@ function display_theme($theme, $actions = null, $show_details = true) {
 <p><strong><?php _e('Downloaded:') ?></strong> <?php printf(_n('%s time', '%s times', $theme->downloaded), number_format_i18n($theme->downloaded)) ?></p>
 <?php endif; ?>
 <div class="star-holder" title="<?php printf(_n('(based on %s rating)', '(based on %s ratings)', $theme->num_ratings), number_format_i18n($theme->num_ratings)) ?>">
-	<div class="star star-rating" style="width: <?php echo attribute_escape($theme->rating) ?>px"></div>
+	<div class="star star-rating" style="width: <?php echo esc_attr($theme->rating) ?>px"></div>
 	<div class="star star5"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('5 stars') ?>" /></div>
 	<div class="star star4"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('4 stars') ?>" /></div>
 	<div class="star star3"><img src="<?php echo admin_url('images/star.gif'); ?>" alt="<?php _e('3 stars') ?>" /></div>
@@ -374,7 +374,7 @@ function display_themes($themes, $page = 1, $totalpages = 1) {
 <div class="tablenav">
 <div class="alignleft actions"><?php do_action('install_themes_table_header'); ?></div>
 	<?php
-	$url = clean_url($_SERVER['REQUEST_URI']);
+	$url = esc_url($_SERVER['REQUEST_URI']);
 	if ( ! empty($term) )
 		$url = add_query_arg('s', $term, $url);
 	if ( ! empty($type) )
@@ -391,8 +391,9 @@ function display_themes($themes, $page = 1, $totalpages = 1) {
 
 	if ( $page_links )
 		echo "\t\t<div class='tablenav-pages'>$page_links</div>";
-	?> <br class="clear" />
+	?>
 </div>
+<br class="clear" />
 <?php
 	if ( empty($themes) ) {
 		_e('No themes found');
@@ -403,10 +404,10 @@ function display_themes($themes, $page = 1, $totalpages = 1) {
 <?php
 	$rows = ceil(count($themes) / 3);
 	$table = array();
-	$theme_keys = array_keys($themes); 
-	for ( $row = 1; $row <= $rows; $row++ ) 
-		for ( $col = 1; $col <= 3; $col++ ) 
-			$table[$row][$col] = array_shift($theme_keys); 
+	$theme_keys = array_keys($themes);
+	for ( $row = 1; $row <= $rows; $row++ )
+		for ( $col = 1; $col <= 3; $col++ )
+			$table[$row][$col] = array_shift($theme_keys);
 
 	foreach ( $table as $row => $cols ) {
 	?>
@@ -421,8 +422,8 @@ function display_themes($themes, $page = 1, $totalpages = 1) {
 		if ( $col == 3 ) $class[] = 'right';
 		?>
 		<td class="<?php echo join(' ', $class); ?>"><?php
-			if ( isset($themes[$theme_index]) ) 
-				display_theme($themes[$theme_index]); 
+			if ( isset($themes[$theme_index]) )
+				display_theme($themes[$theme_index]);
 		?></td>
 		<?php } // end foreach $cols ?>
 	</tr>
@@ -501,7 +502,7 @@ function install_theme_information() {
 ?>
 
 <div class='available-theme'>
-<img src='<?php echo clean_url($api->screenshot_url) ?>' width='300' class="theme-preview-img" />
+<img src='<?php echo esc_url($api->screenshot_url) ?>' width='300' class="theme-preview-img" />
 <h3><?php echo $api->name; ?></h3>
 <p><?php printf(__('by %s'), $api->author); ?></p>
 <p><?php printf(__('Version: %s'), $api->version); ?></p>

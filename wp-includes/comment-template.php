@@ -193,7 +193,8 @@ function comment_author_IP() {
  */
 function get_comment_author_url() {
 	global $comment;
-	return apply_filters('get_comment_author_url', $comment->comment_author_url);
+	$url = ('http://' == $comment->comment_author_url) ? '' : $comment->comment_author_url;
+	return apply_filters('get_comment_author_url', $url);
 }
 
 /**
@@ -293,7 +294,7 @@ function get_comment_class( $class = '', $comment_id = null, $post_id = null ) {
 	if ( $comment->user_id > 0 && $user = get_userdata($comment->user_id) ) {
 		// For all registered users, 'byuser'
 		$classes[] = 'byuser';
-		$classes[] = 'comment-author-' . $user->user_nicename;
+		$classes[] = 'comment-author-' . sanitize_html_class($user->user_nicename, $comment->user_id);
 		// For comment authors who are the author of the post
 		if ( $post = get_post($post_id) ) {
 			if ( $comment->user_id === $post->post_author )
@@ -352,7 +353,7 @@ function get_comment_class( $class = '', $comment_id = null, $post_id = null ) {
 function get_comment_date( $d = '' ) {
 	global $comment;
 	if ( '' == $d )
-		$date = mysql2date( get_option('date_format'), $comment->comment_date);
+		$date = mysql2date(get_option('date_format'), $comment->comment_date);
 	else
 		$date = mysql2date($d, $comment->comment_date);
 	return apply_filters('get_comment_date', $date, $d);
@@ -590,15 +591,16 @@ function comment_text() {
  *
  * @param string $d Optional. The format of the time (defaults to user's config)
  * @param bool $gmt Whether to use the GMT date
+ * @param bool $translate Whether to translate the time (for use in feeds)
  * @return string The formatted time
  */
-function get_comment_time( $d = '', $gmt = false ) {
+function get_comment_time( $d = '', $gmt = false, $translate = true ) {
 	global $comment;
 	$comment_date = $gmt? $comment->comment_date_gmt : $comment->comment_date;
 	if ( '' == $d )
-		$date = mysql2date(get_option('time_format'), $comment_date);
+		$date = mysql2date(get_option('time_format'), $comment_date, $translate);
 	else
-		$date = mysql2date($d, $comment_date);
+		$date = mysql2date($d, $comment_date, $translate);
 	return apply_filters('get_comment_time', $date, $d, $gmt);
 }
 
@@ -824,7 +826,7 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 	} else if ( empty($comment_author) ) {
 		$comments = get_comments( array('post_id' => $post->ID, 'status' => 'approve', 'order' => 'ASC') );
 	} else {
-		$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_post_ID = %d AND ( comment_approved = '1' OR ( comment_author = %s AND comment_author_email = %s AND comment_approved = '0' ) ) ORDER BY comment_date_gmt", $post->ID, $comment_author, $comment_author_email));
+		$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments WHERE comment_post_ID = %d AND ( comment_approved = '1' OR ( comment_author = %s AND comment_author_email = %s AND comment_approved = '0' ) ) ORDER BY comment_date_gmt", $post->ID, wp_specialchars_decode($comment_author,ENT_QUOTES), $comment_author_email));
 	}
 
 	// keep $comments for legacy's sake
@@ -908,12 +910,12 @@ function comments_popup_script($width=400, $height=400, $file='') {
  */
 function comments_popup_link( $zero = false, $one = false, $more = false, $css_class = '', $none = false ) {
 	global $id, $wpcommentspopupfile, $wpcommentsjavascript, $post;
-	
+
     if ( false === $zero ) $zero = __( 'No Comments' );
     if ( false === $one ) $one = __( '1 Comment' );
     if ( false === $more ) $more = __( '% Comments' );
     if ( false === $none ) $none = __( 'Comments Off' );
-	
+
 	$number = get_comments_number( $id );
 
 	if ( 0 == $number && !comments_open() && !pings_open() ) {
@@ -945,7 +947,7 @@ function comments_popup_link( $zero = false, $one = false, $more = false, $css_c
 	if ( !empty( $css_class ) ) {
 		echo ' class="'.$css_class.'" ';
 	}
-	$title = attribute_escape( get_the_title() );
+	$title = esc_attr( get_the_title() );
 
 	echo apply_filters( 'comments_popup_link_attributes', '' );
 
@@ -993,9 +995,9 @@ function get_comment_reply_link($args = array(), $comment = null, $post = null) 
 	$link = '';
 
 	if ( get_option('comment_registration') && !$user_ID )
-		$link = '<a rel="nofollow" href="' . wp_login_url( get_permalink() ) . '">' . $login_text . '</a>';
+		$link = '<a rel="nofollow" class="comment-reply-login" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . $login_text . '</a>';
 	else
-		$link = "<a rel='nofollow' class='comment-reply-link' href='" . wp_specialchars( add_query_arg( 'replytocom', $comment->comment_ID ) ) . "#" . $respond_id . "' onclick='return addComment.moveForm(\"$add_below-$comment->comment_ID\", \"$comment->comment_ID\", \"$respond_id\", \"$post->ID\")'>$reply_text</a>";
+		$link = "<a rel='nofollow' class='comment-reply-link' href='" . esc_url( add_query_arg( 'replytocom', $comment->comment_ID ) ) . "#" . $respond_id . "' onclick='return addComment.moveForm(\"$add_below-$comment->comment_ID\", \"$comment->comment_ID\", \"$respond_id\", \"$post->ID\")'>$reply_text</a>";
 	return apply_filters('comment_reply_link', $before . $link . $after, $args, $comment, $post);
 }
 
@@ -1076,7 +1078,7 @@ function get_cancel_comment_reply_link($text = '') {
 		$text = __('Click here to cancel reply.');
 
 	$style = isset($_GET['replytocom']) ? '' : ' style="display:none;"';
-	$link = wp_specialchars( remove_query_arg('replytocom') ) . '#respond';
+	$link = esc_html( remove_query_arg('replytocom') ) . '#respond';
 	return apply_filters('cancel_comment_reply_link', '<a rel="nofollow" id="cancel-comment-reply-link" href="' . $link . '"' . $style . '>' . $text . '</a>', $link, $text);
 }
 
@@ -1115,7 +1117,7 @@ function comment_id_fields() {
  */
 function comment_form_title( $noreplytext = false, $replytext = false, $linktoparent = TRUE ) {
 	global $comment;
-	
+
 	if ( false === $noreplytext ) $noreplytext = __( 'Leave a Reply' );
 	if ( false === $replytext ) $replytext = __( 'Leave a Reply to %s' );
 

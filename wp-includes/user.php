@@ -85,7 +85,7 @@ function wp_authenticate_username_password($user, $username, $password) {
 
 	$userdata = get_userdatabylogin($username);
 
-	if ( !$userdata || ($userdata->user_login != $username) ) {
+	if ( !$userdata ) {
 		return new WP_Error('invalid_username', sprintf(__('<strong>ERROR</strong>: Invalid username. <a href="%s" title="Password Lost and Found">Lost your password</a>?'), site_url('wp-login.php?action=lostpassword', 'login')));
 	}
 
@@ -540,7 +540,7 @@ function wp_dropdown_users( $args = '' ) {
 			$user->ID = (int) $user->ID;
 			$_selected = $user->ID == $selected ? " selected='selected'" : '';
 			$display = !empty($user->$show) ? $user->$show : '('. $user->user_login . ')';
-			$output .= "\t<option value='$user->ID'$_selected>" . wp_specialchars($display) . "</option>\n";
+			$output .= "\t<option value='$user->ID'$_selected>" . esc_html($display) . "</option>\n";
 		}
 
 		$output .= "</select>";

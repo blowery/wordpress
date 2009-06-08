@@ -146,9 +146,9 @@ $messages[6] = __('Tags deleted.'); ?>
 
 <div class="wrap nosubsub">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title );
+<h2><?php echo esc_html( $title );
 if ( isset($_GET['s']) && $_GET['s'] )
-	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', wp_specialchars( stripslashes($_GET['s']) ) ); ?>
+	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', esc_html( stripslashes($_GET['s']) ) ); ?>
 </h2>
 
 <?php if ( isset($_GET['message']) && ( $msg = (int) $_GET['message'] ) ) : ?>
@@ -157,10 +157,11 @@ if ( isset($_GET['s']) && $_GET['s'] )
 endif; ?>
 
 <form class="search-form" action="" method="get">
+<input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy); ?>" />
 <p class="search-box">
-	<label class="hidden" for="tag-search-input"><?php _e( 'Search Tags' ); ?>:</label>
+	<label class="screen-reader-text" for="tag-search-input"><?php _e( 'Search Tags' ); ?>:</label>
 	<input type="text" id="tag-search-input" name="s" value="<?php _admin_search_query(); ?>" />
-	<input type="submit" value="<?php _e( 'Search Tags' ); ?>" class="button" />
+	<input type="submit" value="<?php esc_attr_e( 'Search Tags' ); ?>" class="button" />
 </p>
 </form>
 <br class="clear" />
@@ -170,7 +171,7 @@ endif; ?>
 <div id="col-right">
 <div class="col-wrap">
 <form id="posts-filter" action="" method="get">
-<input type="hidden" name="taxonomy" value="<?php echo attribute_escape($taxonomy); ?>" />
+<input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy); ?>" />
 <div class="tablenav">
 <?php
 $pagenum = isset( $_GET['pagenum'] ) ? absint( $_GET['pagenum'] ) : 0;
@@ -201,7 +202,7 @@ if ( $page_links )
 <option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
-<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
+<input type="submit" value="<?php esc_attr_e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
 <?php wp_nonce_field('bulk-tags'); ?>
 </div>
 
@@ -244,7 +245,7 @@ if ( $page_links )
 <option value="" selected="selected"><?php _e('Bulk Actions'); ?></option>
 <option value="delete"><?php _e('Delete'); ?></option>
 </select>
-<input type="submit" value="<?php _e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
+<input type="submit" value="<?php esc_attr_e('Apply'); ?>" name="doaction2" id="doaction2" class="button-secondary action" />
 </div>
 
 <br class="clear" />
@@ -276,7 +277,7 @@ else
 <div id="ajax-response"></div>
 <form name="addtag" id="addtag" method="post" action="edit-tags.php" class="add:the-list: validate">
 <input type="hidden" name="action" value="addtag" />
-<input type="hidden" name="taxonomy" value="<?php echo attribute_escape($taxonomy); ?>" />
+<input type="hidden" name="taxonomy" value="<?php echo esc_attr($taxonomy); ?>" />
 <?php wp_original_referer_field(true, 'previous'); wp_nonce_field('add-tag'); ?>
 
 <div class="form-field form-required">
@@ -297,7 +298,7 @@ else
     <p><?php _e('The description is not prominent by default, however some themes may show it.'); ?></p>
 </div>
 
-<p class="submit"><input type="submit" class="button" name="submit" value="<?php _e('Add Tag'); ?>" /></p>
+<p class="submit"><input type="submit" class="button" name="submit" value="<?php esc_attr_e('Add Tag'); ?>" /></p>
 <?php do_action('add_tag_form'); ?>
 </form></div>
 <?php } ?>

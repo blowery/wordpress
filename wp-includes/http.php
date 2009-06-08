@@ -73,11 +73,11 @@ class WP_Http {
 	 * Tests all of the objects and returns the object that passes. Also caches
 	 * that object to be used later.
 	 *
-	 * The order for the GET/HEAD requests are Streams, HTTP Extension, Fopen,
-	 * and finally Fsockopen. fsockopen() is used last, because it has the most
-	 * overhead in its implementation. There isn't any real way around it, since
-	 * redirects have to be supported, much the same way the other transports
-	 * also handle redirects.
+	 * The order for the GET/HEAD requests are HTTP Extension, FSockopen Streams, 
+	 * Fopen, and finally cURL. Whilst Fsockopen has the highest overhead, Its
+	 * used 2nd due to high compatibility with most hosts, The HTTP Extension is
+	 * tested first due to hosts which have it enabled, are likely to work
+	 * correctly with it.
 	 *
 	 * There are currently issues with "localhost" not resolving correctly with
 	 * DNS. This may cause an error "failed to open stream: A connection attempt
@@ -98,18 +98,18 @@ class WP_Http {
 			if ( true === WP_Http_ExtHttp::test($args) ) {
 				$working_transport['exthttp'] = new WP_Http_ExtHttp();
 				$blocking_transport[] = &$working_transport['exthttp'];
-			} else if ( true === WP_Http_Curl::test($args) ) {
-				$working_transport['curl'] = new WP_Http_Curl();
-				$blocking_transport[] = &$working_transport['curl'];
+			} else if ( true === WP_Http_Fsockopen::test($args) ) {
+				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
+				$blocking_transport[] = &$working_transport['fsockopen'];
 			} else if ( true === WP_Http_Streams::test($args) ) {
 				$working_transport['streams'] = new WP_Http_Streams();
 				$blocking_transport[] = &$working_transport['streams'];
 			} else if ( true === WP_Http_Fopen::test($args) ) {
 				$working_transport['fopen'] = new WP_Http_Fopen();
 				$blocking_transport[] = &$working_transport['fopen'];
-			} else if ( true === WP_Http_Fsockopen::test($args) ) {
-				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
-				$blocking_transport[] = &$working_transport['fsockopen'];
+			} else if ( true === WP_Http_Curl::test($args) ) {
+				$working_transport['curl'] = new WP_Http_Curl();
+				$blocking_transport[] = &$working_transport['curl'];
 			}
 
 			foreach ( array('curl', 'streams', 'fopen', 'fsockopen', 'exthttp') as $transport ) {
@@ -149,15 +149,15 @@ class WP_Http {
 			if ( true === WP_Http_ExtHttp::test($args) ) {
 				$working_transport['exthttp'] = new WP_Http_ExtHttp();
 				$blocking_transport[] = &$working_transport['exthttp'];
-			} else if ( true === WP_Http_Curl::test($args) ) {
-				$working_transport['curl'] = new WP_Http_Curl();
-				$blocking_transport[] = &$working_transport['curl'];
-			} else if ( true === WP_Http_Streams::test($args) ) {
-				$working_transport['streams'] = new WP_Http_Streams();
-				$blocking_transport[] = &$working_transport['streams'];
 			} else if ( true === WP_Http_Fsockopen::test($args) ) {
 				$working_transport['fsockopen'] = new WP_Http_Fsockopen();
 				$blocking_transport[] = &$working_transport['fsockopen'];
+			} else if ( true === WP_Http_Streams::test($args) ) {
+				$working_transport['streams'] = new WP_Http_Streams();
+				$blocking_transport[] = &$working_transport['streams'];
+			} else if ( true === WP_Http_Curl::test($args) ) {
+				$working_transport['curl'] = new WP_Http_Curl();
+				$blocking_transport[] = &$working_transport['curl'];
 			}
 
 			foreach ( array('curl', 'streams', 'fsockopen', 'exthttp') as $transport ) {
@@ -281,7 +281,10 @@ class WP_Http {
 			$transports = WP_Http::_getTransport($r);
 		} else {
 			if ( is_array( $r['body'] ) || is_object( $r['body'] ) ) {
-				$r['body'] = http_build_query($r['body'], null, '&');
+				if ( ! version_compare(phpversion(), '5.1.2', '>=') )
+					$r['body'] = _http_build_query($r['body'], null, '&');
+				else
+					$r['body'] = http_build_query($r['body'], null, '&');
 				$r['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=' . get_option('blog_charset');
 				$r['headers']['Content-Length'] = strlen($r['body']);
 			}
@@ -393,8 +396,15 @@ class WP_Http {
 	 * 					Then a numbered array is returned as the value of that header-key.
 	 */
 	function processHeaders($headers) {
-		if ( is_string($headers) )
-			$headers = explode("\n", str_replace(array("\r\n", "\r"), "\n", $headers) );
+		// split headers, one per array element
+		if ( is_string($headers) ) {
+			// tolerate line terminator: CRLF = LF (RFC 2616 19.3)
+			$headers = str_replace("\r\n", "\n", $headers);
+			// unfold folded header fields. LWS = [CRLF] 1*( SP | HT ) <US-ASCII SP, space (32)>, <US-ASCII HT, horizontal-tab (9)> (RFC 2616 2.2)
+			$headers = preg_replace('/\n[ \t]/', ' ', $headers);
+			// create the headers array
+			$headers = explode("\n", $headers);
+		}
 
 		$response = array('code' => 0, 'message' => '');
 
@@ -415,12 +425,11 @@ class WP_Http {
 
 			if ( !empty( $value ) ) {
 				$key = strtolower( $key );
-
-				if ( isset( $newheaders[$key] ) )
+				if ( isset( $newheaders[$key] ) ) {
 					$newheaders[$key] = array( $newheaders[$key], trim( $value ) );
-				else
+				} else {
 					$newheaders[$key] = trim( $value );
-
+				}
 				if ( 'set-cookie' == strtolower( $key ) )
 					$cookies[] = new WP_Http_Cookie( $value );
 			}
@@ -445,8 +454,9 @@ class WP_Http {
 	function buildCookieHeader( &$r ) {
 		if ( ! empty($r['cookies']) ) {
 			$cookies_header = '';
-			foreach ( (array) $r['cookies'] as $cookie )
+			foreach ( (array) $r['cookies'] as $cookie ) {
 				$cookies_header .= $cookie->getHeaderValue() . '; ';
+			}
 			$cookies_header = substr( $cookies_header, 0, -2 );
 			$r['headers']['cookie'] = $cookies_header;
 		}
@@ -601,11 +611,13 @@ class WP_Http_Fsockopen {
 
 		$arrURL = parse_url($url);
 
+		$fsockopen_host = $arrURL['host'];
+
 		$secure_transport = false;
 
-		if ( ! isset($arrURL['port']) ) {
-			if ( ($arrURL['scheme'] == 'ssl' || $arrURL['scheme'] == 'https') && extension_loaded('openssl') ) {
-				$arrURL['host'] = 'ssl://' . $arrURL['host'];
+		if ( ! isset( $arrURL['port'] ) ) {
+			if ( ( $arrURL['scheme'] == 'ssl' || $arrURL['scheme'] == 'https' ) && extension_loaded('openssl') ) {
+				$fsockopen_host = "ssl://$fsockopen_host";
 				$arrURL['port'] = 443;
 				$secure_transport = true;
 			} else {
@@ -624,14 +636,14 @@ class WP_Http_Fsockopen {
 
 		if ( !defined('WP_DEBUG') || ( defined('WP_DEBUG') && false === WP_DEBUG ) ) {
 			if ( $proxy->is_enabled() && $proxy->send_through_proxy( $url ) )
-				$handle = @fsockopen($proxy->host(), $proxy->port(), $iError, $strError, $r['timeout'] );
+				$handle = @fsockopen( $proxy->host(), $proxy->port(), $iError, $strError, $r['timeout'] );
 			else
-				$handle = @fsockopen($arrURL['host'], $arrURL['port'], $iError, $strError, $r['timeout'] );
+				$handle = @fsockopen( $fsockopen_host, $arrURL['port'], $iError, $strError, $r['timeout'] );
 		} else {
 			if ( $proxy->is_enabled() && $proxy->send_through_proxy( $url ) )
-				$handle = fsockopen($proxy->host(), $proxy->port(), $iError, $strError, $r['timeout'] );
+				$handle = fsockopen( $proxy->host(), $proxy->port(), $iError, $strError, $r['timeout'] );
 			else
-				$handle = fsockopen($arrURL['host'], $arrURL['port'], $iError, $strError, $r['timeout'] );
+				$handle = fsockopen( $fsockopen_host, $arrURL['port'], $iError, $strError, $r['timeout'] );
 		}
 
 		$endDelay = time();
@@ -716,7 +728,7 @@ class WP_Http_Fsockopen {
 		if ( ! empty( $process['body'] ) && isset( $arrHeaders['headers']['transfer-encoding'] ) && 'chunked' == $arrHeaders['headers']['transfer-encoding'] )
 			$process['body'] = WP_Http::chunkTransferDecode($process['body']);
 
-		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($arrHeaders) )
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($arrHeaders['headers']) )
 			$process['body'] = WP_Http_Encoding::decompress( $process['body'] );
 
 		return array('headers' => $arrHeaders['headers'], 'body' => $process['body'], 'response' => $arrHeaders['response'], 'cookies' => $arrHeaders['cookies']);
@@ -830,7 +842,7 @@ class WP_Http_Fopen {
 		if ( ! empty( $strResponse ) && isset( $processedHeaders['headers']['transfer-encoding'] ) && 'chunked' == $processedHeaders['headers']['transfer-encoding'] )
 			$strResponse = WP_Http::chunkTransferDecode($strResponse);
 
-		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders) )
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders['headers']) )
 			$strResponse = WP_Http_Encoding::decompress( $strResponse );
 
 		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response'], 'cookies' => $processedHeaders['cookies']);
@@ -998,7 +1010,7 @@ class WP_Http_Streams {
 		if ( ! empty( $strResponse ) && isset( $processedHeaders['headers']['transfer-encoding'] ) && 'chunked' == $processedHeaders['headers']['transfer-encoding'] )
 			$strResponse = WP_Http::chunkTransferDecode($strResponse);
 
-		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders) )
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($processedHeaders['headers']) )
 			$strResponse = WP_Http_Encoding::decompress( $strResponse );
 
 		return array('headers' => $processedHeaders['headers'], 'body' => $strResponse, 'response' => $processedHeaders['response'], 'cookies' => $processedHeaders['cookies']);
@@ -1154,7 +1166,7 @@ class WP_Http_ExtHTTP {
 				$theBody = http_chunked_decode($theBody);
 		}
 
-		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders) )
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders['headers']) )
 			$theBody = http_inflate( $theBody );
 
 		$theResponse = array();
@@ -1287,8 +1299,9 @@ class WP_Http_Curl {
 		if ( !empty( $r['headers'] ) ) {
 			// cURL expects full header strings in each element
 			$headers = array();
-			foreach ( $r['headers'] as $name => $value )
+			foreach ( $r['headers'] as $name => $value ) {
 				$headers[] = "{$name}: $value";
+			}
 			curl_setopt( $handle, CURLOPT_HTTPHEADER, $headers );
 		}
 
@@ -1337,7 +1350,7 @@ class WP_Http_Curl {
 
 		curl_close( $handle );
 
-		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders) )
+		if ( true === $r['decompress'] && true === WP_Http_Encoding::should_decode($theHeaders['headers']) )
 			$theBody = WP_Http_Encoding::decompress( $theBody );
 
 		return array('headers' => $theHeaders['headers'], 'body' => $theBody, 'response' => $response, 'cookies' => $theHeaders['cookies']);
@@ -1781,10 +1794,12 @@ class WP_Http_Encoding {
 		if ( false !== $decompressed )
 			return $decompressed;
 
-		$decompressed = gzdecode( $compressed );
+		if ( function_exists('gzdecode') ) {
+			$decompressed = gzdecode( $compressed );
 
-		if ( false !== $decompressed )
-			return $decompressed;
+			if ( false !== $decompressed )
+				return $decompressed;
+		}
 
 		return $compressed;
 	}
@@ -1898,7 +1913,7 @@ function &_wp_http_get_object() {
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return WP_Error|string The body of the response or WP_Error on failure.
+ * @return WP_Error|array The response or WP_Error on failure.
  */
 function wp_remote_request($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1914,7 +1929,7 @@ function wp_remote_request($url, $args = array()) {
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return WP_Error|string The body of the response or WP_Error on failure.
+ * @return WP_Error|array The response or WP_Error on failure.
  */
 function wp_remote_get($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1930,7 +1945,7 @@ function wp_remote_get($url, $args = array()) {
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return WP_Error|string The body of the response or WP_Error on failure.
+ * @return WP_Error|array The response or WP_Error on failure.
  */
 function wp_remote_post($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1946,7 +1961,7 @@ function wp_remote_post($url, $args = array()) {
  *
  * @param string $url Site URL to retrieve.
  * @param array $args Optional. Override the defaults.
- * @return WP_Error|string The body of the response or WP_Error on failure.
+ * @return WP_Error|array The response or WP_Error on failure.
  */
 function wp_remote_head($url, $args = array()) {
 	$objFetchSite = _wp_http_get_object();
@@ -1962,7 +1977,7 @@ function wp_remote_head($url, $args = array()) {
  * @return array The headers of the response. Empty array if incorrect parameter given.
  */
 function wp_remote_retrieve_headers(&$response) {
-	if ( ! isset($response['headers']) || ! is_array($response['headers']))
+	if ( is_wp_error($response) || ! isset($response['headers']) || ! is_array($response['headers']))
 		return array();
 
 	return $response['headers'];
@@ -1975,10 +1990,10 @@ function wp_remote_retrieve_headers(&$response) {
  *
  * @param array $response
  * @param string $header Header name to retrieve value from.
- * @return array The header value. Empty string on if incorrect parameter given.
+ * @return string The header value. Empty string on if incorrect parameter given, or if the header doesnt exist.
  */
 function wp_remote_retrieve_header(&$response, $header) {
-	if ( ! isset($response['headers']) || ! is_array($response['headers']))
+	if ( is_wp_error($response) || ! isset($response['headers']) || ! is_array($response['headers']))
 		return '';
 
 	if ( array_key_exists($header, $response['headers']) )
@@ -1995,10 +2010,10 @@ function wp_remote_retrieve_header(&$response, $header) {
  * @since 2.7.0
  *
  * @param array $response HTTP response.
- * @return array The keys 'code' and 'message' give information on the response.
+ * @return string the response code. Empty string on incorrect parameter given.
  */
 function wp_remote_retrieve_response_code(&$response) {
-	if ( ! isset($response['response']) || ! is_array($response['response']))
+	if ( is_wp_error($response) || ! isset($response['response']) || ! is_array($response['response']))
 		return '';
 
 	return $response['response']['code'];
@@ -2012,10 +2027,10 @@ function wp_remote_retrieve_response_code(&$response) {
  * @since 2.7.0
  *
  * @param array $response HTTP response.
- * @return array The keys 'code' and 'message' give information on the response.
+ * @return string The response message. Empty string on incorrect parameter given.
  */
 function wp_remote_retrieve_response_message(&$response) {
-	if ( ! isset($response['response']) || ! is_array($response['response']))
+	if ( is_wp_error($response) || ! isset($response['response']) || ! is_array($response['response']))
 		return '';
 
 	return $response['response']['message'];
@@ -2030,7 +2045,7 @@ function wp_remote_retrieve_response_message(&$response) {
  * @return string The body of the response. Empty string if no body or incorrect parameter given.
  */
 function wp_remote_retrieve_body(&$response) {
-	if ( ! isset($response['body']) )
+	if ( is_wp_error($response) || ! isset($response['body']) )
 		return '';
 
 	return $response['body'];

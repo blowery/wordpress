@@ -18,9 +18,6 @@ $title = __('Install Plugins');
 $parent_file = 'plugins.php';
 
 wp_reset_vars( array('tab', 'paged') );
-wp_enqueue_style( 'plugin-install' );
-wp_enqueue_script( 'plugin-install' );
-add_thickbox();
 
 //These are the tabs which are shown on the page,
 $tabs = array();
@@ -46,6 +43,11 @@ if( empty($tab) || ( ! isset($tabs[ $tab ]) && ! in_array($tab, (array)$nonmenu_
 if( empty($paged) )
 	$paged = 1;
 
+wp_enqueue_style( 'plugin-install' );
+wp_enqueue_script( 'plugin-install' );
+if ( 'plugin-information' != $tab )
+	add_thickbox();
+
 $body_id = $tab;
 
 do_action('install_plugins_pre_' . $tab); //Used to override the general interface, Eg, install or plugin information.
@@ -54,7 +56,7 @@ include('admin-header.php');
 ?>
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2>
+<h2><?php echo esc_html( $title ); ?></h2>
 
 	<ul class="subsubsub">
 <?php
