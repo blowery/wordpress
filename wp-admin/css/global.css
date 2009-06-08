@@ -185,6 +185,16 @@ table {
 	clear: both;
 }
 
+/* Hide visually but not from screen readers */
+.screen-reader-text,
+.screen-reader-text span {
+	position: absolute;
+	left: -1000em;
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+}
+
 .hidden,
 .js .closed .inside,
 .js .hide-if-js,
@@ -304,6 +314,30 @@ h6 {
   font-size: 0.67em;
   font-weight: bold;
   margin: 2.33em 0;
+}
+
+ul.ul-disc {
+	list-style: disc outside;
+}
+
+ul.ul-square {
+	list-style: square outside;
+}
+
+ol.ol-decimal {
+	list-style: decimal outside;
+}
+
+ul.ul-disc,
+ul.ul-square,
+ol.ol-decimal {
+	margin-left: 1.8em;
+}
+
+ul.ul-disc > li,
+ul.ul-square > li,
+ol.ol-decimal > li {
+	margin: 0 0 0.5em;
 }
 
 .subsubsub {
@@ -438,7 +472,7 @@ h6 {
 
 .wrap .updated,
 .wrap .error {
-	margin: 5px 0;
+	margin: 5px 0 15px;
 }
 
 .wrap h2 {

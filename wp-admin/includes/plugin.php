@@ -86,7 +86,7 @@ function get_plugin_data( $plugin_file, $markup = true, $translate = true ) {
 
 	foreach ( array( 'name', 'uri', 'version', 'description', 'author_name', 'author_uri', 'text_domain', 'domain_path' ) as $field ) {
 		if ( !empty( ${$field} ) )
-			${$field} = trim(${$field}[1]);
+			${$field} = _cleanup_header_comment(${$field}[1]);
 		else
 			${$field} = '';
 	}
@@ -468,7 +468,10 @@ function delete_plugins($plugins, $redirect = '' ) {
 		return new WP_Error('could_not_remove_plugin', sprintf(__('Could not fully remove the plugin(s) %s'), implode(', ', $errors)) );
 
 	// Force refresh of plugin update information
-	delete_transient('update_plugins');
+	if ( $current = get_transient('update_plugins') ) {
+		unset( $current->response[ $plugin_file ] );
+		set_transient('update_plugins', $current);
+	}
 
 	return true;
 }
@@ -594,6 +597,8 @@ function add_menu_page( $page_title, $menu_title, $access_level, $file, $functio
 
 	if ( empty($icon_url) )
 		$icon_url = 'images/generic.png';
+	elseif ( is_ssl() && 0 === strpos($icon_url, 'http://') )
+		$icon_url = 'https://' . substr($icon_url, 7);
 
 	$menu[] = array ( $menu_title, $access_level, $file, $page_title, 'menu-top ' . $hookname, $hookname, $icon_url );
 
@@ -634,6 +639,8 @@ function add_utility_page( $page_title, $menu_title, $access_level, $file, $func
 
 	if ( empty($icon_url) )
 		$icon_url = 'images/generic.png';
+	elseif ( is_ssl() && 0 === strpos($icon_url, 'http://') )
+		$icon_url = 'https://' . substr($icon_url, 7);
 
 	$_wp_last_utility_menu++;
 
@@ -1022,7 +1029,7 @@ function add_option_update_handler($option_group, $option_name, $sanitize_callba
  */
 function remove_option_update_handler($option_group, $option_name, $sanitize_callback = '') {
 	global $new_whitelist_options;
-	$pos = array_search( $option_name, $new_whitelist_options );
+	$pos = array_search( $option_name, (array) $new_whitelist_options );
 	if ( $pos !== false )
 		unset( $new_whitelist_options[ $option_group ][ $pos ] );
 	if ( $sanitize_callback != '' )
@@ -1112,7 +1119,7 @@ function remove_option_whitelist( $del_options, $options = '' ) {
  * @param string $option_group A settings group name.  This should match the group name used in register_setting().
  */
 function settings_fields($option_group) {
-	echo "<input type='hidden' name='option_page' value='$option_group' />";
+	echo "<input type='hidden' name='option_page' value='" . esc_attr($option_group) . "' />";
 	echo '<input type="hidden" name="action" value="update" />';
 	wp_nonce_field("$option_group-options");
 }

@@ -34,7 +34,7 @@ if ( isset($_GET['action']) ) {
 		$upgrader->upgrade($plugin);
 
 		include('admin-footer.php');
-		
+
 	} elseif ('activate-plugin' == $action ) {
 		if ( ! current_user_can('update_plugins') )
 			wp_die(__('You do not have sufficient permissions to update plugins for this blog.'));
@@ -63,30 +63,26 @@ if ( isset($_GET['action']) ) {
 			wp_die(__('You do not have sufficient permissions to install plugins for this blog.'));
 
 		include_once ABSPATH . 'wp-admin/includes/plugin-install.php'; //for plugins_api..
-	
+
 		check_admin_referer('install-plugin_' . $plugin);
 		$api = plugins_api('plugin_information', array('slug' => $plugin, 'fields' => array('sections' => false) ) ); //Save on a bit of bandwidth.
-	
+
 		if ( is_wp_error($api) )
 	 		wp_die($api);
-	
+
 		$title = __('Plugin Install');
 		$parent_file = 'plugins.php';
 		$submenu_file = 'plugin-install.php';
 		require_once('admin-header.php');
-	
+
 		$title = sprintf( __('Installing Plugin: %s'), $api->name . ' ' . $api->version );
 		$nonce = 'install-plugin_' . $plugin;
-		$url = add_query_arg( array(
-								'plugin' => $plugin,
-								'plugin_name' => $api->name . ' ' . $api->version,
-								'download_url' => $api->download_link
-							), 'update.php?action=install-plugin');
+		$url = 'update.php?action=install-plugin&plugin=' . $plugin;
 		$type = 'web'; //Install plugin type, From Web or an Upload.
 
 		$upgrader = new Plugin_Upgrader( new Plugin_Installer_Skin( compact('title', 'url', 'nonce', 'plugin', 'api') ) );
 		$upgrader->install($api->download_link);
-		
+
 		include('admin-footer.php');
 
 	} elseif ( 'upload-plugin' == $action ) {
@@ -102,7 +98,7 @@ if ( isset($_GET['action']) ) {
 		$parent_file = 'plugins.php';
 		$submenu_file = 'plugin-install.php';
 		require_once('admin-header.php');
-		
+
 		$title = sprintf( __('Installing Plugin from uploaded file: %s'), basename( $file_upload->filename ) );
 		$nonce = 'plugin-upload';
 		$url = add_query_arg(array('package' => $file_upload->filename ), 'update.php?action=upload-plugin');
@@ -134,14 +130,14 @@ if ( isset($_GET['action']) ) {
 		$upgrader->upgrade($theme);
 
 		include('admin-footer.php');
-	
+
 	} elseif ( 'install-theme' == $action ) {
 
 		if ( ! current_user_can('install_themes') )
 			wp_die(__('You do not have sufficient permissions to install themes for this blog.'));
 
 		include_once ABSPATH . 'wp-admin/includes/theme-install.php'; //for themes_api..
-	
+
 		check_admin_referer('install-theme_' . $theme);
 		$api = themes_api('theme_information', array('slug' => $theme, 'fields' => array('sections' => false) ) ); //Save on a bit of bandwidth.
 
@@ -154,21 +150,17 @@ if ( isset($_GET['action']) ) {
 		$parent_file = 'themes.php';
 		$submenu_file = 'theme-install.php';
 		require_once('admin-header.php');
-	
+
 		$title = sprintf( __('Installing theme: %s'), $api->name . ' ' . $api->version );
 		$nonce = 'install-theme_' . $theme;
-		$url = add_query_arg( array(
-								'theme' => $theme,
-								'theme_name' => $api->name . ' ' . $api->version,
-								'download_url' => $api->download_link
-							), 'update.php?action=install-theme');
+		$url = 'update.php?action=install-theme&theme=' . $theme;
 		$type = 'web'; //Install theme type, From Web or an Upload.
-	
+
 		$upgrader = new Theme_Upgrader( new Theme_Installer_Skin( compact('title', 'url', 'nonce', 'plugin', 'api') ) );
 		$upgrader->install($api->download_link);
-		
+
 		include('admin-footer.php');
-		
+
 	} elseif ( 'upload-theme' == $action ) {
 
 		if ( ! current_user_can('install_themes') )

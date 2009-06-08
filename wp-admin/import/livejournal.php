@@ -181,12 +181,12 @@ class LJ_API_Import {
 		<form action="admin.php?import=livejournal" method="post">
 		<?php wp_nonce_field( 'lj-api-import' ) ?>
 		<?php if ( get_option( 'ljapi_username' ) && get_option( 'ljapi_password' ) ) : ?>
-			<input type="hidden" name="step" value="<?php echo get_option( 'ljapi_step' ) ?>" />
+			<input type="hidden" name="step" value="<?php echo esc_attr( get_option( 'ljapi_step' ) ) ?>" />
 			<p><?php _e( 'It looks like you attempted to import your LiveJournal posts previously and got interrupted.' ) ?></p>
 			<p class="submit">
-				<input type="submit" class="button-primary" value="<?php echo attribute_escape( __( 'Continue previous import' ) ) ?>" />
+				<input type="submit" class="button-primary" value="<?php esc_attr_e( 'Continue previous import' ) ?>" />
 			</p>
-			<p class="submitbox"><a href="<?php echo clean_url($_SERVER['PHP_SELF'] . '?import=livejournal&amp;step=-1&amp;_wpnonce=' . wp_create_nonce( 'lj-api-import' ) . '&amp;_wp_http_referer=' . attribute_escape( $_SERVER['REQUEST_URI'] )) ?>" class="deletion submitdelete"><?php _e( 'Cancel &amp; start a new import' ) ?></a></p>
+			<p class="submitbox"><a href="<?php echo esc_url($_SERVER['PHP_SELF'] . '?import=livejournal&amp;step=-1&amp;_wpnonce=' . wp_create_nonce( 'lj-api-import' ) . '&amp;_wp_http_referer=' . esc_attr( $_SERVER['REQUEST_URI'] )) ?>" class="deletion submitdelete"><?php _e( 'Cancel &amp; start a new import' ) ?></a></p>
 			<p>
 		<?php else : ?>
 			<input type="hidden" name="step" value="1" />
@@ -209,7 +209,7 @@ class LJ_API_Import {
 			</table>
 
 			<p><?php _e( 'If you have any entries on LiveJournal which are marked as private, they will be password-protected when they are imported so that only people who know the password can see them.' ) ?></p>
-			<p><?php _e( "If you don't enter a password, ALL ENTRIES from your LiveJournal will be imported as public posts in WordPress." ) ?></p>
+			<p><?php _e( 'If you don&#8217;t enter a password, ALL ENTRIES from your LiveJournal will be imported as public posts in WordPress.' ) ?></p>
 			<p><?php _e( 'Enter the password you would like to use for all protected entries here:' ) ?></p>
 			<table class="form-table">
 
@@ -223,7 +223,7 @@ class LJ_API_Import {
 			<p><?php _e( "<strong>WARNING:</strong> This can take a really long time if you have a lot of entries in your LiveJournal, or a lot of comments. Ideally, you should only start this process if you can leave your computer alone while it finishes the import." ) ?></p>
 
 			<p class="submit">
-				<input type="submit" class="button-primary" value="<?php echo attribute_escape( __( 'Connect to LiveJournal and Import' ) ) ?>" />
+				<input type="submit" class="button-primary" value="<?php esc_attr_e( 'Connect to LiveJournal and Import' ) ?>" />
 			</p>
 
 			<p><?php _e( '<strong>NOTE:</strong> If the import process is interrupted for <em>any</em> reason, come back to this page and it will continue from where it stopped automatically.' ) ?></p>
@@ -383,7 +383,7 @@ class LJ_API_Import {
 				return $post_id;
 			}
 			if ( !$post_id ) {
-				_e( "Couldn't get post ID (creating post failed!)" );
+				_e( 'Couldn&#8217;t get post ID (creating post failed!)' );
 				echo '</li>';
 				return new WP_Error( 'insert_post_failed', __( 'Failed to create post.' ) );
 			}
@@ -576,7 +576,7 @@ class LJ_API_Import {
 		// Get the body and HTMLize it
 		preg_match( '|<body>(.*)</body>|is', $comment, $matches );
 		$comment_content = !empty( $comment_subject ) ? $comment_subject . "\n\n" . $matches[1] : $matches[1];
-		$comment_content = html_entity_decode( $comment_content );
+		$comment_content = @html_entity_decode( $comment_content, ENT_COMPAT, get_option('blog_charset') );
 		$comment_content = str_replace( '&apos;', "'", $comment_content );
 		$comment_content = wpautop( $comment_content );
 		$comment_content = str_replace( '<br>', '<br />', $comment_content );
@@ -724,7 +724,7 @@ class LJ_API_Import {
 		if ( empty( $this->username ) || empty( $this->password ) ) {
 			?>
 			<p><?php _e( 'Please enter your LiveJournal username <em>and</em> password so we can download your posts and comments.' ) ?></p>
-			<p><a href="<?php echo clean_url($_SERVER['PHP_SELF'] . '?import=livejournal&amp;step=-1&amp;_wpnonce=' . wp_create_nonce( 'lj-api-import' ) . '&amp;_wp_http_referer=' . attribute_escape( str_replace( '&step=1', '', $_SERVER['REQUEST_URI'] ) ) ) ?>"><?php _e( 'Start again' ) ?></a></p>
+			<p><a href="<?php echo esc_url($_SERVER['PHP_SELF'] . '?import=livejournal&amp;step=-1&amp;_wpnonce=' . wp_create_nonce( 'lj-api-import' ) . '&amp;_wp_http_referer=' . esc_attr( str_replace( '&step=1', '', $_SERVER['REQUEST_URI'] ) ) ) ?>"><?php _e( 'Start again' ) ?></a></p>
 			<?php
 			return false;
 		}
@@ -736,7 +736,7 @@ class LJ_API_Import {
 				delete_option( 'ljapi_protected_password' );
 				?>
 				<p><?php _e( 'Logging in to LiveJournal failed. Check your username and password and try again.' ) ?></p>
-				<p><a href="<?php echo clean_url($_SERVER['PHP_SELF'] . '?import=livejournal&amp;step=-1&amp;_wpnonce=' . wp_create_nonce( 'lj-api-import' ) . '&amp;_wp_http_referer=' . attribute_escape( str_replace( '&step=1', '', $_SERVER['REQUEST_URI'] ) ) ) ?>"><?php _e( 'Start again' ) ?></a></p>
+				<p><a href="<?php echo esc_url($_SERVER['PHP_SELF'] . '?import=livejournal&amp;step=-1&amp;_wpnonce=' . wp_create_nonce( 'lj-api-import' ) . '&amp;_wp_http_referer=' . esc_attr( str_replace( '&step=1', '', $_SERVER['REQUEST_URI'] ) ) ) ?>"><?php _e( 'Start again' ) ?></a></p>
 				<?php
 				return false;
 			} else {
@@ -778,7 +778,7 @@ class LJ_API_Import {
 
 		echo '<div id="ljapi-status">';
 		echo '<h3>' . __( 'Importing Posts' ) . '</h3>';
-		echo '<p>' . __( "We're downloading and importing your LiveJournal posts..." ) . '</p>';
+		echo '<p>' . __( 'We&#8217;re downloading and importing your LiveJournal posts...' ) . '</p>';
 		if ( get_option( 'ljapi_post_batch' ) && count( get_option( 'ljapi_sync_item_times' ) ) ) {
 			$batch = count( get_option( 'ljapi_sync_item_times' ) );
 			$batch = $count > 300 ? ceil( $batch / 300 ) : 1;
@@ -801,7 +801,7 @@ class LJ_API_Import {
 			if ( 406 == $this->ixr->getErrorCode() ) {
 				?>
 				<p><strong><?php _e( 'Uh oh &ndash; LiveJournal has disconnected us because we made too many requests to their servers too quickly.' ) ?></strong></p>
-				<p><strong><?php _e( "We've saved where you were up to though, so if you come back to this importer in about 30 minutes, you should be able to continue from where you were." ) ?></strong></p>
+				<p><strong><?php _e( 'We&#8217;ve saved where you were up to though, so if you come back to this importer in about 30 minutes, you should be able to continue from where you were.' ) ?></strong></p>
 				<?php
 				echo $this->next_step( 1, __( 'Try Again' ) );
 				return false;
@@ -816,12 +816,12 @@ class LJ_API_Import {
 			<form action="admin.php?import=livejournal" method="post" id="ljapi-auto-repost">
 			<?php wp_nonce_field( 'lj-api-import' ) ?>
 			<input type="hidden" name="step" id="step" value="1" />
-			<p><input type="submit" class="button-primary" value="<?php echo attribute_escape( __( 'Import the next batch' ) ) ?>" /> <span id="auto-message"></span></p>
+			<p><input type="submit" class="button-primary" value="<?php esc_attr_e( 'Import the next batch' ) ?>" /> <span id="auto-message"></span></p>
 			</form>
 			<?php $this->auto_ajax( 'ljapi-auto-repost', 'auto-message', 0 ); ?>
 		<?php
 		} else {
-			echo '<p>' . __( "Your posts have all been imported, but wait - there's more! Now we need to download &amp; import your comments." ) . '</p>';
+			echo '<p>' . __( 'Your posts have all been imported, but wait &#8211; there&#8217;s more! Now we need to download &amp; import your comments.' ) . '</p>';
 			echo $this->next_step( 2, __( 'Download my comments &raquo;' ) );
 			$this->auto_submit();
 		}
@@ -866,7 +866,7 @@ class LJ_API_Import {
 			<p><strong><?php printf( __( 'Imported comment batch %d of <strong>approximately</strong> %d' ), get_option( 'ljapi_comment_batch' ), $batch ) ?></strong></p>
 			<?php wp_nonce_field( 'lj-api-import' ) ?>
 			<input type="hidden" name="step" id="step" value="2" />
-			<p><input type="submit" class="button-primary" value="<?php echo attribute_escape( __( 'Import the next batch' ) ) ?>" /> <span id="auto-message"></span></p>
+			<p><input type="submit" class="button-primary" value="<?php esc_attr_e( 'Import the next batch' ) ?>" /> <span id="auto-message"></span></p>
 			</form>
 			<?php $this->auto_ajax( 'ljapi-auto-repost', 'auto-message', 0 ); ?>
 		<?php
@@ -941,8 +941,8 @@ class LJ_API_Import {
 		$str  = '<form action="admin.php?import=livejournal" method="post" id="' . $id . '">';
 		$str .= wp_nonce_field( 'lj-api-import', '_wpnonce', true, false );
 		$str .= wp_referer_field( false );
-		$str .= '<input type="hidden" name="step" id="step" value="' . $next_step . '" />';
-		$str .= '<p><input type="submit" class="button-primary" value="' . attribute_escape( $label ) . '" /> <span id="auto-message"></span></p>';
+		$str .= '<input type="hidden" name="step" id="step" value="' . esc_attr($next_step) . '" />';
+		$str .= '<p><input type="submit" class="button-primary" value="' . esc_attr( $label ) . '" /> <span id="auto-message"></span></p>';
 		$str .= '</form>';
 
 		return $str;
@@ -963,7 +963,7 @@ class LJ_API_Import {
 				if ( next_counter <= 0 ) {
 					if ( jQuery( '#<?php echo $id ?>' ).length ) {
 						jQuery( "#<?php echo $id ?> input[type='submit']" ).hide();
-						str = '<?php _e( "Continuing" ) ?> <img src="images/loading-publish.gif" alt="" id="processing" align="top" />';
+						str = '<?php _e( "Continuing" ) ?> <img src="images/wpspin_light.gif" alt="" id="processing" align="top" />';
 						jQuery( '#<?php echo $msg ?>' ).html( str );
 						jQuery( '#<?php echo $id ?>' ).submit();
 						return;
@@ -992,7 +992,7 @@ class LJ_API_Import {
 					if ( jQuery( '#<?php echo $id ?>' ).length ) {
 						jQuery( "#<?php echo $id ?> input[type='submit']" ).hide();
 						jQuery.ajaxSetup({'timeout':3600000});
-						str = '<?php _e( "Processing next batch." ) ?> <img src="images/loading-publish.gif" alt="" id="processing" align="top" />';
+						str = '<?php _e( "Processing next batch." ) ?> <img src="images/wpspin_light.gif" alt="" id="processing" align="top" />';
 						jQuery( '#<?php echo $msg ?>' ).html( str );
 						jQuery('#ljapi-status').load(ajaxurl, {'action':'lj-importer',
 																'step':jQuery('#step').val(),

@@ -20,7 +20,7 @@ foreach ( $filters as $filter ) {
 	add_filter($filter, 'strip_tags');
 	add_filter($filter, 'trim');
 	add_filter($filter, 'wp_filter_kses');
-	add_filter($filter, 'wp_specialchars', 30);
+	add_filter($filter, '_wp_specialchars', 30);
 }
 
 // Kses only for textarea saves
@@ -43,7 +43,7 @@ $filters = array('pre_comment_author_url', 'pre_user_url', 'pre_link_url', 'pre_
 foreach ( $filters as $filter ) {
 	add_filter($filter, 'strip_tags');
 	add_filter($filter, 'trim');
-	add_filter($filter, 'sanitize_url');
+	add_filter($filter, 'esc_url_raw');
 	add_filter($filter, 'wp_filter_kses');
 }
 
@@ -52,7 +52,7 @@ $filters = array('user_url', 'link_url', 'link_image', 'link_rss', 'comment_url'
 foreach ( $filters as $filter ) {
 	add_filter($filter, 'strip_tags');
 	add_filter($filter, 'trim');
-	add_filter($filter, 'clean_url');
+	add_filter($filter, 'esc_url');
 	add_filter($filter, 'wp_filter_kses');
 }
 
@@ -76,11 +76,11 @@ foreach ( $filters as $filter ) {
 
 // Format strings for display.
 $filters = array('comment_author', 'term_name', 'link_name', 'link_description',
-	'link_notes', 'bloginfo', 'wp_title');
+	'link_notes', 'bloginfo', 'wp_title', 'widget_title');
 foreach ( $filters as $filter ) {
 	add_filter($filter, 'wptexturize');
 	add_filter($filter, 'convert_chars');
-	add_filter($filter, 'wp_specialchars');
+	add_filter($filter, 'esc_html');
 }
 
 // Format text area for display.
@@ -131,19 +131,19 @@ add_filter('wp_sprintf', 'wp_sprintf_l', 10, 2);
 // RSS filters
 add_filter('the_title_rss', 'strip_tags');
 add_filter('the_title_rss', 'ent2ncr', 8);
-add_filter('the_title_rss', 'wp_specialchars');
+add_filter('the_title_rss', 'esc_html');
 add_filter('the_content_rss', 'ent2ncr', 8);
 add_filter('the_excerpt_rss', 'convert_chars');
 add_filter('the_excerpt_rss', 'ent2ncr', 8);
 add_filter('comment_author_rss', 'ent2ncr', 8);
 add_filter('comment_text_rss', 'ent2ncr', 8);
-add_filter('comment_text_rss', 'wp_specialchars');
+add_filter('comment_text_rss', 'esc_html');
 add_filter('bloginfo_rss', 'ent2ncr', 8);
 add_filter('the_author', 'ent2ncr', 8);
 
 // Misc filters
 add_filter('option_ping_sites', 'privacy_ping_filter');
-add_filter('option_blog_charset', 'wp_specialchars');
+add_filter('option_blog_charset', '_wp_specialchars'); // IMPORTANT: This must not be wp_specialchars() or esc_html() or it'll cause an infinite loop
 add_filter('option_home', '_config_wp_home');
 add_filter('option_siteurl', '_config_wp_siteurl');
 add_filter('tiny_mce_before_init', '_mce_set_direction');
@@ -186,6 +186,7 @@ add_action('do_feed_rss', 'do_feed_rss', 10, 1);
 add_action('do_feed_rss2', 'do_feed_rss2', 10, 1);
 add_action('do_feed_atom', 'do_feed_atom', 10, 1);
 add_action('do_pings', 'do_all_pings', 10, 1);
+add_action('do_generic_ping', 'generic_ping', 10, 1);
 add_action('do_robots', 'do_robots');
 add_action('sanitize_comment_cookies', 'sanitize_comment_cookies');
 add_action('admin_print_scripts', 'print_head_scripts', 20);

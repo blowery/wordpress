@@ -27,8 +27,11 @@ function wp_version_check() {
 	$php_version = phpversion();
 
 	$current = get_transient( 'update_core' );
-	if ( ! is_object($current) )
+	if ( ! is_object($current) ) {
 		$current = new stdClass;
+		$current->updates = array();
+		$current->version_checked = $wp_version;
+	}
 
 	$locale = apply_filters( 'core_version_check_locale', get_locale() );
 
@@ -62,15 +65,15 @@ function wp_version_check() {
 	foreach( explode( "\n\n", $body ) as $entry) {
 		$returns = explode("\n", $entry);
 		$new_option = new stdClass();
-		$new_option->response = attribute_escape( $returns[0] );
+		$new_option->response = esc_attr( $returns[0] );
 		if ( isset( $returns[1] ) )
-			$new_option->url = clean_url( $returns[1] );
+			$new_option->url = esc_url( $returns[1] );
 		if ( isset( $returns[2] ) )
-			$new_option->package = clean_url( $returns[2] );
+			$new_option->package = esc_url( $returns[2] );
 		if ( isset( $returns[3] ) )
-			$new_option->current = attribute_escape( $returns[3] );
+			$new_option->current = esc_attr( $returns[3] );
 		if ( isset( $returns[4] ) )
-			$new_option->locale = attribute_escape( $returns[4] );
+			$new_option->locale = esc_attr( $returns[4] );
 		$new_options[] = $new_option;
 	}
 
@@ -205,13 +208,15 @@ function wp_update_themes( ) {
 	$current_theme->last_checked = time();
 	set_transient( 'update_themes', $current_theme );
 
+	$current_theme->template = get_option( 'template' );
+
 	$themes = array( );
-	$themes['current_theme'] = $current_theme;
+	$themes['current_theme'] = (array) $current_theme;
 	foreach( (array) $installed_themes as $theme_title => $theme ) {
-		$themes[$theme['Template']] = array( );
+		$themes[$theme['Stylesheet']] = array( );
 
 		foreach( (array) $theme as $key => $value ) {
-			$themes[$theme['Template']][$key] = $value;
+			$themes[$theme['Stylesheet']][$key] = $value;
 		}
 	}
 
@@ -283,7 +288,8 @@ function _maybe_update_themes( ) {
 	wp_update_themes( );
 }
 
-add_action( 'init', '_maybe_update_core' );
+add_action( 'admin_init', '_maybe_update_core' );
+add_action( 'wp_version_check', 'wp_version_check' );
 
 add_action( 'load-plugins.php', 'wp_update_plugins' );
 add_action( 'load-update.php', 'wp_update_plugins' );
@@ -295,9 +301,11 @@ add_action( 'load-update.php', 'wp_update_themes' );
 add_action( 'admin_init', '_maybe_update_themes' );
 add_action( 'wp_update_themes', 'wp_update_themes' );
 
+if ( !wp_next_scheduled('wp_version_check') && !defined('WP_INSTALLING') )
+	wp_schedule_event(time(), 'twicedaily', 'wp_version_check');
+
 if ( !wp_next_scheduled('wp_update_plugins') && !defined('WP_INSTALLING') )
 	wp_schedule_event(time(), 'twicedaily', 'wp_update_plugins');
-
 
 if ( !wp_next_scheduled('wp_update_themes') && !defined('WP_INSTALLING') )
 	wp_schedule_event(time(), 'twicedaily', 'wp_update_themes');

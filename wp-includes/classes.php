@@ -36,7 +36,7 @@ class WP {
 	 * @since 2.0.0
 	 * @var array
 	 */
-	var $private_query_vars = array('offset', 'posts_per_page', 'posts_per_archive_page', 'what_to_show', 'showposts', 'nopaging', 'post_type', 'post_status', 'category__in', 'category__not_in', 'category__and', 'tag__in', 'tag__not_in', 'tag__and', 'tag_slug__in', 'tag_slug__and', 'tag_id', 'post_mime_type', 'perm', 'comments_per_page');
+	var $private_query_vars = array('offset', 'posts_per_page', 'posts_per_archive_page', 'showposts', 'nopaging', 'post_type', 'post_status', 'category__in', 'category__not_in', 'category__and', 'tag__in', 'tag__not_in', 'tag__and', 'tag_slug__in', 'tag_slug__and', 'tag_id', 'post_mime_type', 'perm', 'comments_per_page');
 
 	/**
 	 * Extra query variables set by the user.
@@ -253,7 +253,7 @@ class WP {
 		$this->public_query_vars = apply_filters('query_vars', $this->public_query_vars);
 
 		foreach ( $GLOBALS['wp_taxonomies'] as $taxonomy => $t )
-			if ( isset($t->query_var) )
+			if ( $t->query_var )
 				$taxonomy_query_vars[$t->query_var] = $taxonomy;
 
 		for ($i=0; $i<count($this->public_query_vars); $i += 1) {
@@ -414,10 +414,10 @@ class WP {
 			$GLOBALS[$key] = $value;
 		}
 
-		$GLOBALS['query_string'] = & $this->query_string;
+		$GLOBALS['query_string'] = $this->query_string;
 		$GLOBALS['posts'] = & $wp_query->posts;
-		$GLOBALS['post'] = & $wp_query->post;
-		$GLOBALS['request'] = & $wp_query->request;
+		$GLOBALS['post'] = $wp_query->post;
+		$GLOBALS['request'] = $wp_query->request;
 
 		if ( is_single() || is_page() ) {
 			$GLOBALS['more'] = 1;
@@ -1184,10 +1184,10 @@ class Walker_Page extends Walker {
 		} elseif ( $page->ID == get_option('page_for_posts') ) {
 			$css_class[] = 'current_page_parent';
 		}
-		
-		$css_class = implode(' ', apply_filters('page_css_class', $css_class, $page)); 
 
-		$output .= $indent . '<li class="' . $css_class . '"><a href="' . get_page_link($page->ID) . '" title="' . attribute_escape(apply_filters('the_title', $page->post_title)) . '">' . $link_before . apply_filters('the_title', $page->post_title) . $link_after . '</a>';
+		$css_class = implode(' ', apply_filters('page_css_class', $css_class, $page));
+
+		$output .= $indent . '<li class="' . $css_class . '"><a href="' . get_page_link($page->ID) . '" title="' . esc_attr(apply_filters('the_title', $page->post_title)) . '">' . $link_before . apply_filters('the_title', $page->post_title) . $link_after . '</a>';
 
 		if ( !empty($show_date) ) {
 			if ( 'modified' == $show_date )
@@ -1252,7 +1252,7 @@ class Walker_PageDropdown extends Walker {
 		if ( $page->ID == $args['selected'] )
 			$output .= ' selected="selected"';
 		$output .= '>';
-		$title = wp_specialchars($page->post_title);
+		$title = esc_html($page->post_title);
 		$output .= "$pad$title";
 		$output .= "</option>\n";
 	}
@@ -1325,13 +1325,13 @@ class Walker_Category extends Walker {
 	function start_el(&$output, $category, $depth, $args) {
 		extract($args);
 
-		$cat_name = attribute_escape( $category->name);
+		$cat_name = esc_attr( $category->name);
 		$cat_name = apply_filters( 'list_cats', $cat_name, $category );
 		$link = '<a href="' . get_category_link( $category->term_id ) . '" ';
 		if ( $use_desc_for_title == 0 || empty($category->description) )
 			$link .= 'title="' . sprintf(__( 'View all posts filed under %s' ), $cat_name) . '"';
 		else
-			$link .= 'title="' . attribute_escape( apply_filters( 'category_description', $category->description, $category )) . '"';
+			$link .= 'title="' . esc_attr( strip_tags( apply_filters( 'category_description', $category->description, $category ) ) ) . '"';
 		$link .= '>';
 		$link .= $cat_name . '</a>';
 

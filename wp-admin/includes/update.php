@@ -83,7 +83,7 @@ function find_core_update( $version, $locale ) {
 
 function core_update_footer( $msg = '' ) {
 	if ( !current_user_can('manage_options') )
-		return sprintf( '| '.__( 'Version %s' ), $GLOBALS['wp_version'] );
+		return sprintf( __( 'Version %s' ), $GLOBALS['wp_version'] );
 
 	$cur = get_preferred_from_update_core();
 	if ( ! isset( $cur->current ) )
@@ -152,17 +152,22 @@ function wp_plugin_update_row( $file, $plugin_data ) {
 
 	$r = $current->response[ $file ];
 
+	$plugins_allowedtags = array('a' => array('href' => array(),'title' => array()),'abbr' => array('title' => array()),'acronym' => array('title' => array()),'code' => array(),'em' => array(),'strong' => array());
+	$plugin_name = wp_kses( $plugin_data['Name'], $plugins_allowedtags );
+
 	$details_url = admin_url('plugin-install.php?tab=plugin-information&plugin=' . $r->slug . '&TB_iframe=true&width=600&height=800');
 
-	echo '<tr><td colspan="5" class="plugin-update">';
+	echo '<tr class="plugin-update-tr"><td colspan="3" class="plugin-update"><div class="update-message">';
 	if ( ! current_user_can('update_plugins') )
-		printf( __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a>.'), $plugin_data['Name'], $details_url, $r->new_version);
+		printf( __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%3$s">View version %4$s Details</a>.'), $plugin_name, esc_url($details_url), esc_attr($plugin_name), $r->new_version );
 	else if ( empty($r->package) )
-		printf( __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> <em>automatic upgrade unavailable for this plugin</em>.'), $plugin_data['Name'], $details_url, $r->new_version);
+		printf( __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%3$s">View version %4$s Details</a> <em>automatic upgrade unavailable for this plugin</em>.'), $plugin_name, esc_url($details_url), esc_attr($plugin_name), $r->new_version );
 	else
-		printf( __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> or <a href="%4$s">upgrade automatically</a>.'), $plugin_data['Name'], $details_url, $r->new_version, wp_nonce_url('update.php?action=upgrade-plugin&amp;plugin=' . $file, 'upgrade-plugin_' . $file) );
+		printf( __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%3$s">View version %4$s Details</a> or <a href="%5$s">upgrade automatically</a>.'), $plugin_name, esc_url($details_url), esc_attr($plugin_name), $r->new_version, wp_nonce_url('update.php?action=upgrade-plugin&plugin=' . $file, 'upgrade-plugin_' . $file) );
 
-	echo '</td></tr>';
+	do_action( "in_plugin_update_message-$file", $plugin_data, $r );
+
+	echo '</div></td></tr>';
 }
 add_action( 'after_plugin_row', 'wp_plugin_update_row', 10, 2 );
 
@@ -177,7 +182,7 @@ function wp_update_plugin($plugin, $feedback = '') {
 }
 
 function wp_update_theme($theme, $feedback = '') {
-	
+
 	if ( !empty($feedback) )
 		add_filter('update_feedback', $feedback);
 
@@ -188,7 +193,7 @@ function wp_update_theme($theme, $feedback = '') {
 
 
 function wp_update_core($current, $feedback = '') {
-	
+
 	if ( !empty($feedback) )
 		add_filter('update_feedback', $feedback);
 

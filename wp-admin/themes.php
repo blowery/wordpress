@@ -28,6 +28,14 @@ if ( isset($_GET['action']) ) {
 $title = __('Manage Themes');
 $parent_file = 'themes.php';
 
+$help = '<p>' . __('Themes give your WordPress style. Once a theme is installed, you may preview it, activate it or deactivate it here.') . '</p>';
+if ( current_user_can('install_themes') ) {
+	$help .= '<p>' . sprintf(__('You can find additional themes for your site by using the new <a href="%1$s">Theme Browser/Installer</a> functionality or by browsing the <a href="http://wordpress.org/extend/themes/">WordPress Theme Directory</a> directly and installing manually.  To install a theme <em>manually</em>, <a href="%2$s">upload its ZIP archive with the new uploader</a> or copy its folder via FTP into your <code>wp-content/themes</code> directory.'), 'theme-install.php', 'theme-install.php?tab=upload' ) . '</p>';
+	$help .= '<p>' . __('Once a theme is uploaded, you should see it on this page.') . '</p>' ;
+}
+
+add_contextual_help('themes', $help);
+
 add_thickbox();
 wp_enqueue_script( 'theme-preview' );
 
@@ -36,9 +44,13 @@ require_once('admin-header.php');
 
 <?php if ( ! validate_current_theme() ) : ?>
 <div id="message1" class="updated fade"><p><?php _e('The active theme is broken.  Reverting to the default theme.'); ?></p></div>
-<?php elseif ( isset($_GET['activated']) ) : ?>
-<div id="message2" class="updated fade"><p><?php printf(__('New theme activated. <a href="%s">Visit site</a>'), get_bloginfo('url') . '/'); ?></p></div>
-<?php elseif ( isset($_GET['deleted']) ) : ?>
+<?php elseif ( isset($_GET['activated']) ) :
+		if ( isset($wp_registered_sidebars) && count( (array) $wp_registered_sidebars ) ) { ?>
+<div id="message2" class="updated fade"><p><?php printf(__('New theme activated. This theme supports widgets, please visit the <a href="%s">widgets settings page</a> to configure them.'), admin_url('widgets.php') ); ?></p></div><?php
+		} else { ?>
+<div id="message2" class="updated fade"><p><?php printf(__('New theme activated. <a href="%s">Visit site</a>'), get_bloginfo('url') . '/'); ?></p></div><?php
+		}
+	elseif ( isset($_GET['deleted']) ) : ?>
 <div id="message3" class="updated fade"><p><?php _e('Theme deleted.') ?></p></div>
 <?php endif; ?>
 
@@ -97,13 +109,14 @@ function theme_update_available( $theme ) {
 		$theme_name = is_object($theme) ? $theme->name : (is_array($theme) ? $theme['Name'] : '');
 		$details_url = add_query_arg(array('TB_iframe' => 'true', 'width' => 1024, 'height' => 800), $update['url']); //Theme browser inside WP? replace this, Also, theme preview JS will override this on the available list.
 		$update_url = wp_nonce_url('update.php?action=upgrade-theme&amp;theme=' . urlencode($stylesheet), 'upgrade-theme_' . $stylesheet);
+		$update_onclick = 'onclick="if ( confirm(\'' . esc_js( __("Upgrading this theme will lose any customizations you have made.  'Cancel' to stop, 'OK' to upgrade.") ) . '\') ) {return true;}return false;"';
 
 		if ( ! current_user_can('update_themes') )
-			printf( __('<p>There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a>.</p>'), $theme_name, $details_url, $update['new_version']);
+			printf( '<p><strong>' . __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a>.') . '</strong></p>', $theme_name, $details_url, $update['new_version']);
 		else if ( empty($update->package) )
-			printf( __('<p>There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> <em>automatic upgrade unavailable for this theme</em>.</p>'), $theme_name, $details_url, $update['new_version']);
+			printf( '<p><strong>' . __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> <em>automatic upgrade unavailable for this theme</em>.') . '</strong></p>', $theme_name, $details_url, $update['new_version']);
 		else
-			printf( __('<p>There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> or <a href="%4$s">upgrade automatically</a>.</p>'), $theme_name, $details_url, $update['new_version'], $update_url );
+			printf( '<p><strong>' . __('There is a new version of %1$s available. <a href="%2$s" class="thickbox" title="%1$s">View version %3$s Details</a> or <a href="%4$s" %5$s >upgrade automatically</a>.') . '</strong></p>', $theme_name, $details_url, $update['new_version'], $update_url, $update_onclick );
 	}
 }
 
@@ -111,7 +124,7 @@ function theme_update_available( $theme ) {
 
 <div class="wrap">
 <?php screen_icon(); ?>
-<h2><?php echo wp_specialchars( $title ); ?></h2>
+<h2><?php echo esc_html( $title ); ?></h2>
 
 <h3><?php _e('Current Theme'); ?></h3>
 <div id="current-theme">
@@ -121,7 +134,7 @@ function theme_update_available( $theme ) {
 <h4><?php
 	/* translators: 1: theme title, 2: theme version, 3: theme author */
 	printf(__('%1$s %2$s by %3$s'), $ct->title, $ct->version, $ct->author) ; ?></h4>
-<p class="description"><?php echo $ct->description; ?></p>
+<p class="theme-description"><?php echo $ct->description; ?></p>
 <?php if ($ct->parent_theme) { ?>
 	<p><?php printf(__('The template files are located in <code>%2$s</code>.  The stylesheet files are located in <code>%3$s</code>.  <strong>%4$s</strong> uses templates from <strong>%5$s</strong>.  Changes made to the templates will affect both themes.'), $ct->title, $ct->template_dir, $ct->stylesheet_dir, $ct->title, $ct->parent_theme); ?></p>
 <?php } else { ?>
@@ -158,6 +171,7 @@ $style = '';
 $theme_names = array_keys($themes);
 natcasesort($theme_names);
 
+$table = array();
 $rows = ceil(count($theme_names) / 3);
 for ( $row = 1; $row <= $rows; $row++ )
 	for ( $col = 1; $col <= 3; $col++ )
@@ -186,18 +200,18 @@ foreach ( $cols as $col => $theme_name ) {
 	$stylesheet_dir = $themes[$theme_name]['Stylesheet Dir'];
 	$template_dir = $themes[$theme_name]['Template Dir'];
 	$parent_theme = $themes[$theme_name]['Parent Theme'];
-	$preview_link = clean_url( get_option('home') . '/');
+	$preview_link = esc_url( get_option('home') . '/');
 	$preview_link = htmlspecialchars( add_query_arg( array('preview' => 1, 'template' => $template, 'stylesheet' => $stylesheet, 'TB_iframe' => 'true' ), $preview_link ) );
-	$preview_text = attribute_escape( sprintf( __('Preview of "%s"'), $title ) );
+	$preview_text = esc_attr( sprintf( __('Preview of &#8220;%s&#8221;'), $title ) );
 	$tags = $themes[$theme_name]['Tags'];
 	$thickbox_class = 'thickbox thickbox-preview';
 	$activate_link = wp_nonce_url("themes.php?action=activate&amp;template=".urlencode($template)."&amp;stylesheet=".urlencode($stylesheet), 'switch-theme_' . $template);
-	$activate_text = attribute_escape( sprintf( __('Activate "%s"'), $title ) );
+	$activate_text = esc_attr( sprintf( __('Activate &#8220;%s&#8221;'), $title ) );
 	$actions = array();
 	$actions[] = '<a href="' . $activate_link .  '" class="activatelink" title="' . $activate_text . '">' . __('Activate') . '</a>';
-	$actions[] = '<a href="' . $preview_link . '" class="thickbox thickbox-preview" title="' . attribute_escape(sprintf(__('Preview "%s"'), $theme_name)) . '">' . __('Preview') . '</a>';
+	$actions[] = '<a href="' . $preview_link . '" class="thickbox thickbox-preview" title="' . esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $theme_name)) . '">' . __('Preview') . '</a>';
 	if ( current_user_can('update_themes') )
-		$actions[] = '<a class="submitdelete deletion" href="' . wp_nonce_url("themes.php?action=delete&amp;template=$stylesheet", 'delete-theme_' . $stylesheet) . '" onclick="' . "if ( confirm('" . js_escape(sprintf( __("You are about to delete this theme '%s'\n  'Cancel' to stop, 'OK' to delete."), $theme_name )) . "') ) {return true;}return false;" . '">' . __('Delete') . '</a>';
+		$actions[] = '<a class="submitdelete deletion" href="' . wp_nonce_url("themes.php?action=delete&amp;template=$stylesheet", 'delete-theme_' . $stylesheet) . '" onclick="' . "if ( confirm('" . esc_js(sprintf( __("You are about to delete this theme '%s'\n  'Cancel' to stop, 'OK' to delete."), $theme_name )) . "') ) {return true;}return false;" . '">' . __('Delete') . '</a>';
 	$actions = apply_filters('theme_action_links', $actions, $themes[$theme_name]);
 
 	$actions = implode ( ' | ', $actions );
@@ -212,7 +226,8 @@ foreach ( $cols as $col => $theme_name ) {
 	printf(__('%1$s %2$s by %3$s'), $title, $version, $author) ; ?></h3>
 <p class="description"><?php echo $description; ?></p>
 <span class='action-links'><?php echo $actions ?></span>
-	<?php if ($parent_theme) { ?>
+	<?php if ($parent_theme) {
+	/* translators: 1: theme title, 2:  template dir, 3: stylesheet_dir, 4: theme title, 5: parent_theme */ ?>
 	<p><?php printf(__('The template files are located in <code>%2$s</code>.  The stylesheet files are located in <code>%3$s</code>.  <strong>%4$s</strong> uses templates from <strong>%5$s</strong>.  Changes made to the templates will affect both themes.'), $title, $template_dir, $stylesheet_dir, $title, $parent_theme); ?></p>
 <?php } else { ?>
 	<p><?php printf(__('All of this theme&#8217;s files are located in <code>%2$s</code>.'), $title, $template_dir, $stylesheet_dir); ?></p>
@@ -277,10 +292,6 @@ if ( count($broken_themes) ) {
 <?php
 }
 ?>
-
-<h3><?php _e('Get More Themes'); ?></h3>
-<p><?php _e('You can find additional themes for your site in the <a href="http://wordpress.org/extend/themes/">WordPress theme directory</a>. To install a theme you generally just need to upload the theme folder into your <code>wp-content/themes</code> directory. Once a theme is uploaded, you should see it on this page.'); ?></p>
-
 </div>
 
 <?php require('admin-footer.php'); ?>

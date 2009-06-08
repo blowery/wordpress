@@ -20,6 +20,8 @@ require( '../wp-load.php' );
 timer_start();
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
+delete_transient('update_core');
+
 if ( isset( $_GET['step'] ) )
 	$step = $_GET['step'];
 else
@@ -55,7 +57,7 @@ $step = (int) $step;
 switch ( $step ) :
 	case 0:
 		$goback = stripslashes( wp_get_referer() );
-		$goback = clean_url( $goback, null, 'url' );
+		$goback = esc_url_raw( $goback );
 		$goback = urlencode( $goback );
 ?>
 <h2><?php _e( 'Database Upgrade Required' ); ?></h2>
@@ -71,7 +73,7 @@ switch ( $step ) :
 			$backto = __get_option( 'home' ) . '/';
 		else {
 			$backto = stripslashes( urldecode( $_GET['backto'] ) );
-			$backto = clean_url( $backto, null, 'url' );
+			$backto = esc_url_raw( $backto  );
 		}
 ?>
 <h2><?php _e( 'Upgrade Complete' ); ?></h2>

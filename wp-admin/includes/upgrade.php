@@ -20,7 +20,7 @@ require_once(ABSPATH . 'wp-admin/includes/schema.php');
 
 if ( !function_exists('wp_install') ) :
 /**
- * {@internal Missing Short Description}}
+ * Installs the blog
  *
  * {@internal Missing Long Description}}
  *
@@ -31,7 +31,7 @@ if ( !function_exists('wp_install') ) :
  * @param string $user_email User's email.
  * @param bool $public Whether blog is public.
  * @param null $deprecated Optional. Not used.
- * @return array Array keys 'url', 'user_id', 'password'.
+ * @return array Array keys 'url', 'user_id', 'password', 'password_message'.
  */
 function wp_install($blog_title, $user_name, $user_email, $public, $deprecated='') {
 	global $wp_rewrite;
@@ -59,9 +59,12 @@ function wp_install($blog_title, $user_name, $user_email, $public, $deprecated='
 	$user_id = username_exists($user_name);
 	if ( !$user_id ) {
 		$random_password = wp_generate_password();
+		$message = __('<strong><em>Note that password</em></strong> carefully! It is a <em>random</em> password that was generated just for you.');
 		$user_id = wp_create_user($user_name, $random_password, $user_email);
+		update_usermeta($user_id, 'default_password_nag', true);
 	} else {
-		$random_password = __('User already exists.  Password inherited.');
+		$random_password = '';
+		$message =  __('User already exists.  Password inherited.');
 	}
 
 	$user = new WP_User($user_id);
@@ -75,7 +78,7 @@ function wp_install($blog_title, $user_name, $user_email, $public, $deprecated='
 
 	wp_cache_flush();
 
-	return array('url' => $guessurl, 'user_id' => $user_id, 'password' => $random_password);
+	return array('url' => $guessurl, 'user_id' => $user_id, 'password' => $random_password, 'password_message' => $message);
 }
 endif;
 
@@ -344,7 +347,8 @@ function upgrade_all() {
 
 	maybe_disable_automattic_widgets();
 
-	update_option('db_version', 'db_upgraded');
+	update_option( 'db_version', $wp_db_version );
+	update_option( 'db_upgraded', true );
 }
 
 /**
@@ -525,10 +529,6 @@ function upgrade_130() {
 		}
 	}
 
-	// The "paged" option for what_to_show is no more.
-	if ($wpdb->get_var("SELECT option_value FROM $wpdb->options WHERE option_name = 'what_to_show'") == 'paged')
-		$wpdb->update( $wpdb->options, array('option_value' => 'posts'), array('option_name' => 'what_to_show') );
-
 	$active_plugins = __get_option('active_plugins');
 
 	// If plugins are not stored in an array, they're stored in the old
@@ -683,7 +683,7 @@ function upgrade_210() {
 		$posts = $wpdb->get_results("SELECT ID, post_date FROM $wpdb->posts WHERE post_status ='future'");
 		if ( !empty($posts) )
 			foreach ( $posts as $post )
-				wp_schedule_single_event(mysql2date('U', $post->post_date), 'publish_future_post', array($post->ID));
+				wp_schedule_single_event(mysql2date('U', $post->post_date, false), 'publish_future_post', array($post->ID));
 	}
 }
 
