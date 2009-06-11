@@ -3,43 +3,44 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-	<title>Dojo Playground: Animation Looper</title>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Dojo Playground: Animation Looper</title>
+  
+  <script type="text/javascript" djConfig="isDebug: true" src="http://ajax.googleapis.com/ajax/libs/dojo/1.3.1/dojo/dojo.xd.js"></script>
 
-	<script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
-
-	<script type="text/javascript">
+  <script type="text/javascript">
     dojo.require("dojo.fx");
 		
-		dojo.addOnLoad(function(){
-		  var n = dojo.byId("loader");
+    dojo.addOnLoad(function(){
+      var n = dojo.byId("loader");
       dojo.fadeOut({ node: n, onEnd: function() {
         dojo.byId("loader").innerHTML = "Dojo loaded!";
         dojo.fadeIn({ node: n }).play();
-      } }).play();
-		});
-		
-		function setContent(c) {
-		  dojo.byId("scrolly").innerHTML = c;
-		}
-	</script>
-	
-	<style type="text/css">
-	noscript { 
+      }   
+      }).play();
+    });
+    
+    function setContent(c) {
+    dojo.byId("scrolly").innerHTML = c;
+    }
+  </script>
+  
+  <style type="text/css">
+    noscript { 
     display: block;
     color: #900;
     font-size: 2em;
-	}
-	</style>
-
+    }
+  </style>
+  
 </head>
 <body>
-<div id="loader">Loading dojo...</div>
-<div id="scrolly">
+  <div id="loader">Loading dojo...</div>
+  <div id="scrolly">
   
-</div>
-<noscript>
-  This page requires you to enable JavaScript for full functionality.
-</noscript>
+  </div>
+  <noscript>
+    This page requires you to enable JavaScript for full functionality.
+  </noscript>
 </body>
 </html>

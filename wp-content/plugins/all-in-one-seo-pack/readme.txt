@@ -14,13 +14,16 @@ Automatically optimizes your Wordpress blog for Search Engines (Search Engine Op
 
 **[Download now!](http://downloads.wordpress.org/plugin/all-in-one-seo-pack.zip)**
 
-[Support](http://semperfiwebdesign.com/contact/) |
+[Support](http://semperfiwebdesign.com/forum/) |
 [Version History](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/all-in-one-seo-pack-release-history/) |
 [FAQ](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/all-in-one-seo-faq/)|
 [Translations](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/translations-for-all-in-one-seo-pack/)
 
 Some features:
 
+* Canonical URLs
+* Nonce Security
+* Support for CMS-style WordPress installations
 * Automatically optimizes your **titles** for search engines
 * Generates **META tags automatically**
 * Avoids the typical duplicate content found on Wordpress blogs
@@ -33,6 +36,9 @@ Be sure to check out:
 [WP Security Scan](http://wordpress.org/extend/plugins/wp-security-scan/)
 and
 [SMS Text Message](http://wordpress.org/extend/plugins/sms-text-message/)
+
+Follow me on Twitter to keep up with the latest updates [Michael
+Torbert](http://twitter.com/michaeltorbert/)
 
 == Installation ==
 
@@ -48,4 +54,4 @@ If you have to upgrade manually simply repeat the installation steps.
 == Frequently Asked Questions ==
 
 Please read these **[FAQs](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/all-in-one-seo-faq/)** before requesting
-**[Support](http://semperfiwebdesign.com/contact/)**
+**[Support](http://semperfiwebdesign.com/forum/)**

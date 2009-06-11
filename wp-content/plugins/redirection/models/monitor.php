@@ -16,16 +16,17 @@ class Red_Monitor
 			add_action ('edit_post',          array (&$this, 'post_changed'));
 			add_action ('delete_post',        array (&$this, 'post_deleted'));
 			
-			if ($options['monitor_new_posts'])
-				add_action ('transition_post_status', array (&$this, 'transition_post_status'), 10, 3);
+//			if ($options['monitor_new_posts'])
+//				add_action ('transition_post_status', array (&$this, 'transition_post_status'), 10, 3);
 		}
 		
 		if ($options['monitor_category'] > 0)
 		{
-			$this->monitor_category = $options['monitor_category'];
+/*			$this->monitor_category = $options['monitor_category'];
 			
 			add_action ('edit_category_form', array (&$this, 'insert_old_category'));
 			add_action ('edit_category', array (&$this, 'category_changed'));
+			*/
 		}
 	}
 	
@@ -96,10 +97,15 @@ class Red_Monitor
 		$oldslug = $_POST['redirection_slug'];
 		$base    = get_option ('home');
 
-		if ($newslug != $oldslug && strlen ($oldslug) > 0 && ($post->post_status == 'publish' || $post->post_status == 'static') && $_POST['redirection_status'] != 'draft' && $_POST['redirection_status'] != 'pending')
+		if ($newslug != $oldslug && strlen ($oldslug) > 0 && ($post->post_status == 'publish' || $post->post_status == 'static') && $_POST['redirection_status'] != 'draft' && $_POST['redirection_status'] != 'pending' && $newslug != '/')
 		{
 			$old_url = parse_url ($oldslug);
 			$new_url = parse_url ($newslug);
+
+			$conflicting_items = Red_Item::get_for_url ($new_url['path'], 'wp');
+			foreach ($conflicting_items as $item) {
+				Red_Item::delete ($item->id);
+			}
 
 			Red_Item::create (array ('source' => $old_url['path'], 'target' => $new_url['path'], 'match' => 'url', 'action' => 'url', 'group' => $this->monitor_post));
 		}

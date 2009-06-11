@@ -150,6 +150,7 @@ class Red_Xml_File extends Red_FileIO
 								'action_code' => (string)$item->action['code'],
 								'action_data' => $actiondata
 							);
+							
 							foreach ($data AS $key => $value)
 								$data[$key] = "'".$wpdb->escape ($value)."'";
 							

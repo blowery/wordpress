@@ -4,7 +4,7 @@ Plugin Name: WordPress.com Stats
 Plugin URI: http://wordpress.org/extend/plugins/stats/
 Description: Tracks views, post/page views, referrers, and clicks. Requires a WordPress.com API key.
 Author: Andy Skelton
-Version: 1.3.7
+Version: 1.4
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 Requires WordPress 2.1 or later. Not for use with WPMU.
@@ -13,6 +13,8 @@ Looking for a way to hide the gif? Put this in your stylesheet:
 img#wpstats{display:none}
 
 Recent changes:
+1.4   - Added gmt_offset setting to blog definition.
+1.3.8 - Fixed "Missing API Key" error appearing in place of more helpful errors. Hat tip: Walt Ritscher.
 1.3.7 - If blog dashboard is https, stats iframe should be https.
 1.3.6 - fopen v wp_remote_fopen CSV fix from A. Piccinelli
 1.3.5 - Compatibility with WordPress 2.7
@@ -38,11 +40,8 @@ function stats_set_api_key($api_key) {
 function stats_get_options() {
 	$options = get_option( 'stats_options' );
 
-	if ( !isset( $options['version'] ) || $options['version'] < STATS_VERSION ) {
+	if ( !isset( $options['version'] ) || $options['version'] < STATS_VERSION )
 		$options = stats_upgrade_options( $options );
-
-		stats_set_options( $options );
-	}
 
 	return $options;
 }
@@ -58,9 +57,9 @@ function stats_get_option( $option ) {
 
 function stats_set_option( $option, $value ) {
 	$options = stats_get_options();
-	
+
 	$options[$option] = $value;
-	
+
 	stats_set_options($options);
 }
 
@@ -80,7 +79,16 @@ function stats_upgrade_options( $options ) {
 	else
 		$options = $defaults;
 
+	// Send new bloginfo with gmt_offset
+	if ( $options['version'] < 3 )
+		$update_bloginfo = true;
+
 	$options['version'] = STATS_VERSION;
+
+	stats_set_options( $options );
+
+	if ( $update_bloginfo )
+		stats_update_bloginfo();
 
 	return $options;
 }
@@ -184,7 +192,8 @@ function stats_admin_load() {
 					stats_set_options($options);
 					stats_update_bloginfo();
 				}
-				stats_set_option('key_check', false);
+				if ( stats_get_option('blog_id') )
+					stats_set_option('key_check', false);
 				wp_redirect( "plugins.php?page=$plugin_page" );
 				exit;
 		}
@@ -192,7 +201,7 @@ function stats_admin_load() {
 
 	$options = stats_get_options();
 	if ( empty( $options['blog_id']) && empty( $options['key_check'] ) && stats_get_api_key() )
-		stats_check_key( $stats_get_api_key );
+		stats_check_key( stats_get_api_key() );
 }
 
 function stats_admin_notices() {
@@ -332,6 +341,7 @@ function stats_get_blog( ) {
 		'name' => get_option('blogname'),
 		'description' => get_option('blogdescription'),
 		'siteurl' => get_option('siteurl'),
+		'gmt_offset' => get_option('gmt_offset'),
 		'version' => STATS_VERSION
 	);
 }
@@ -516,7 +526,7 @@ function stats_register_dashboard_widget() {
 }
 
 function stats_dashboard_widget_options() {
-	$defaults = array( 'chart' => 1, 'top' => -1, 'search' => 7, 'active' => 7 );
+	$defaults = array( 'chart' => 1, 'top' => 7, 'search' => 7, 'active' => 7 );
 	if ( ( !$options = get_option( 'stats_dashboard_widget' ) ) || !is_array($options) )
 		$options = array();
 	return array_merge( $defaults, $options );
@@ -877,6 +887,9 @@ add_action( 'update_option_home', 'stats_update_bloginfo' );
 add_action( 'update_option_siteurl', 'stats_update_bloginfo' );
 add_action( 'update_option_blogname', 'stats_update_bloginfo' );
 add_action( 'update_option_blogdescription', 'stats_update_bloginfo' );
+add_action( 'update_option_timezone_string', 'stats_update_bloginfo' );
+add_action( 'add_option_timezone_string', 'stats_update_bloginfo' );
+add_action( 'update_option_gmt_offset', 'stats_update_bloginfo' );
 
 // Tell HQ about changed posts
 add_action( 'save_post', 'stats_update_post', 10, 1 );
@@ -887,5 +900,5 @@ add_action( 'update_option_permalink_structure', 'stats_flush_posts' );
 // Teach the XMLRPC server how to dance properly
 add_filter( 'xmlrpc_methods', 'stats_xmlrpc_methods' );
 
-define( 'STATS_VERSION', '2' );
+define( 'STATS_VERSION', '3' );
 define( 'STATS_XMLRPC_SERVER', 'http://wordpress.com/xmlrpc.php' );
