@@ -316,6 +316,7 @@ if ( !is_blog_installed() && (strpos($_SERVER['PHP_SELF'], 'install.php') === fa
 		$link = preg_replace('|/[^/]+?$|', '/', $_SERVER['PHP_SELF']) . 'wp-admin/install.php';
 	require_once(ABSPATH . WPINC . '/kses.php');
 	require_once(ABSPATH . WPINC . '/pluggable.php');
+	require_once(ABSPATH . WPINC . '/formatting.php');
 	wp_redirect($link);
 	die(); // have to die here ~ Mark
 }
@@ -527,6 +528,10 @@ if ( !defined( 'AUTOSAVE_INTERVAL' ) )
 
 
 require (ABSPATH . WPINC . '/vars.php');
+
+// make taxonomies available to plugins and themes
+// @plugin authors: warning: this gets registered again on the init hook
+create_initial_taxonomies();
 
 // Check for hacks file if the option is enabled
 if ( get_option('hack_file') ) {

@@ -249,7 +249,7 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'xfn', "/wp-admin/js/xfn$suffix.js", false, '3517m' );
 
-		$scripts->add( 'postbox', "/wp-admin/js/postbox$suffix.js", array('jquery-ui-sortable'), '20090327' );
+		$scripts->add( 'postbox', "/wp-admin/js/postbox$suffix.js", array('jquery-ui-sortable'), '20090618' );
 		$scripts->add_data( 'postbox', 'group', 1 );
 		$scripts->localize( 'postbox', 'postboxL10n', array(
 			'requestFile' => admin_url('admin-ajax.php')
@@ -377,7 +377,7 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'farbtastic', '/wp-admin/js/farbtastic.js', array('jquery'), '1.2' );
 
-		$scripts->add( 'dashboard', "/wp-admin/js/dashboard$suffix.js", array( 'jquery', 'admin-comments', 'postbox' ), '20090201' );
+		$scripts->add( 'dashboard', "/wp-admin/js/dashboard$suffix.js", array( 'jquery', 'admin-comments', 'postbox' ), '20090618' );
 		$scripts->add_data( 'dashboard', 'group', 1 );
 
 		$scripts->add( 'hoverIntent', "/wp-includes/js/hoverIntent$suffix.js", array('jquery'), '20090102' );
@@ -423,10 +423,10 @@ function wp_default_styles( &$styles ) {
 	// all colors stylesheets need to have the same query strings (cache manifest compat)
 	$colors_version = '20090610';
 
-	$styles->add( 'wp-admin', '/wp-admin/wp-admin.css', array(), '20090610' );
+	$styles->add( 'wp-admin', '/wp-admin/wp-admin.css', array(), '20090612' );
 	$styles->add_data( 'wp-admin', 'rtl', '/wp-admin/rtl.css' );
 
-	$styles->add( 'ie', '/wp-admin/css/ie.css', array(), '20090514' );
+	$styles->add( 'ie', '/wp-admin/css/ie.css', array(), '20090612' );
 	$styles->add_data( 'ie', 'conditional', 'lte IE 7' );
 
 	// Register "meta" stylesheet for admin colors. All colors-* style sheets should have the same version string.
@@ -438,8 +438,8 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'colors-classic', '/wp-admin/css/colors-classic.css', array(), $colors_version);
 	$styles->add_data( 'colors-classic', 'rtl', true );
 
-	$styles->add( 'global', '/wp-admin/css/global.css', array(), '20090514' );
-	$styles->add( 'media', '/wp-admin/css/media.css', array(), '20090516' );
+	$styles->add( 'global', '/wp-admin/css/global.css', array(), '20090612' );
+	$styles->add( 'media', '/wp-admin/css/media.css', array(), '20090612' );
 	$styles->add( 'widgets', '/wp-admin/css/widgets.css', array(), '20090603' );
 	$styles->add( 'dashboard', '/wp-admin/css/dashboard.css', array(), '20090514' );
 	$styles->add( 'install', '/wp-admin/css/install.css', array(), '20090514' );

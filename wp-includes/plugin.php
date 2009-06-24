@@ -53,7 +53,7 @@
  * @subpackage Plugin
  * @since 0.71
  * @global array $wp_filter Stores all of the filters added in the form of
- *	wp_filter['tag']['array of priorities']['array of functions serialized']['array of ['array (functions, accepted_args)]']
+ *	wp_filter['tag']['array of priorities']['array of functions serialized']['array of ['array (functions, accepted_args)']']
  * @global array $merged_filters Tracks the tags that need to be merged for later. If the hook is added, it doesn't need to run through that process.
  *
  * @param string $tag The name of the filter to hook the $function_to_add to.
@@ -495,6 +495,7 @@ function plugin_basename($file) {
 	$mu_plugin_dir = str_replace('\\','/',WPMU_PLUGIN_DIR); // sanitize for Win32 installs
 	$mu_plugin_dir = preg_replace('|/+|','/', $mu_plugin_dir); // remove any duplicate slash
 	$file = preg_replace('#^' . preg_quote($plugin_dir, '#') . '/|^' . preg_quote($mu_plugin_dir, '#') . '/#','',$file); // get relative path from plugins dir
+	$file = trim($file, '/');
 	return $file;
 }
 

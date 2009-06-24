@@ -2574,6 +2574,13 @@ class wp_xmlrpc_server extends IXR_Server {
 			$post_date = mysql2date('Ymd\TH:i:s', $postdata['post_date'], false);
 			$post_date_gmt = mysql2date('Ymd\TH:i:s', $postdata['post_date_gmt'], false);
 
+			// For drafts use the GMT version of the post date
+			if ( $postdata['post_status'] == 'draft' ) {
+				$post_date_gmt = get_gmt_from_date( mysql2date( 'Y-m-d H:i:s', $postdata['post_date'] ) );
+				$post_date_gmt = preg_replace( '|\-|', '', $post_date_gmt );
+				$post_date_gmt = preg_replace( '| |', 'T', $post_date_gmt );
+			}
+
 			$categories = array();
 			$catids = wp_get_post_categories($post_ID);
 			foreach($catids as $catid)
@@ -3293,7 +3300,7 @@ class wp_xmlrpc_server extends IXR_Server {
 
 		$p = explode( "\n\n", $linea );
 
-		$preg_target = preg_quote($pagelinkedto);
+		$preg_target = preg_quote($pagelinkedto, '|');
 
 		foreach ( $p as $para ) {
 			if ( strpos($para, $pagelinkedto) !== false ) { // it exists, but is it a link?
@@ -3315,7 +3322,7 @@ class wp_xmlrpc_server extends IXR_Server {
 				$excerpt= str_replace($context[0], $marker, $excerpt); // swap out the link for our marker
 				$excerpt = strip_tags($excerpt, '<wpcontext>');        // strip all tags but our context marker
 				$excerpt = trim($excerpt);
-				$preg_marker = preg_quote($marker);
+				$preg_marker = preg_quote($marker, '|');
 				$excerpt = preg_replace("|.*?\s(.{0,100}$preg_marker.{0,100})\s.*|s", '$1', $excerpt);
 				$excerpt = strip_tags($excerpt); // YES, again, to remove the marker wrapper
 				break;

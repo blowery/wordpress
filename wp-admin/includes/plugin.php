@@ -585,7 +585,7 @@ function uninstall_plugin($plugin) {
 //
 
 function add_menu_page( $page_title, $menu_title, $access_level, $file, $function = '', $icon_url = '' ) {
-	global $menu, $admin_page_hooks;
+	global $menu, $admin_page_hooks, $_registered_pages;
 
 	$file = plugin_basename( $file );
 
@@ -602,11 +602,13 @@ function add_menu_page( $page_title, $menu_title, $access_level, $file, $functio
 
 	$menu[] = array ( $menu_title, $access_level, $file, $page_title, 'menu-top ' . $hookname, $hookname, $icon_url );
 
+	$_registered_pages[$hookname] = true;
+
 	return $hookname;
 }
 
 function add_object_page( $page_title, $menu_title, $access_level, $file, $function = '', $icon_url = '') {
-	global $menu, $admin_page_hooks, $_wp_last_object_menu;
+	global $menu, $admin_page_hooks, $_wp_last_object_menu, $_registered_pages;
 
 	$file = plugin_basename( $file );
 
@@ -623,11 +625,13 @@ function add_object_page( $page_title, $menu_title, $access_level, $file, $funct
 
 	$menu[$_wp_last_object_menu] = array ( $menu_title, $access_level, $file, $page_title, 'menu-top ' . $hookname, $hookname, $icon_url );
 
+	$_registered_pages[$hookname] = true;
+
 	return $hookname;
 }
 
 function add_utility_page( $page_title, $menu_title, $access_level, $file, $function = '', $icon_url = '') {
-	global $menu, $admin_page_hooks, $_wp_last_utility_menu;
+	global $menu, $admin_page_hooks, $_wp_last_utility_menu, $_registered_pages;
 
 	$file = plugin_basename( $file );
 
@@ -646,6 +650,8 @@ function add_utility_page( $page_title, $menu_title, $access_level, $file, $func
 
 	$menu[$_wp_last_utility_menu] = array ( $menu_title, $access_level, $file, $page_title, 'menu-top ' . $hookname, $hookname, $icon_url );
 
+	$_registered_pages[$hookname] = true;
+
 	return $hookname;
 }
 
@@ -654,6 +660,7 @@ function add_submenu_page( $parent, $page_title, $menu_title, $access_level, $fi
 	global $menu;
 	global $_wp_real_parent_file;
 	global $_wp_submenu_nopriv;
+	global $_registered_pages;
 
 	$file = plugin_basename( $file );
 
@@ -682,6 +689,11 @@ function add_submenu_page( $parent, $page_title, $menu_title, $access_level, $fi
 	$hookname = get_plugin_page_hookname( $file, $parent);
 	if (!empty ( $function ) && !empty ( $hookname ))
 		add_action( $hookname, $function );
+
+	$_registered_pages[$hookname] = true;
+	// backwards-compatibility for plugins using add_management page.  See wp-admin/admin.php for redirect from edit.php to tools.php
+	if ( 'tools.php' == $parent ) 
+		$_registered_pages[get_plugin_page_hookname( $file, 'edit.php')] = true;
 
 	return $hookname;
 }
@@ -919,14 +931,21 @@ function user_can_access_admin_page() {
 	global $_wp_menu_nopriv;
 	global $_wp_submenu_nopriv;
 	global $plugin_page;
+	global $_registered_pages;
 
 	$parent = get_admin_page_parent();
 
 	if ( !isset( $plugin_page ) && isset( $_wp_submenu_nopriv[$parent][$pagenow] ) )
 		return false;
 
-	if ( isset( $plugin_page ) && isset( $_wp_submenu_nopriv[$parent][$plugin_page] ) )
-		return false;
+	if ( isset( $plugin_page ) ) {
+		if ( isset( $_wp_submenu_nopriv[$parent][$plugin_page] ) )
+			return false;
+
+		$hookname = get_plugin_page_hookname($plugin_page, $parent);
+		if ( !isset($_registered_pages[$hookname]) )
+			return false;
+	}
 
 	if ( empty( $parent) ) {
 		if ( isset( $_wp_menu_nopriv[$pagenow] ) )
@@ -934,6 +953,8 @@ function user_can_access_admin_page() {
 		if ( isset( $_wp_submenu_nopriv[$pagenow][$pagenow] ) )
 			return false;
 		if ( isset( $plugin_page ) && isset( $_wp_submenu_nopriv[$pagenow][$plugin_page] ) )
+			return false;
+		if ( isset( $plugin_page ) && isset( $_wp_menu_nopriv[$plugin_page] ) )
 			return false;
 		foreach (array_keys( $_wp_submenu_nopriv ) as $key ) {
 			if ( isset( $_wp_submenu_nopriv[$key][$pagenow] ) )
@@ -943,6 +964,9 @@ function user_can_access_admin_page() {
 		}
 		return true;
 	}
+
+	if ( isset( $plugin_page ) && ( $plugin_page == $parent ) && isset( $_wp_menu_nopriv[$plugin_page] ) )
+		return false;
 
 	if ( isset( $submenu[$parent] ) ) {
 		foreach ( $submenu[$parent] as $submenu_array ) {
