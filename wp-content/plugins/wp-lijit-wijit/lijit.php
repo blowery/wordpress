@@ -3,8 +3,8 @@
 Plugin Name: Lijit Search
 Plugin URI: http://www.lijit.com
 Description: Search Powered Web Applications for Publishers. <a href="options-general.php?page=lijit.php">Click here to configure the Lijit Plugin</a>.
-Version: 1.03
-Author: Crowd Favorite for Lijit Networks Inc.
+Version: 1.04
+Author: Crowd Favorite and Lijit Networks Inc.
 Author URI: http://crowdfavorite.com
 */
 
@@ -21,7 +21,7 @@ Author URI: http://crowdfavorite.com
 	 * **********************************************************************
 	 */
 
-	$lijit_plugin_version = '1.03';
+	$lijit_plugin_version = '1.04';
 	
 	function lijit_request_handler() {
 		if(cflj_is_configured()) {
@@ -316,8 +316,8 @@ else { window.attachEvent('onload', lwp_hijack_search); }
 // Prep WP search form for Lijit functionality
 function lwp_hijack_search() {
 	if(document.getElementById('searchform')) {
-		var inputText = lwp_$('s');
-		if (!inputText){var inputText = lwp_$('search');};
+		var inputText = document.getElementById('s');
+		if (!inputText){var inputText = document.getElementById('search');};
 		inputText.value = 'Lijit Search';
 		inputText.onfocus = function(){if (inputText.value = 'Lijit Search'){inputText.value = '';}};
 		document.getElementById('searchform').onsubmit = lwp_hijack_submit;
@@ -325,8 +325,16 @@ function lwp_hijack_search() {
 }
 // do the search
 function lwp_hijack_submit(e) {
-	lwp_dosearch(document.getElementById('s').value);
-	return false;
+  if (self.lwp_dosearch)
+  {
+    lwp_dosearch(document.getElementById('s').value);
+    return false;
+    }
+  else
+  {
+    lwpnet_dosearch(document.getElementById('s').value);
+    return false;
+  }
 }
 				";
 		}
@@ -393,8 +401,8 @@ function lijit_in_page_results() {
 		extract($args);
 		if(!isset($wijit)) { $wijit = true;$options = get_option('widget_Lijit');$title = htmlspecialchars($options['title'], ENT_QUOTES); }
 		if($wijit) { echo $before_widget.$before_title.$title.$after_title; }
-		echo '<script type="text/javascript" src="http://www.lijit.com/informers/wijits?username='.
-			 get_option('lijit_username').'&js=1"></script>';
+		echo '<script type="text/javascript" src="http://www.lijit.com/informers/wijits?uri=http%3A%2F%2Fwww.lijit.com%2Fusers%2F'.
+			 get_option('lijit_username').'&amp;js=1"></script>';
 		if($wijit) {
 			echo '<a style="color: #999" href="http://www.lijit.com" id="lijit_wijit_pvs_link">Lijit Search</a>'.
 			     $after_widget;
