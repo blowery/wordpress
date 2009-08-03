@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Dojo Playground: Animation Looper</title>
+  
+  <script type="text/javascript" djConfig="isDebug: true" src="http://ajax.googleapis.com/ajax/libs/dojo/1.3.1/dojo/dojo.xd.js"></script>
+
+  <script type="text/javascript">
+    dojo.require("dojo.fx");
+		
+    dojo.addOnLoad(function(){
+      var n = dojo.byId("loader");
+      dojo.fadeOut({ node: n, onEnd: function() {
+        dojo.byId("loader").innerHTML = "Dojo loaded!";
+        dojo.fadeIn({ node: n }).play();
+      }   
+      }).play();
+
+var foo = {
+  startup: function() { dojo.connect(dojo.body(), "onclick", this, this.one); },
+  one: function() { console.log("one"); }
+}
+
+var bar = {
+  startup: function() { dojo.connect(foo, "one", this, this.two); },
+  two: function() { console.log("two"); }
+}
+
+foo.startup();
+bar.startup();
+
+// notice clicks on the body never trigger bar.two()
+
+    });
+    
+    function setContent(c) {
+    dojo.byId("scrolly").innerHTML = c;
+    }
+  </script>
+  
+  <style type="text/css">
+    noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+    }
+    #scrolly {
+      height: 20em;
+      border: 1px solid #666;
+      margin: 2em;
+    }
+  </style>
+  
+</head>
+<body>
+  <div id="loader">Loading dojo...</div>
+  <div id="scrolly">
+   click in here, would expect to see one and two in console
+  </div>
+  <noscript>
+    This page requires you to enable JavaScript for full functionality.
+  </noscript>
+</body>
+</html>

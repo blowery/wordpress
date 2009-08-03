@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>foo</title>
+    <style type="text/css">
+      #thediv {
+        margin: 5em;
+        padding: 1em;
+        background: yellow;
+        border: 1px solid orange;
+       -moz-border-radius: 10px;
+        text-align: center;
+      }
+
+      #thediv span {
+        display: block;
+        padding: 1em;
+        background: rgba(255,255,255,.25);
+        border: 1px solid orange;
+        text-align: center;
+        -moz-border-radius: 10px;
+      }
+    </style>
+    <script type="text/javascript" src="http://tinyurl.com/dojo-13" djConfig="isDebug:true"></script>
+    <script type="text/javascript">
+      dojo.addOnLoad(function(){
+        function log(what, e){
+          console.log("%s: this: %o, target: %o, currentTarget: %o, relatedTarget: %o", what, this, e.target, e.currentTarget, e.relatedTarget);
+        }
+
+        function onOver(e){
+          log("over", e);
+        }
+
+        function onOut(e){
+          log("out", e);
+        }
+
+        function onClick(e){
+          log("click", e);
+        }
+
+        function onEnter(e){
+          log("enter", e);
+        }
+
+        function onLeave(e){
+          log("leave", e);
+
+        }
+
+//        dojo.query("#thediv").forEach(function(n){
+//          dojo.connect(n, "onmouseover", onOver);
+//          dojo.connect(n, "onmouseout", onOut);
+//          dojo.connect(n, "onclick", onClick);
+//          dojo.connect(n, "onmouseenter", onEnter);
+//          dojo.connect(n, "onmouseleave", onLeave);
+//        });
+
+        dojo.query("#thediv").onmouseover(onOver).onmouseout(onOut).onclick(onClick).onmouseenter(onEnter).onmouseleave(onLeave);
+
+      });
+    </script>
+  </head>
+  <body>
+    <div id="thediv">#thediv <span class="a">A <span class="b">B <span class="c">C </span></span></span></div>
+  </body>
+</html>

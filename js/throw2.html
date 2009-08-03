@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Dojo Playground: Loading Throbber</title>
+
+  <script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
+  <script type="text/javascript">
+    dojo.require("dojo.fx");
+
+    dojo.addOnLoad(function(){
+      dojo.connect(dojo.byId("goBtn"), "click", findIt);
+    });
+
+    function findIt(){
+      var term = dojo.trim(dojo.byId("term").value);
+
+      function makeHi() {
+        var hilight = dojo.animateProperty({ node: dojo.query(".loadable")[0], 
+                                               properties: { borderColor: "#999", duration: 500 }});
+        return hilight;
+      }
+
+      function makeLow() {
+     
+        var lowlight = dojo.animateProperty({ node: dojo.query(".loadable")[0],
+                                               properties: { borderColor: "#ddd", duration: 500 }} );
+        return lowlight;
+      }
+      var throb = dojo.fx.chain([ makeHi(), makeLow() ]);
+      dojo.connect(throb, "onEnd", dojo.hitch(throb, "play", 0, true));
+      throb.play();
+      if(dojo.style("response", "display") == "block") {
+        dojo.fx.wipeOut( { node: "response" }).play();
+      }
+      setTimeout(function(){
+        throb.stop(true);
+        dojo.style("response", "height", "0px");
+        dojo.byId("response").innerHTML = "Nothing found for " + term;
+        dojo.fx.wipeIn({ node: "response" }).play();
+      }, 5000);
+      
+    }
+  </script>
+  <style type="text/css">
+    .loadable {
+      border: 1px solid #ddd;
+      background: #eee;
+      border-radius: 12px;
+      -moz-border-radius: 12px;
+      margin: 0 auto;
+      padding: 2em;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="loadable">
+  <p>This is a widget that loads something</p>
+  <form action="">
+    <div>
+      <label for="term">search for:</label>
+      <input type="text" id="term" />
+    </div>
+    <div>
+      <button id="goBtn" type="button">search</button>
+    </div>
+    <div id="response"></div>
+  </form>
+</div>
+
+</body>
+</html>

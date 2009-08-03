@@ -1,0 +1,60 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Dojo Playground: StopEvent and Bubbling</title>
+  
+  <script type="text/javascript" djConfig="isDebug: true" src="dojo/dojo.js"></script>
+
+  <script type="text/javascript">
+    dojo.require("dojo.fx");
+		
+    dojo.addOnLoad(function(){
+      var n = dojo.byId("loader");
+      dojo.fadeOut({ node: n, onEnd: function() {
+        dojo.byId("loader").innerHTML = "Dojo loaded!";
+        dojo.fadeIn({ node: n }).play();
+      }   
+      }).play();
+
+      dojo.connect(dojo.byId("outer"), "onclick", dojo.partial(setContent, "outer saw click"));
+      dojo.connect(dojo.byId("inner"), "onclick", function(evt) {
+        if(dojo.byId("stopIt").checked) evt.stopPropagation();
+        if(dojo.byId("preventIt").checked) evt.preventDefault();
+        setContent("inner saw click");
+      });
+    });
+    
+    function setContent(c) {
+      dojo.byId("scrolly").innerHTML += "<br />" + c;
+    }
+  </script>
+  
+  <style type="text/css">
+    noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+    }
+  </style>
+  
+</head>
+<body>
+  <div id="loader">Loading dojo...</div>
+  <div id="outer">Outer
+    <a id="inner" href="#mark">Anchor</a>
+  </div>
+  <div id="controls">
+    <input type="checkbox" id="stopIt" value="1"> <label for="stopId">Stop Prop</label><br />
+    <input type="checkbox" id="preventIt" value="1" <label for="preventIt">Prevent Default</label>
+  </div>
+  <div id="scrolly">
+  
+  </div>
+  <noscript>
+    This page requires you to enable JavaScript for full functionality.
+  </noscript>
+</body>
+</html>

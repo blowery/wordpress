@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Widget Nesting</title>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.3/dojo/dojo.xd.js"></script>
+    <script type="text/javascript">
+      dojo.require("dijit.dijit");
+    
+      dojo.addOnLoad(function(){
+
+      dojo.declare("LifetimeLogger", dijit._Widget, 
+      {
+        constructor: function(){
+          console.log("%s: constructor", this);
+        },
+        buildRendering: function(){
+          this.inherited(arguments);
+          console.log("%s: buildRendering", this);
+        },
+        v: true,
+        _setVAttr: function(v) {
+          console.log("%s: _setVAttr %s", this, v);
+          this.v = v;
+        },
+        postCreate: function(){
+          this.inherited(arguments);
+          console.log("%s postCreate", this);
+        },
+        uninitialize: function(){
+          console.log("%s: uninit", this);
+        }
+      });
+
+      dojo.declare("Held", LifetimeLogger, {});
+
+      dojo.declare("Holder", LifetimeLogger, 
+      {
+        buildRendering: function(){
+          this.inherited(arguments);
+          this.containerNode = this.domNode;
+          var held = new Held({});
+          held.placeAt(this.domNode);
+        }
+      });
+
+      dojo.declare("TemplatedHolder", [ LifetimeLogger, dijit._Templated ],
+      {
+        templateString: "<div><div dojoType='Holder'></div><div dojoAttachPoint='containerNode'></div></div>",
+        widgetsInTemplate: true
+      });
+
+      dojo.parser.parse();
+      window.setTimeout(function(){
+        console.log("destroying plainHolder");
+        dijit.byId("plainHolder").destroyRecursive();
+        console.log("destroying templatedHolder");
+        dijit.byId("templatedHolder").destroyRecursive();
+      }, 0);
+      
+      });
+
+    </script>
+  </head>
+  <body>
+    <div id="plainHolder" dojoType="Holder">Holder</div>
+    <div id="templatedHolder" dojoType="TemplatedHolder">Templated</div>
+  </body>
+</html>

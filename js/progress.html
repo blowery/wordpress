@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+  <title>Dojo Playground: Animation Looper</title>
+  
+  <script type="text/javascript" djConfig="isDebug: true" src="http://ajax.googleapis.com/ajax/libs/dojo/1.3.1/dojo/dojo.xd.js"></script>
+
+  <script type="text/javascript">
+    dojo.require("dojo.fx");
+		
+    dojo.addOnLoad(function(){
+      var n = dojo.byId("loader");
+      dojo.fadeOut({ node: n, onEnd: function() {
+        dojo.byId("loader").innerHTML = "Dojo loaded!";
+        dojo.fadeIn({ node: n }).play();
+      }   
+      }).play();
+
+      range(0,10, function(i) {
+        var b = dojo.place("<div class='rounded'></div>", dojo.byId("blocks"));
+        b.id="rounded-" + i;
+        dojo.style(b, "borderColor", "#999");
+      });
+
+      dojo.connect(dojo.byId("fadeUp"), "onclick", dojo.partial(fadeEm, "#fff"));
+      dojo.connect(dojo.byId("fadeDown"), "onclick", dojo.partial(fadeEm, "#999"));
+      dojo.connect(dojo.byId("fadeArb"), "onclick", function() {
+        var c = dojo.byId("dest").value;
+        fadeEm(c);
+      });
+
+      
+    });
+    
+    function setContent(c) {
+    dojo.byId("scrolly").innerHTML = c;
+    }
+
+    function range(start, end, fn, ths) {
+      for(var i = start; i != end; i++) fn.call(ths || window, i);
+    }
+
+    function fadeEm(color){
+      range(0, 10, function(i) { dojo.anim("rounded-" + i, { backgroundColor: color, borderColor: color }, 300, null, null, i * 400) });
+    }
+
+    
+  </script>
+  
+  <style type="text/css">
+    noscript { 
+    display: block;
+    color: #900;
+    font-size: 2em;
+    }
+    #blocks { margin: 1em; }
+    .rounded {
+      background-color: #999;
+      height: 18px;
+      width: 6px;
+      border-radius: 2px;
+      -moz-border-radius: 2px;
+      margin-right: 6px;
+      display:inline-block;
+      border: #999 1px solid;
+    }
+
+    button {
+      background-color: #888;
+      border: 1px solid #666;
+      color: #fff;
+      font-weight: bold;
+      -moz-border-radius: 4px;
+      border-radius: 4px;
+    }
+      
+
+body { background-color: #666; }
+  </style>
+  
+</head>
+<body>
+  <div id="loader">Loading dojo...</div>
+
+  <div id="blocks"></div>
+
+  <div><button id="fadeUp">To White</button> <button id="fadeDown">To Grey</button></div>
+  <div><input type="text" id="dest" value="#ff0000"> <button id="fadeArb">To Any</button>
+
+  
+  <div id="scrolly">
+  
+  </div>
+  <noscript>
+    This page requires you to enable JavaScript for full functionality.
+  </noscript>
+</body>
+</html>
