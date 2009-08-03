@@ -1,9 +1,9 @@
 === Plugin Name ===
 Contributors: johnny5
-Donate link: http://urbangiraffe.com/about/support/
+Donate link: http://urbangiraffe.com/about/
 Tags: post, admin, seo, pages, manage, 301, 404, redirect, permalink
 Requires at least: 2.3
-Tested up to: 2.8
+Tested up to: 2.8.1
 Stable tag: trunk
 
 Redirection is a WordPress plugin to manage 301 redirections and keep track of 404 errors without requiring knowledge of Apache .htaccess files.
@@ -19,7 +19,6 @@ New features include:
 * Full logs for all redirected URLs
 * All URLs can be redirected, not just ones that don't exist
 * Redirection methods - redirect based upon login status, redirect to random pages, redirect based upon the referrer!
-* WordPress 2.7+ only
 
 Existing features include:
 
@@ -35,11 +34,14 @@ Existing features include:
 Redirection is available in:
 
 * English
-* French (thanks to [Oncle Tom](http://oncle-tom.net))
-* Hebrew (thanks to [Rami](http://www.bdihot.co.il/))
-* Spanish (thanks to [Juan](http://unahormiga.com>))
-* Simplified Chinese (thanks to [Sha Miao](http://shamiao.com))
-* Catalan (thanks to Robert Bu)
+* French by Oncle Tom
+* Hebrew by Rami
+* Spanish by Juan
+* Simplified Chinese by Sha Miao
+* Catalan by Robert Bu
+* Japanese by Naoko McCracken
+* Hindi by Ashish
+* Russian by Grib
 
 == Installation ==
 
@@ -72,3 +74,126 @@ The plugin works in a similar manner to how WordPress handles permalinks and sho
 
 Full documentation can be found on the [Redirection](http://urbangiraffe.com/plugins/redirection/) page.
 
+== Changelog ==
+
+= 2.0    = 
+* New version
+
+= 2.0.1  = 
+* Install defaults when no existing redirection setup
+
+= 2.0.2  = 
+* Correct DB install
+* Fix IIS problem
+
+= 2.0.3  = 
+* Fix #248
+* Update plugin.php to better handle odd directories
+
+= 2.0.4  = 
+* get_home_path seems not be available for some people
+
+= 2.0.5  = 
+* Fix #264
+
+= 2.0.6  = 
+* Support for wp-load.php
+
+= 2.0.7  = 
+* Fix incorrect automatic redirection with static home pages
+
+= 2.0.8  = 
+* Refix log delete
+
+= 2.0.9  = 
+* Fix delete redirects
+
+= 2.0.10 = 
+* Fix small issues in display with WP 2.7
+
+= 2.0.11 = 
+* Hebrew translation
+
+= 2.0.12 = 
+* Disable category monitor in 2.7
+
+= 2.1    = 
+* Change to jQuery
+* Nonce protection
+* Fix #352, #353, #339, #351
+* Add #358, #316.
+
+= 2.1.1  = 
+* Force JS cache
+* Fix log deletion
+
+= 2.1.2  = 
+* Minor button changes
+
+= 2.1.3  = 
+* Re-enable import feature
+
+= 2.1.4  = 
+* RSS feed token
+
+= 2.1.5  = 
+* Fix #366, #371, #378, #390, #400.
+* Add #370, #357
+
+= 2.1.6  = 
+* Redirection loops
+
+= 2.1.7  = 
+* Fix #422, #426
+
+= 2.1.8  = 
+* Fix category change 'quick edit'
+
+= 2.1.9  = 
+* Fix 'you do not permissions' error on some non-English sites
+
+= 2.1.10 = 
+* Missing localisations
+
+= 2.1.11 = 
+* Errors on some sites
+
+= 2.1.12 = 
+* Add icons
+* Disable category monitoring
+
+= 2.1.13 = 
+* Add Spanish and Chinese translation
+
+= 2.1.14 = 
+* Fix #457
+* Add #475, #427
+* Add Catalan translation.
+* WP2.8 compatibility
+
+= 2.1.15 = 
+* Use WP Ajax
+* Add Japanese
+
+= 2.1.16 = 
+* Fix group edit and log add entry
+
+= 2.1.17 = 
+* Log JS fixes
+
+= 2.1.18 = 
+* Fix module deletion
+
+= 2.1.19 = 
+* Add Hindi translation
+* Fix some ajax
+
+= 2.1.20 =
+* Fix for some users with problems deleting redirections
+
+= 2.1.21 =
+* Fix #620
+* Add Russian translation
+
+= 2.1.22 =
+* Pre WP2.8 compatibility fix

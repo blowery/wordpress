@@ -10,7 +10,7 @@
 		<td><input style="width: 95%" type="text" name="something" readonly="readonly" value="<?php echo htmlspecialchars ($log->sent_to) ?>"/></td>
 	</tr>
 	<?php endif; ?>
-	<?php if ($redirect && $redirect->method) : ?>
+	<?php if ($redirect && isset($redirect->method) && $redirect->method) : ?>
 	<tr>
 		<th><?php _e ('Redirected by', 'redirection'); ?>:</th>
 		<td><?php echo $redirect->method->name () ?> <?php _e ('for', 'redirection'); ?>: <code><?php echo htmlspecialchars ($redirect->url) ?></code></td>
@@ -23,7 +23,7 @@
 	<tr>
 		<td></td>
 		<td>
-			<input class="button-secondary" type="submit" name="cancel" value="Cancel" onclick="jQuery('#info_<?php echo $log->id ?>').load (wp_base + 'ajax.php?cmd=hide_log&amp;id=<?php echo $log->id ?>', {}, function () { showLogs () }); return false"/>
+			<input class="button-secondary" type="submit" name="cancel" value="Cancel"/>
 		</td>
 	</tr>
 </table>

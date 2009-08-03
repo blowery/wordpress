@@ -3,7 +3,7 @@ Contributors: hallsofmontezuma
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=mrtorbert%40gmail%2ecom&item_name=All%20In%20One%20SEO%20Pack&item_number=Support%20Open%20Source&no_shipping=0&no_note=1&tax=0&currency_code=USD&lc=US&bn=PP%2dDonationsBF&charset=UTF%2d8
 Tags: post,google,seo,meta,meta keywords,meta description,title,posts,plugin, search engine optimization
 Requires at least: 1.5
-Tested up to: 2.7.1
+Tested up to: 2.8.1
 Stable tag: trunk
 
 Automatically optimizes your Wordpress blog for Search Engines (Search Engine Optimization).
@@ -14,22 +14,27 @@ Automatically optimizes your Wordpress blog for Search Engines (Search Engine Op
 
 **[Download now!](http://downloads.wordpress.org/plugin/all-in-one-seo-pack.zip)**
 
+**If upgrading, please back up your database first!**
+
 [Support](http://semperfiwebdesign.com/forum/) |
-[Version History](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/all-in-one-seo-pack-release-history/) |
+[Change Log](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/all-in-one-seo-pack-release-history/) |
 [FAQ](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/all-in-one-seo-faq/)|
 [Translations](http://semperfiwebdesign.com/documentation/all-in-one-seo-pack/translations-for-all-in-one-seo-pack/)
 
 Some features:
 
 * Canonical URLs
+* Fine tune Page Navigational Links 
+* Built-in API so other plugins/themes can access and extend functionality
+* Provides SEO Integration for WP e-Commerce sites
 * Nonce Security
 * Support for CMS-style WordPress installations
 * Automatically optimizes your **titles** for search engines
 * Generates **META tags automatically**
 * Avoids the typical duplicate content found on Wordpress blogs
-* For Wordpress 2.7.1 you don't even have to look at the options, it works out-of-the-box. Just install.
+* For beginners, you don't even have to look at the options, it works out-of-the-box. Just install.
+* For advanced users, you can fine-tune everything
 * You can override any title and set any META description and any META keywords you want.
-* You can fine-tune everything
 * Backward-Compatibility with many other plugins, like Auto Meta, Ultimate Tag Warrior and others.
 
 Be sure to check out:
@@ -42,14 +47,22 @@ Torbert](http://twitter.com/michaeltorbert/)
 
 == Installation ==
 
-1. Unzip into your `/wp-content/plugins/` directory. If you're uploading it make sure to upload
+You can use the built in installer and upgrader, or you can install the plugin
+manually.
+
+1. You can either use the automatic plugin installer or your FTP program to upload it to your wp-content/plugins directory
 the top-level folder. Don't just upload all the php files and put them in `/wp-content/plugins/`.
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Visit your SEO options (*Options - All in One SEO*) for Wordpress 2.3.x, (*Settings - All in One SEO*) for Wordpress 2.5.x-2.7 
+1. Visit your SEO options (*Options - All in One SEO*) for Wordpress 2.3.x, (*Settings - All in One SEO*) for Wordpress 2.5.x-2.8.x 
+1. Configure any options as desired, and then enable the plugin
 1. That's it!
 
-For upgrading please use the built-in one-click updater (*Options - All in One SEO*).
-If you have to upgrade manually simply repeat the installation steps.
+If you have to upgrade manually simply repeat the installation steps and re-enable the plugin.
+
+**If upgrading, please back up your database first!**
+
+[Upgrade guide for upgrading from 1.5.x and below to
+1.6.x](http://onefinejay.com/2009/07/11/a-guide-to-upgrading-to-aioseop-v1-6-1)
 
 == Frequently Asked Questions ==
 

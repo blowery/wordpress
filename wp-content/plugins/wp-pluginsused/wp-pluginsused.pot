@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: WP-PluginsUsed 1.40\n"
+"Project-Id-Version: WP-PluginsUsed 1.50\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-12-10 00:41+0800\n"
-"PO-Revision-Date: 2008-12-10 00:41+0800\n"
+"POT-Creation-Date: 2009-06-08 19:01+0800\n"
+"PO-Revision-Date: 2009-06-08 19:01+0800\n"
 "Last-Translator: Lester Chan <lesterchan@gmail.com>\n"
 "Language-Team: Lester Chan <lesterchan@gmail.com>\n"
 "MIME-Version: 1.0\n"
@@ -11,38 +11,38 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-Language: English\n"
 "X-Poedit-Country: SINGAPORE\n"
-"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;__ngettext_noop:1,2\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;__ngettext_noop:1,2\n"
 "X-Poedit-Basepath: .\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: wp-pluginsused.php:155
+#: wp-pluginsused.php:161
 #, php-format
 msgid "There is <strong>%s</strong> plugin used:"
 msgid_plural "There are <strong>%s</strong> plugins used:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: wp-pluginsused.php:155
+#: wp-pluginsused.php:161
 #, php-format
 msgid "<strong>%s active plugin</strong>"
 msgid_plural "<strong>%s active plugins</strong>"
 msgstr[0] ""
 msgstr[1] ""
 
-#: wp-pluginsused.php:155
+#: wp-pluginsused.php:161
 msgid "and"
 msgstr ""
 
-#: wp-pluginsused.php:155
+#: wp-pluginsused.php:161
 #, php-format
 msgid "<strong>%s inactive plugin</strong>."
 msgid_plural "<strong>%s inactive plugins</strong>."
 msgstr[0] ""
 msgstr[1] ""
 
-#: wp-pluginsused.php:166
-#: wp-pluginsused.php:179
+#: wp-pluginsused.php:172
+#: wp-pluginsused.php:185
 msgid "url"
 msgstr ""
 

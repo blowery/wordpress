@@ -4,15 +4,16 @@ Plugin Name: WordPress.com Stats
 Plugin URI: http://wordpress.org/extend/plugins/stats/
 Description: Tracks views, post/page views, referrers, and clicks. Requires a WordPress.com API key.
 Author: Andy Skelton
-Version: 1.4
+Version: 1.5
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
-Requires WordPress 2.1 or later. Not for use with WPMU.
+Requires WordPress 2.7 or later. Not for use with WPMU.
 
 Looking for a way to hide the gif? Put this in your stylesheet:
 img#wpstats{display:none}
 
 Recent changes:
+1.5   - Kill iframes. Use blog's role/cap system to allow local users to view reports. Thanks to Stefanos Kofopoulos for helping to debug encoding issues.
 1.4   - Added gmt_offset setting to blog definition.
 1.3.8 - Fixed "Missing API Key" error appearing in place of more helpful errors. Hat tip: Walt Ritscher.
 1.3.7 - If blog dashboard is https, stats iframe should be https.
@@ -129,7 +130,7 @@ function stats_array($kvs) {
 
 function stats_admin_menu() {
 	if ( stats_get_option('blog_id') ) {
-		$hook = add_submenu_page('index.php', __('Blog Stats'), __('Blog Stats'), 'manage_options', 'stats', 'stats_reports_page');
+		$hook = add_submenu_page('index.php', __('Blog Stats'), __('Blog Stats'), 'publish_posts', 'stats', 'stats_reports_page');
 		add_action("load-$hook", 'stats_reports_load');
 	}
 	$hook = add_submenu_page('plugins.php', __('WordPress.com Stats Plugin'), __('WordPress.com Stats'), 'manage_options', 'wpstats', 'stats_admin_page');
@@ -152,11 +153,95 @@ function stats_reports_head() {
 }
 
 function stats_reports_page() {
-	if ( isset( $_GET['noheader'] ) )
+	if ( isset( $_GET['dashboard'] ) )
 		return stats_dashboard_widget_content();
 	$blog_id = stats_get_option('blog_id');
-	$day = isset( $_GET['day'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $_GET['day'] ) ? "&day=$_GET[day]" : '';
-	echo "<iframe id='statsreport' frameborder='0' src='http://dashboard.wordpress.com/wp-admin/index.php?page=estats&blog=$blog_id&noheader=true$day'></iframe>";
+	$key = stats_get_api_key();
+	$day = isset( $_GET['day'] ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $_GET['day'] ) ? $_GET['day'] : false;
+	$q = array(
+		'noheader' => 'true',
+		'proxy' => '',
+		'page' => 'stats',
+		'key' => $key,
+		'day' => $day,
+		'blog' => $blog_id,
+		'charset' => get_option('blog_charset'),
+	);
+	$args = array(
+		'view' => array('referrers', 'postviews', 'searchterms', 'clicks', 'post', 'table'),
+		'numdays' => 'int',
+		'day' => 'date',
+		'unit' => array(1, 7, 31),
+		'summarize' => null,
+		'post' => 'int',
+		'width' => 'int',
+		'height' => 'int',
+		'data' => 'data',
+	);
+	foreach ( $args as $var => $vals ) {
+		if ( ! isset($_GET[$var]) )
+			continue;
+		if ( is_array($vals) ) {
+			if ( in_array($_GET[$var], $vals) )
+				$q[$var] = $_GET[$var];
+		} elseif ( $vals == 'int' ) {
+			$q[$var] = intval($_GET[$var]);
+		} elseif ( $vals == 'date' ) {
+			if ( preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET[$var]) )
+				$q[$var] = $_GET[$var];
+		} elseif ( $vals == null ) {
+			$q[$var] = '';
+		} elseif ( $vals == 'data' ) {
+			if ( substr($_GET[$var], 0, 9) == 'index.php' )
+				$q[$var] = $_GET[$var];
+		}
+	}
+	if ( isset( $_GET['swf'] ) ) {
+		$url = "https://s-ssl.wordpress.com/wp-includes/charts/ofc/open-flash-chart.swf";
+	} elseif ( isset( $_GET['chart'] ) ) {
+		if ( preg_match('/^[a-z0-9-]+$/', $_GET['chart']) )
+			$url = "https://dashboard.wordpress.com/wp-includes/charts/{$_GET['chart']}.php";
+	} else {
+		$url = "https://dashboard.wordpress.com/wp-admin/index.php";
+	}
+
+	$url = add_query_arg($q, $url);
+
+	$get = wp_remote_get($url, array('timeout'=>300));
+
+	if ( is_wp_error($get) || empty($get['body']) ) {
+		$http = $_SERVER['https'] ? 'https' : 'http';
+		$day = $day ? "&amp;day=$day" : '';
+		echo "<iframe id='statsreport' frameborder='0' src='$http://dashboard.wordpress.com/wp-admin/index.php?page=estats&amp;blog=$blog_id&amp;noheader=true$day'></iframe>";
+	} else {
+		echo convert_post_titles($get['body']);
+	}
+	if ( isset( $_GET['noheader'] ) )
+		die;
+}
+
+function convert_post_titles($html) {
+	global $wpdb, $stats_posts;
+	$pattern = "<span class='post-(\d+)-link'>.*?</span>";
+	if ( ! preg_match_all("!$pattern!", $html, $matches) )
+		return $html;
+	$posts = get_posts(array(
+		'include' => implode(',', $matches[1]),
+		'post_type' => 'any',
+		'numberposts' => -1,
+	));
+	foreach ( $posts as $post )
+		$stats_posts[$post->ID] = $post;
+	$html = preg_replace_callback("!$pattern!", 'convert_post_title', $html);
+	return $html;
+}
+
+function convert_post_title($matches) {
+	global $stats_posts;
+	$post_id = $matches[1];
+	if ( isset($stats_posts[$post_id]) )
+		return '<a href="'.get_permalink($post_id).'" target="_blank">'.get_the_title($post_id).'</a>';
+	return sprintf(__("Post #%d"), $post_id);
 }
 
 function stats_admin_load() {
@@ -613,7 +698,7 @@ jQuery( function($) {
 		var args = 'width=' + ( dashStats.prev().width() * 2 ).toString();
 	}
 
-	dashStats.not( '.dashboard-widget-control' ).load('index.php?page=stats&noheader&' + args );
+	dashStats.not( '.dashboard-widget-control' ).load('index.php?page=stats&noheader&dashboard&' + args );
 } );
 /* ]]> */
 </script>
@@ -794,11 +879,32 @@ function stats_dashboard_widget_content() {
 
 	$options = stats_dashboard_widget_options();
 
-	$http = ( !empty( $_SERVER['HTTPS'] ) ) ? 'https' : 'http';
+	$q = array(
+		'noheader' => 'true',
+		'proxy' => '',
+		'page' => 'stats',
+		'blog' => $blog_id,
+		'key' => stats_get_api_key(),
+		'chart' => '',
+		'unit' => $options['chart'],
+		'width' => $_width,
+		'height' => $_height,
+	);
 
-	$src = clean_url( "$http://dashboard.wordpress.com/wp-admin/index.php?page=estats&blog=$blog_id&noheader=true&chart&unit=$options[chart]&width=$_width&height=$_height" );
+	$url = 'https://dashboard.wordpress.com/wp-admin/index.php';
 
-	echo "<iframe id='stats-graph' class='stats-section' frameborder='0' style='width: {$width}px; height: {$height}px; overflow: hidden' src='$src'></iframe>";
+	$url = add_query_arg($q, $url);
+
+	$get = wp_remote_get($url, array('timeout'=>300));
+
+
+	if ( is_wp_error($get) || empty($get['body']) ) {
+		$http = $_SERVER['https'] ? 'https' : 'http';
+		$src = clean_url( "$http://dashboard.wordpress.com/wp-admin/index.php?page=estats&blog=$blog_id&noheader=true&chart&unit=$options[chart]&width=$_width&height=$_height" );
+		echo "<iframe id='stats-graph' class='stats-section' frameborder='0' style='width: {$width}px; height: {$height}px; overflow: hidden' src='$src'></iframe>";
+	} else {
+		echo $get['body'];
+	}
 
 	$post_ids = array();
 

@@ -3,64 +3,9 @@
 Plugin Name: Redirection
 Plugin URI: http://urbangiraffe.com/plugins/redirection/
 Description: Manage all your 301 redirects and monitor 404 errors
-Version: 2.1.14
+Version: 2.1.22
 Author: John Godley
 Author URI: http://urbangiraffe.com
-============================================================================================================
-1.1    - Added .htaccess processing, counter reset, and Search Regex
-         Better item deletion, and infinite redirection protection
-1.2    - AJAX support(delete/edit), split admin interface, bug fixes, better regex, redirections to external sites
-1.3    - Highlight internal redirects.  Fix bug in Google code
-1.4    - Change to wpurl
-1.5    - Make non-regex pattern not match subpatterns of itself
-1.6    - Allow 'custom' scripts
-1.7    - Interface redesign and feature upgrade
-1.7.9  - Fix bug with PHP4. Add search box and IP lookup service.  Add log delete function & update notification.  Add 410.
-         Add optional global 404 redirect
-1.7.10 - Fix bug where other plugins that hook redirections wouldn't work when no redirections are defined
-1.7.11 - Fix bug where index.html was not being redirected correctly
-1.7.12 - Better database performance, clean up log display, make usable in WP 2.0+
-1.7.13 - Workaround for FastCGI bug
-1.7.14 - Add delete option, stop AJAX from looping on a bad redirection
-1.7.15 - Minor bug fix, show redirect names in drop-down list, add auto-generated target URL
-1.7.16 - Prevent errors caused by magic _vti_cnf.php files
-1.7.17 - Add option to disable 404 logs
-1.7.18 - Add auto-generation for source URL
-1.7.19 - Better database installation, better auto-generation
-1.7.20 - Workaround for the FastCGI workaround.  Hide canonical options for WP2.3
-1.7.21 - Fix activation bug
-1.7.22 - Allow carats in regex patterns, another FastCGI workaround
-1.7.23 - Stop FTP log files being picked up, RSS 404 log
-1.7.24 - Stop problems with mod_security
-1.7.25 - Fix database problem on some hosts
-2.0    - New version
-2.0.1  - Install defaults when no existing redirection setup
-2.0.2  - Correct DB install, fix IIS problem
-2.0.3  - Fix #248.  Update plugin.php to better handle odd directories
-2.0.4  - get_home_path seems not be available for some people
-2.0.5  - Fix #264
-2.0.6  - Support for wp-load.php
-2.0.7  - Fix incorrect automatic redirection with static home pages
-2.0.8  - Refix log delete
-2.0.9  - Fix delete redirects
-2.0.10 - Fix small issues in display with WP 2.7
-2.0.11 - Hebrew translation
-2.0.12 - Disable category monitor in 2.7
-2.1    - Change to jQuery.  Nonce protection.  Fix #352, #353, #339, #351.  Add #358, #316.
-2.1.1  - Force JS cache.  Fix log deletion
-2.1.2  - Minor button changes
-2.1.3  - Re-enable import feature
-2.1.4  - RSS feed token
-2.1.5  - Fix #366, #371, #378, #390, #400.  Add #370, #357
-2.1.6  - Redirection loops
-2.1.7  - Fix #422, #426
-2.1.8  - Fix category change 'quick edit'
-2.1.9  - Fix 'you do not permissions' error on some non-English sites
-2.1.10 - Missing localisations
-2.1.11 - Errors on some sites
-2.1.12 - Add icons, disable category monitoring
-2.1.13 - Add Spanish and Chinese translation
-2.1.14 - Fix #457, add #475, #427, add Catalan translation. WP2.8 compatability
 ============================================================================================================
 This software is provided "as is" and any express or implied warranties, including, but not limited to, the
 implied warranties of merchantibility and fitness for a particular purpose are disclaimed. In no event shall
@@ -101,8 +46,16 @@ class Redirection extends Redirection_Plugin {
 			$this->add_action( 'admin_head', 'wp_print_styles' );
 			$this->add_action( 'init', 'inject' );
 			$this->add_filter( 'contextual_help', 'contextual_help', 10, 2 );
+			$this->add_action( 'admin_footer' );
+			$this->add_filter( 'print_scripts_array' );
 			
 			$this->register_plugin_settings( __FILE__ );
+			
+			// Ajax functions
+			if ( defined( 'DOING_AJAX' ) ) {
+				include_once dirname( __FILE__ ).'/ajax.php';
+				$this->ajax = new RedirectionAjax();
+			}
 		}
 		else {
 			$this->update();
@@ -116,6 +69,15 @@ class Redirection extends Redirection_Plugin {
 		}
 		
 		$this->monitor = new Red_Monitor($this->get_options());
+	}
+	
+	function print_scripts_array( $scripts ) {
+		$farb = array_search( 'farbtastic', $scripts );
+
+		if ( $farb && isset( $_GET['page'] ) && $_GET['page'] == 'redirection.php' )
+			unset( $scripts[$farb] );
+
+		return $scripts;
 	}
 	
 	function plugin_settings( $links ) {
@@ -186,8 +148,10 @@ class Redirection extends Redirection_Plugin {
 	}
 	
 	function admin_head() {
-		if ( strpos( $_SERVER['REQUEST_URI'], 'redirection.php' ) )
-			$this->render_admin( 'head', array( 'type' => $_GET['sub'] == '' ? '301' : $_GET['sub'] ) );
+		$sub = isset($_GET['sub']) ? $_GET['sub'] : '';
+		
+		if ( isset($_GET['page']) && $_GET['page'] == 'redirection.php' )
+			$this->render_admin( 'head', array( 'type' => $sub == '' ? '301' : $sub ) );
 	}
 	
 	function admin_menu() {
@@ -210,21 +174,23 @@ class Redirection extends Redirection_Plugin {
 	  
 		$sub     = $this->submenu();	
 		$options = $this->get_options();
-		
-		if ( $_GET['sub'] == 'log' )
-			return $this->admin_screen_log();
-	  elseif ( $_GET['sub'] == 'options' )
-	    return $this->admin_screen_options();
-	  elseif ( $_GET['sub'] == 'process' )
-	    return $this->admin_screen_process();
-	  elseif ( $_GET['sub'] == 'groups' )
-			return $this->admin_groups( isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0);
-		elseif ( $_GET['sub'] == 'modules' )
-			return $this->admin_screen_modules();
-		elseif ( $_GET['sub'] == 'support' )
-			return $this->render_admin('support');
-		else
-			return $this->admin_redirects(isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0);
+
+		if ( isset($_GET['sub']) ) {
+			if ( $_GET['sub'] == 'log' )
+				return $this->admin_screen_log();
+		  elseif ( $_GET['sub'] == 'options' )
+		    return $this->admin_screen_options();
+		  elseif ( $_GET['sub'] == 'process' )
+		    return $this->admin_screen_process();
+		  elseif ( $_GET['sub'] == 'groups' )
+				return $this->admin_groups( isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0);
+			elseif ( $_GET['sub'] == 'modules' )
+				return $this->admin_screen_modules();
+			elseif ( $_GET['sub'] == 'support' )
+				return $this->render_admin('support');
+		}
+
+		return $this->admin_redirects(isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0);
 	}
 	
 	function admin_screen_modules() {
@@ -232,8 +198,12 @@ class Redirection extends Redirection_Plugin {
 			$_POST = stripslashes_deep( $_POST );
 			
 			if ( ( $module = Red_Module::create( $_POST ) ) ) {
+				$moduleid = 0;
+				if ( isset($_POST['module']))
+					$moduleid = intval( $_POST['module'] );
+				
 				$this->render_message( __( 'Your module was successfully created', 'redirection' ) );
-				Red_Module::flush( intval( $_POST['module'] ) );
+				Red_Module::flush( $moduleid );
 			}
 			else
 				$this->render_error( __( 'Your module was not created - did you provide a name?', 'redirection' ) );
@@ -249,7 +219,7 @@ class Redirection extends Redirection_Plugin {
 			$options = array();
 			
 		$defaults = array	(
-			'lookup'            => 'http://geomaplookup.cinnamonthoughts.org/?ip=',
+			'lookup'            => 'http://urbangiraffe.com/map/?from=redirection&amp;ip=',
 			'support'           => false,
 			'expire'            => 0,
 			'token'             => '',
@@ -262,13 +232,16 @@ class Redirection extends Redirection_Plugin {
 				$options[$key] = $value;
 		}
 		
+		if ($options['lookup'] == 'http://geomaplookup.cinnamonthoughts.org/?ip=' || $options['lookup'] == 'http://geomaplookup.net/?ip=')
+			$options['lookup'] = 'http://urbangiraffe.com/map/?from=redirection&amp;ip=';
+		
 		return $options;
 	}
 	
 	function inject() {
 		$options = $this->get_options();
 		
-		if ( ( current_user_can( 'administrator' ) || $_GET['token'] == $options['token'] ) && $_GET['page'] == 'redirection.php' && in_array( $_GET['sub'], array( 'rss', 'xml', 'csv', 'apache' ) ) ) {
+		if ( isset($_GET['token'] ) && isset( $_GET['page'] ) && isset( $_GET['sub'] ) && $_GET['token'] == $options['token'] && $_GET['page'] == 'redirection.php' && in_array( $_GET['sub'], array( 'rss', 'xml', 'csv', 'apache' ) ) ) {
 			include dirname( __FILE__ ).'/models/file_io.php';
 
 			$exporter = new Red_FileIO;
@@ -381,15 +354,51 @@ class Redirection extends Redirection_Plugin {
 		$pager = new RE_Pager( $_GET, $_SERVER['REQUEST_URI'], 'position', 'ASC' );
 		$items = Red_Item::get_by_group( $group, $pager );
 
-  	$this->render_admin( 'item_list', array( 'items' => $items, 'pager' => $pager, 'group' => Red_Group::get( $group ), 'groups' => Red_Group::get_for_select() ) );
+  	$this->render_admin( 'item_list', array( 'items' => $items, 'modules' => Red_Group::get_for_select(), 'pager' => $pager, 'group' => Red_Group::get( $group ), 'groups' => Red_Group::get_for_select(), 'date_format' => get_option('date_format')) );
 	}
 	
+		/**
+		 * Displays the nice animated support logo
+		 *
+		 * @return void
+		 **/
+		function admin_footer() {
+			if ( isset($_GET['page']) && $_GET['page'] == basename( __FILE__ ) ) {
+				$options = $this->get_options();
+
+				if ( !$options['support'] ) {
+	?>
+	<script type="text/javascript" charset="utf-8">
+		jQuery(function() {
+			jQuery('#support-annoy').animate( { opacity: 0.2, backgroundColor: 'red' } ).animate( { opacity: 1, backgroundColor: 'yellow' });
+		});
+	</script>
+	<?php
+				}
+			}
+		}
+		
 	function setMatched( $match ) {
 		$this->hasMatched = $match;
 	}
 	
 	function hasMatched() {
 		return $this->hasMatched;
+	}
+	
+	function locales() {
+		$locales = array();
+		$readme  = @file_get_contents( dirname( __FILE__ ).'/readme.txt' );
+		if ( $readme ) {
+			if ( preg_match_all( '/^\* (.*?) by \[(.*?)\]\((.*?)\)/m', $readme, $matches ) ) {
+				foreach ( $matches[1] AS $pos => $match ) {
+					$locales[$match] = '<a href="'.$matches[3][$pos].'">'.$matches[2][$pos].'</a>';
+				}
+			}
+		}
+		
+		ksort( $locales );
+		return $locales;
 	}
 }
 

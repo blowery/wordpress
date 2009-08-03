@@ -3,14 +3,14 @@
 Plugin Name: WP-PluginsUsed
 Plugin URI: http://lesterchan.net/portfolio/programming/php/
 Description: Display WordPress plugins that you currently have (both active and inactive) onto a post/page.
-Version: 1.40
+Version: 1.50
 Author: Lester 'GaMerZ' Chan
 Author URI: http://lesterchan.net
 */
 
 
 /*  
-	Copyright 2008  Lester Chan  (email : lesterchan@gmail.com)
+	Copyright 2009  Lester Chan  (email : lesterchan@gmail.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,6 +30,10 @@ Author URI: http://lesterchan.net
 
 ### Define: Show Plugin Version Number?
 define('PLUGINSUSED_SHOW_VERSION', true);
+
+
+### Variable: Plugins To Hide?
+$pluginsused_hidden_plugins = array();
 
 
 ### Create Text Domain For Translations
@@ -68,7 +72,7 @@ function get_pluginsused() {
 		return $wp_plugins;
 	}
 	$wp_plugins = array();
-	$plugin_root = ABSPATH.PLUGINDIR;
+	$plugin_root = WP_PLUGIN_DIR;
 	$plugins_dir = @ dir($plugin_root);
 	if($plugins_dir) {
 		while(($file = $plugins_dir->read()) !== false) {
@@ -114,27 +118,29 @@ function get_pluginsused() {
 
 ### Function: Process Plugins Used
 function process_pluginsused() {
-	global $plugins_used;
+	global $plugins_used, $pluginsused_hidden_plugins;
 	if(empty($plugins_used)) {
 		$plugins_used = array();
 		$active_plugins = get_option('active_plugins');
 		$plugins = get_pluginsused();
 		$plugins_allowedtags = array('a' => array('href' => array(),'title' => array()),'abbr' => array('title' => array()),'acronym' => array('title' => array()),'code' => array(),'em' => array(),'strong' => array());
 		foreach($plugins as $plugin_file => $plugin_data) {
-			$plugin_data['Plugin_Name'] = wp_kses($plugin_data['Plugin_Name'], $plugins_allowedtags);
-			$plugin_data['Plugin_URI'] = wp_kses($plugin_data['Plugin_URI'], $plugins_allowedtags);
-			$plugin_data['Description'] = wp_kses($plugin_data['Description'], $plugins_allowedtags);
-			$plugin_data['Author'] = wp_kses($plugin_data['Author'], $plugins_allowedtags);
-			$plugin_data['Author_URI'] = wp_kses($plugin_data['Author_URI'], $plugins_allowedtags);
-			if(PLUGINSUSED_SHOW_VERSION) {
-				$plugin_data['Version'] = wp_kses($plugin_data['Version'], $plugins_allowedtags);
-			} else {
-				$plugin_data['Version'] = '';
-			}
-			if (!empty($active_plugins) && in_array($plugin_file, $active_plugins)) {
-				$plugins_used['active'][] = $plugin_data;
-			} else {
-				$plugins_used['inactive'][] = $plugin_data;
+			if(!in_array($plugin_data['Plugin_Name'], $pluginsused_hidden_plugins)) {
+				$plugin_data['Plugin_Name'] = wp_kses($plugin_data['Plugin_Name'], $plugins_allowedtags);
+				$plugin_data['Plugin_URI'] = wp_kses($plugin_data['Plugin_URI'], $plugins_allowedtags);
+				$plugin_data['Description'] = wp_kses($plugin_data['Description'], $plugins_allowedtags);
+				$plugin_data['Author'] = wp_kses($plugin_data['Author'], $plugins_allowedtags);
+				$plugin_data['Author_URI'] = wp_kses($plugin_data['Author_URI'], $plugins_allowedtags);
+				if(PLUGINSUSED_SHOW_VERSION) {
+					$plugin_data['Version'] = wp_kses($plugin_data['Version'], $plugins_allowedtags);
+				} else {
+					$plugin_data['Version'] = '';
+				}
+				if (!empty($active_plugins) && in_array($plugin_file, $active_plugins)) {
+					$plugins_used['active'][] = $plugin_data;
+				} else {
+					$plugins_used['inactive'][] = $plugin_data;
+				}
 			}
 		}
 	}
@@ -152,7 +158,7 @@ function display_pluginsused($type, $display = false) {
 		$total_active_pluginsused = sizeof($plugins_used['active']);
 		$total_inactive_pluginsused = sizeof($plugins_used['inactive']);
 		$total_pluginsused = ($total_active_pluginsused+$total_inactive_pluginsused);
-		$temp = sprintf(__ngettext('There is <strong>%s</strong> plugin used:', 'There are <strong>%s</strong> plugins used:', $total_pluginsused, 'wp-pluginsused'), number_format_i18n($total_pluginsused)).' '.sprintf(__ngettext('<strong>%s active plugin</strong>','<strong>%s active plugins</strong>', $total_active_pluginsused, 'wp-pluginsused'), number_format_i18n($total_active_pluginsused)).' '.__('and', 'wp-pluginsused').' '.sprintf(__ngettext('<strong>%s inactive plugin</strong>.', '<strong>%s inactive plugins</strong>.', $total_inactive_pluginsused, 'wp-pluginsused'), number_format_i18n($total_inactive_pluginsused));
+		$temp = sprintf(_n('There is <strong>%s</strong> plugin used:', 'There are <strong>%s</strong> plugins used:', $total_pluginsused, 'wp-pluginsused'), number_format_i18n($total_pluginsused)).' '.sprintf(_n('<strong>%s active plugin</strong>','<strong>%s active plugins</strong>', $total_active_pluginsused, 'wp-pluginsused'), number_format_i18n($total_active_pluginsused)).' '.__('and', 'wp-pluginsused').' '.sprintf(_n('<strong>%s inactive plugin</strong>.', '<strong>%s inactive plugins</strong>.', $total_inactive_pluginsused, 'wp-pluginsused'), number_format_i18n($total_inactive_pluginsused));
 	} else if($type == 'active') {
 		if($plugins_used['active']) {
 			foreach($plugins_used['active'] as $active_plugins) {

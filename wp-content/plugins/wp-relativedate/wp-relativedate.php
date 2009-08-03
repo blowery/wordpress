@@ -3,14 +3,14 @@
 Plugin Name: WP-RelativeDate
 Plugin URI: http://lesterchan.net/portfolio/programming/php/
 Description: Displays relative date alongside with your post/comments actual date. Like 'Today', 'Yesterday', '2 Days Ago', '2 Weeks Ago', '2 'Seconds Ago', '2 Minutes Ago', '2 Hours Ago'.
-Version: 1.40
+Version: 1.50
 Author: Lester 'GaMerZ' Chan
 Author URI: http://lesterchan.net
 */
 
 
 /*  
-	Copyright 2008  Lester Chan  (email : lesterchan@gmail.com)
+	Copyright 2009  Lester Chan  (email : lesterchan@gmail.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ add_filter('the_date', 'relative_post_date', 999, 4);
 function relative_post_date($the_date, $d = '', $before = '', $after = '', $display_ago_only = false) {
 	global $post, $previous_day;
 	$the_date = strip_tags($the_date);
-	if(gmdate('Y', current_time('timestamp')) != mysql2date('Y', $post->post_date, false)) {
+	if(gmdate('Y', current_time('timestamp')) != mysql2date('Y', $post->post_date, false) && !empty($the_date)) {
 		return $before.$the_date.$after;
 	}
 	$day_diff = (gmdate('z', current_time('timestamp')) - mysql2date('z', $post->post_date, false));
@@ -55,15 +55,15 @@ function relative_post_date($the_date, $d = '', $before = '', $after = '', $disp
 			return $before. __('Yesterday', 'wp-relativedate').$after;
 		} elseif ($day_diff < 7) {
 			if($display_ago_only) {
-				return $before.sprintf(__ngettext('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).$after;
+				return $before.sprintf(_n('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).$after;
 			} else {
-				return $before.$the_date.' ('.sprintf(__ngettext('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).')'.$after;
+				return $before.$the_date.' ('.sprintf(_n('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).')'.$after;
 			}
 		} elseif ($day_diff < 31) {
 			if($display_ago_only) {
-				return $before.sprintf(__ngettext('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).$after;
+				return $before.sprintf(_n('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).$after;
 			} else {
-				return $before.$the_date.' ('.sprintf(__ngettext('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).')'.$after;
+				return $before.$the_date.' ('.sprintf(_n('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).')'.$after;
 			}
 		} else {
 			return $before.$the_date.$after;
@@ -93,15 +93,15 @@ function relative_post_the_date($d = '', $before = '', $after = '', $display_ago
 			$output = $before. __('Yesterday', 'wp-relativedate').$after;
 		} elseif ($day_diff < 7) {
 			if($display_ago_only) {
-				$output = $before.sprintf(__ngettext('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).$after;
+				$output = $before.sprintf(_n('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).$after;
 			} else {
-				$output = $before.$the_date.' ('.sprintf(__ngettext('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).')'.$after;
+				$output = $before.$the_date.' ('.sprintf(_n('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).')'.$after;
 			}
 		} elseif ($day_diff < 31) {
 			if($display_ago_only) {
-				$output = $before.sprintf(__ngettext('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).$after;
+				$output = $before.sprintf(_n('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).$after;
 			} else {
-				$output = $before.$the_date.' ('.sprintf(__ngettext('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).')'.$after;
+				$output = $before.$the_date.' ('.sprintf(_n('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).')'.$after;
 			}
 		} else {
 			$output = $before.$the_date.$after;
@@ -128,11 +128,11 @@ function relative_post_time($current_timeformat, $display_ago_only = 0) {
 	$format_ago = '';
 	if($post_date == $date_today) {
 		if($time_diff < 60) {
-			$format_ago = sprintf(__ngettext('%s second ago', '%s seconds ago', $time_diff, 'wp-relativedate'), number_format_i18n($time_diff));
+			$format_ago = sprintf(_n('%s second ago', '%s seconds ago', $time_diff, 'wp-relativedate'), number_format_i18n($time_diff));
 		} elseif ($time_diff < 3600) {
-			$format_ago = sprintf(__ngettext('%s minute ago', '%s minutes ago', intval($time_diff/60), 'wp-relativedate'), number_format_i18n(intval($time_diff/60)));
+			$format_ago = sprintf(_n('%s minute ago', '%s minutes ago', intval($time_diff/60), 'wp-relativedate'), number_format_i18n(intval($time_diff/60)));
 		} elseif ($time_diff < 86400) {
-			$format_ago = sprintf(__ngettext('%s hour ago', '%s hours ago', intval($time_diff/3600), 'wp-relativedate'), number_format_i18n(intval($time_diff/3600)));
+			$format_ago = sprintf(_n('%s hour ago', '%s hours ago', intval($time_diff/3600), 'wp-relativedate'), number_format_i18n(intval($time_diff/3600)));
 		}
 		if($display_ago_only) {
 			return $format_ago;
@@ -161,15 +161,15 @@ function relative_comment_date($current_dateformat, $display_ago_only = 0) {
 		return __('Yesterday', 'wp-relativedate');
 	} elseif ($day_diff < 7) {
 		if($display_ago_only) {
-			return sprintf(__ngettext('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff));
+			return sprintf(_n('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff));
 		} else {
-			return $current_dateformat.' ('.sprintf(__ngettext('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).')';
+			return $current_dateformat.' ('.sprintf(_n('%s day ago', '%s days ago', $day_diff, 'wp-relativedate'), number_format_i18n($day_diff)).')';
 		}
 	} elseif ($day_diff < 31) {
 		if($display_ago_only) {
-			return sprintf(__ngettext('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7)));
+			return sprintf(_n('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7)));
 		} else {
-			return $current_dateformat.' ('.sprintf(__ngettext('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).')';
+			return $current_dateformat.' ('.sprintf(_n('%s week ago', '%s weeks ago', ceil($day_diff/7), 'wp-relativedate'), number_format_i18n(ceil($day_diff/7))).')';
 		}
 	} else {
 		return $current_dateformat;
@@ -190,11 +190,11 @@ function relative_comment_time($current_timeformat, $display_ago_only = 0) {
 	$format_ago = '';
 	if($comment_date == $date_today) {
 		if($time_diff < 60) {
-			$format_ago = sprintf(__ngettext('%s second ago', '%s seconds ago', $time_diff, 'wp-relativedate'), number_format_i18n($time_diff));
+			$format_ago = sprintf(_n('%s second ago', '%s seconds ago', $time_diff, 'wp-relativedate'), number_format_i18n($time_diff));
 		} elseif ($time_diff < 3600) {
-			$format_ago = sprintf(__ngettext('%s minute ago', '%s minutes ago', intval($time_diff/60), 'wp-relativedate'), number_format_i18n(intval($time_diff/60)));
+			$format_ago = sprintf(_n('%s minute ago', '%s minutes ago', intval($time_diff/60), 'wp-relativedate'), number_format_i18n(intval($time_diff/60)));
 		} elseif ($time_diff < 86400) {
-			$format_ago = sprintf(__ngettext('%s hour ago', '%s hours ago', intval($time_diff/3600), 'wp-relativedate'), number_format_i18n(intval($time_diff/3600)));
+			$format_ago = sprintf(_n('%s hour ago', '%s hours ago', intval($time_diff/3600), 'wp-relativedate'), number_format_i18n(intval($time_diff/3600)));
 		}
 		if($display_ago_only) {
 			return $format_ago;

@@ -6,12 +6,13 @@ class WordPress_Module extends Red_Module
 	var $strip_index  = 'default';
 	var $error_level  = 'default';
 	var $time_limit   = 0;
+	var $matched;
 
 	function start ()
 	{
 		// Setup the various filters and actions that allow Redirection to h appen
 		add_action ('template_redirect',       array (&$this, 'template_redirect'));
-		add_action ('plugins_loaded',          array (&$this, 'plugins_loaded'));
+		add_action ('init',                    array (&$this, 'init'));
 		add_action ('send_headers',            array (&$this, 'send_headers'));
 		add_filter ('permalink_redirect_skip', array (&$this, 'permalink_redirect_skip'));
 		add_filter ('wp_redirect',             array (&$this, 'wp_redirect'), 1, 2);
@@ -26,7 +27,7 @@ class WordPress_Module extends Red_Module
 			add_filter ('status_header', array (&$this, 'status_header'));
 	}
 	
-	function plugins_loaded ()
+	function init ()
 	{
 		global $redirection;
 		
@@ -36,7 +37,7 @@ class WordPress_Module extends Red_Module
 		if (!$this->protected_url ($url) && !$redirection->hasMatched ())
 		{
 			do_action ('redirection_first', $url, $this);
-		
+
 			$redirects = Red_Item::get_for_url ($url, 'wp');
 			if (!empty ($redirects))
 			{
@@ -56,12 +57,12 @@ class WordPress_Module extends Red_Module
 		}
 	}
 	
-	function protected_url ()
+	function protected_url ($url)
 	{
 		global $redirection;
 		$part = explode ('?', $url);
 		
-		if ($part[0] == str_replace (get_bloginfo ('home'), '', $redirection->url ()).'/ajax.php')
+		if ($part[0] == str_replace (get_bloginfo ('home'), '', $redirection->url ()).'/ajax.php' || strpos($url, 'wp-cron.php') !== false)
 			return true;
 		return false;
 	}
@@ -117,7 +118,7 @@ class WordPress_Module extends Red_Module
 
 	function send_headers ($obj)
 	{
-		if ($this->matched->type == '410')
+		if ( !empty($this->matched) && $this->matched->type == '410')
 			status_header (410);
 	}
 

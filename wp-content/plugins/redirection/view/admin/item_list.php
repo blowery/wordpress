@@ -11,15 +11,15 @@
 		<form method="get" action="<?php echo $this->url ($pager->url) ?>">
 			<input type="hidden" name="page" value="<?php echo $_GET['page'] ?>"/>
 			<input type="hidden" name="curpage" value="<?php echo $pager->current_page () ?>"/>
-			<input type="hidden" name="sub" value="<?php echo $_GET['sub'] ?>"/>
+			<input type="hidden" name="sub" value="<?php echo isset($_GET['sub']) ? $_GET['sub'] : ''?>"/>
 
 			<?php _e ('Group', 'redirection'); ?>:
 			<select name="id">
-				<?php echo $this->select ($groups, $_GET['id'])?>
+				<?php echo $this->select ($groups, isset( $_GET['id'] ) ? $_GET['id'] : '')?>
 			</select>
 			
 			<?php _e ('Search', 'redirection'); ?>: 
-			<input type="text" class="search-input"  name="search" value="<?php echo htmlspecialchars ($_GET['search']) ?>" style="font-size: 0.8em"/>
+			<input type="text" class="search-input"  name="search" value="<?php echo isset($_GET['search']) ? htmlspecialchars ($_GET['search']) : '' ?>" style="font-size: 0.8em"/>
 
 			<?php $pager->per_page ('redirection'); ?>
 
@@ -56,24 +56,24 @@
 	<?php endif;?>
 	
 	<div class="pager pagertools">
-		<a href="#" onclick="return select_all ()"><?php _e ('Select All', 'redirection'); ?></a> |
-		<a href="#" onclick="return toggle_items('item')"><?php _e ('Toggle', 'redirection'); ?></a> | 
-		<a href="#" onclick="return reset_items('item','<?php echo wp_create_nonce ('redirection-reset_items') ?>')"><?php _e ('Reset Hits', 'redirection'); ?></a> |
-		<a href="#" onclick="return delete_items('item','<?php echo wp_create_nonce ('redirection-delete_items') ?>')"><?php _e ('Delete', 'redirection'); ?></a> |
-		
+		<a class="select-all" href="#select-all"><?php _e ('Select All', 'redirection'); ?></a> |
+		<a class="toggle-all" href="#toggle-all"><?php _e ('Toggle', 'redirection'); ?></a> | 
+		<a class="reset-all"  href="#reset-all"><?php _e ('Reset Hits', 'redirection'); ?></a> |
+		<a class="delete-all" href="#delete-all"><?php _e ('Delete', 'redirection'); ?></a> |
+
 		<?php _e ('Move To', 'redirection'); ?>:
 		<select name="move" id="move">
-			<?php echo $this->select ($groups)?>
+			<?php echo $this->select ($modules)?>
 		</select>
 		
-		<input class="button-secondary" type="submit" name="go" value="Go" onclick="return move_items('item','<?php echo wp_create_nonce ('redirection-move_items') ?>')"/>
+		<input class="button-secondary move-all" type="submit" value="<?php _e( 'Go', 'redirection'); ?>"/>
 	</div>
 	
 	<div class="sort" id="sort">
 		<img src="<?php echo $this->url () ?>/images/sort.png" width="16" height="16" alt="Sort"/>
 
-		<a id="toggle_sort_on" onclick="return sort_order ();" href="#"><?php _e ('re-order', 'redirection'); ?></a>
-		<a id="toggle_sort_off" style="display: none" onclick="return save_redirect_order (<?php echo ($pager->current_page - 1) * $pager->per_page ?>,'<?php echo wp_create_nonce ('redirection-save_item_order') ?>');" href="#"><?php _e ('save order', 'redirection'); ?></a>
+		<a class="sort-on"   id="toggle_sort_on"  href="#"><?php _e ('re-order', 'redirection'); ?></a>
+		<a class="sort-save" id="toggle_sort_off"  href="#" style="display: none"><?php _e ('save order', 'redirection'); ?></a>
 	</div>
 
 	<?php if (!is_array ($items) || count ($items) == 0) : ?>
@@ -91,11 +91,21 @@
 	<?php endif; ?>
 </div>
 
-<?php $this->render_admin ('add', array ('methods' => $methods, 'add_to_screen' => true, 'group' => $group->id)) ?>
+<?php $this->render_admin ('add', array ('add_to_screen' => true, 'group' => $group->id, 'hidden' => false)) ?>
 
-<script type="text/javascript" charset="utf-8">
-	jQuery(document).ready(function()
-	{ 
-		editItems ('edit_redirect');
+<script type="text/javascript">
+var redirection;
+
+jQuery(document).ready( function() {
+	redirection = new Redirection( {
+		progress: '<?php echo esc_js( '<img src="'.$this->url().'/images/progress.gif" alt="loading" width="50" height="16"/>' ) ?>',
+		ajaxurl: '<?php echo esc_js( admin_url( 'admin-ajax.php' ) ) ?>',
+		nonce: '<?php echo esc_js( wp_create_nonce( 'redirection-items' ) ); ?>',
+		none_select: '<?php echo esc_js( __( 'No items have been selected', 'redirection' ) ); ?>',
+		are_you_sure: '<?php echo esc_js( __( 'Are you sure?', 'redirection') ); ?>',
+		page: <?php echo ($pager->current_page - 1) * $pager->per_page ?>
 	});
+	
+	redirection.edit_items( 'redirect' );
+});
 </script>
