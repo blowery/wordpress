@@ -47,9 +47,6 @@ wp_unregister_GLOBALS();
 
 unset( $wp_filter, $cache_lastcommentmodified, $cache_lastpostdate );
 
-// Force REQUEST to be GET + POST.  If SERVER, COOKIE, or ENV are needed, use those superglobals directly.
-$_REQUEST = array_merge($_GET, $_POST);
-
 /**
  * The $blog_id global, which you can change in the config allows you to create a simple
  * multiple blog installation using just one WordPress and changing $blog_id around.
@@ -60,8 +57,8 @@ $_REQUEST = array_merge($_GET, $_POST);
 if ( ! isset($blog_id) )
 	$blog_id = 1;
 
-// Fix for IIS, which doesn't set REQUEST_URI
-if ( empty( $_SERVER['REQUEST_URI'] ) ) {
+// Fix for IIS when running with PHP ISAPI
+if ( empty( $_SERVER['REQUEST_URI'] ) || ( php_sapi_name() != 'cgi-fcgi' && preg_match( '/^Microsoft-IIS\//', $_SERVER['SERVER_SOFTWARE'] ) ) ) {
 
 	// IIS Mod-Rewrite
 	if (isset($_SERVER['HTTP_X_ORIGINAL_URL'])) {
@@ -201,8 +198,16 @@ function timer_stop($display = 0, $precision = 3) { //if called like timer_stop(
 timer_start();
 
 // Add define('WP_DEBUG',true); to wp-config.php to enable display of notices during development.
-if (defined('WP_DEBUG') and WP_DEBUG == true) {
+if ( defined('WP_DEBUG') && WP_DEBUG == true ) {
 	error_reporting(E_ALL);
+	// Add define('WP_DEBUG_DISPLAY', false); to wp-config.php to use the globally configured setting for display_errors and not force it to On
+	if ( ! defined('WP_DEBUG_DISPLAY') || WP_DEBUG_DISPLAY == true )
+		ini_set('display_errors', 1);
+	// Add define('WP_DEBUG_LOG', true); to enable php debug logging to WP_CONTENT_DIR/debug.log
+	if ( defined('WP_DEBUG_LOG') && WP_DEBUG_LOG == true ) {
+		ini_set('log_errors', 1);
+		ini_set('error_log', WP_CONTENT_DIR . '/debug.log');
+	}
 } else {
 	if ( defined('E_RECOVERABLE_ERROR') )
 		error_reporting(E_ERROR | E_WARNING | E_PARSE | E_USER_ERROR | E_USER_WARNING | E_RECOVERABLE_ERROR);
@@ -526,6 +531,12 @@ force_ssl_login(FORCE_SSL_LOGIN);
 if ( !defined( 'AUTOSAVE_INTERVAL' ) )
 	define( 'AUTOSAVE_INTERVAL', 60 );
 
+/**
+ * It is possible to define this in wp-config.php
+ * @since 2.9.0
+ */
+if ( !defined( 'EMPTY_TRASH_DAYS' ) )
+	define( 'EMPTY_TRASH_DAYS', 30 );
 
 require (ABSPATH . WPINC . '/vars.php');
 
@@ -590,6 +601,9 @@ $_GET    = add_magic_quotes($_GET   );
 $_POST   = add_magic_quotes($_POST  );
 $_COOKIE = add_magic_quotes($_COOKIE);
 $_SERVER = add_magic_quotes($_SERVER);
+
+// Force REQUEST to be GET + POST.  If SERVER, COOKIE, or ENV are needed, use those superglobals directly.
+$_REQUEST = array_merge($_GET, $_POST);
 
 do_action('sanitize_comment_cookies');
 

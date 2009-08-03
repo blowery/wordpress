@@ -1,4 +1,4 @@
-var showNotice, adminMenu, columns;
+var showNotice, adminMenu, columns, validateForm;
 (function($){
 // sidebar admin menu
 adminMenu = {
@@ -122,6 +122,10 @@ columns = {
 
 $(document).ready(function(){columns.init();});
 
+validateForm = function( form ) {
+	return !$( form ).find('.form-required').filter( function() { return $('input:visible', this).val() == ''; } ).addClass( 'form-invalid' ).change( function() { $(this).removeClass( 'form-invalid' ); } ).size();
+}
+
 })(jQuery);
 
 // stub for doing better warnings
@@ -149,13 +153,6 @@ jQuery(document).ready( function($) {
 	// Move .updated and .error alert boxes
 	$('div.wrap h2 ~ div.updated, div.wrap h2 ~ div.error').addClass('below-h2');
 	$('div.updated, div.error').not('.below-h2').insertAfter('div.wrap h2:first');
-
-	// show warnings
-	$('#doaction, #doaction2').click(function(){
-		if ( $('select[name="action"]').val() == 'delete' || $('select[name="action2"]').val() == 'delete' ) {
-			return showNotice.warn();
-		}
-	});
 
 	// screen settings tab
 	$('#show-settings-link').click(function () {

@@ -3222,7 +3222,7 @@ function _wp_timezone_choice_usort_callback( $a, $b ) {
 /**
  * Gives a nicely formatted list of timezone strings // temporary! Not in final
  *
- * @param string $selectedzone - which zone should be the selected one
+ * @param $selected_zone string Selected Zone
  *
  */
 function wp_timezone_choice( $selected_zone ) {
@@ -3300,9 +3300,9 @@ function wp_timezone_choice( $selected_zone ) {
 					$display = str_replace( 'GMT', '', $zone['city'] );
 					$display = strtr( $display, '+-', '-+' ) . ':00';
 				}
-				$display = '&nbsp;&nbsp;&nbsp;' . sprintf( __( 'UTC %s' ), $display );
+				$display = sprintf( __( 'UTC %s' ), $display );
 			} else {
-				$display = '&nbsp;&nbsp;&nbsp;' . $zone['t_city'];
+				$display = $zone['t_city'];
 				if ( !empty( $zone['subcity'] ) ) {
 					// Add the subcity to the value
 					$value[] = $zone['subcity'];
@@ -3320,15 +3320,13 @@ function wp_timezone_choice( $selected_zone ) {
 		$structure[] = '<option ' . $selected . 'value="' . esc_attr( $value ) . '">' . esc_html( $display ) . "</option>";
 		
 		// Close continent optgroup
-		if ( !empty( $zone['city'] ) && isset( $zonen[$key + 1] ) && $zonen[$key + 1]['continent'] !== $zone['continent'] ) {
+		if ( !empty( $zone['city'] ) && ( !isset($zonen[$key + 1]) || (isset( $zonen[$key + 1] ) && $zonen[$key + 1]['continent'] !== $zone['continent']) ) ) {
 			$structure[] = '</optgroup>';
 		}
 	}
 
 	return join( "\n", $structure );
 }
-
-
 
 /**
  * Strip close comment and close php tags from file headers used by WP
@@ -3339,4 +3337,33 @@ function wp_timezone_choice( $selected_zone ) {
 function _cleanup_header_comment($str) {
 	return trim(preg_replace("/\s*(?:\*\/|\?>).*/", '', $str));
 }
-?>
+
+/**
+ * Permanently deletes posts, pages, attachments, and comments which have been in the trash for EMPTY_TRASH_DAYS.
+ * 
+ * @since 2.9.0
+ *
+ * @return void
+ */
+function wp_scheduled_delete() {
+	$trash_meta = get_option('wp_trash_meta');
+	if ( !is_array($trash_meta) )
+		return;
+
+	$delete_timestamp = time() - (60*60*24*EMPTY_TRASH_DAYS);
+
+	foreach ( (array) $trash_meta['comments'] as $id => $meta ) {
+		if ( $meta['time'] < $delete_timestamp ) {
+			wp_delete_comment($id);
+			unset($trash_meta['comments'][$id]);
+		}
+	}
+	foreach ( (array) $trash_meta['posts'] as $id => $meta ) {
+		if ( $meta['time'] < $delete_timestamp ) {
+			wp_delete_post($id);
+			unset($trash_meta['posts'][$id]);
+		}
+	}
+
+	update_option('wp_trash_meta', $trash_meta);
+}

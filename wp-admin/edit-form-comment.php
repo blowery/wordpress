@@ -6,6 +6,10 @@
  * @subpackage Administration
  */
 
+// don't load directly
+if ( !defined('ABSPATH') )
+	die('-1');
+
 /**
  * @var string
  */
@@ -13,6 +17,7 @@ $submitbutton_text = __('Edit Comment');
 $toprow_title = sprintf(__('Editing Comment # %s'), $comment->comment_ID);
 $form_action = 'editedcomment';
 $form_extra = "' />\n<input type='hidden' name='comment_ID' value='" . esc_attr($comment->comment_ID) . "' />\n<input type='hidden' name='comment_post_ID' value='" . esc_attr($comment->comment_post_ID);
+$comment->comment_author_email = esc_attr($comment->comment_author_email);
 ?>
 
 <form name="post" action="comment.php" method="post" id="post">
@@ -24,12 +29,6 @@ $form_extra = "' />\n<input type='hidden' name='comment_ID' value='" . esc_attr(
 <div id="poststuff" class="metabox-holder has-right-sidebar">
 <input type="hidden" name="user_ID" value="<?php echo (int) $user_ID ?>" />
 <input type="hidden" name="action" value='<?php echo $form_action . $form_extra ?>' />
-<?php
-
-$email = esc_attr( $comment->comment_author_email );
-$url = esc_attr( $comment->comment_author_url );
-// add_meta_box('submitdiv', __('Save'), 'comment_submit_meta_box', 'comment', 'side', 'core');
-?>
 
 <div id="side-info-column" class="inner-sidebar">
 <div id="submitdiv" class="stuffbox" >
@@ -69,7 +68,7 @@ $date = date_i18n( $datef, strtotime( $comment->comment_date ) );
 
 <div id="major-publishing-actions">
 <div id="delete-action">
-<?php echo "<a class='submitdelete deletion' href='" . wp_nonce_url("comment.php?action=deletecomment&amp;c=$comment->comment_ID&amp;_wp_original_http_referer=" . urlencode(wp_get_referer()), 'delete-comment_' . $comment->comment_ID) . "' onclick=\"if ( confirm('" . esc_js(__("You are about to delete this comment. \n  'Cancel' to stop, 'OK' to delete.")) . "') ){return true;}return false;\">" . __('Delete') . "</a>\n"; ?>
+<?php echo "<a class='submitdelete deletion' href='" . wp_nonce_url("comment.php?action=deletecomment&amp;c=$comment->comment_ID&amp;_wp_original_http_referer=" . urlencode(wp_get_referer()), 'delete-comment_' . $comment->comment_ID) . "'>" . __('Move to Trash') . "</a>\n"; ?>
 </div>
 <div id="publishing-action">
 <input type="submit" name="save" value="<?php esc_attr_e('Update Comment'); ?>" tabindex="4" class="button-primary" />
@@ -95,25 +94,24 @@ $date = date_i18n( $datef, strtotime( $comment->comment_date ) );
 <tr valign="top">
 	<td class="first">
 	<?php
-		if ( $email ) {
+		if ( $comment->comment_author_email ) {
 			printf( __( 'E-mail (%s):' ), get_comment_author_email_link( __( 'send e-mail' ), '', '' ) );
 		} else {
 			_e( 'E-mail:' );
 		}
 ?></td>
-	<td><input type="text" name="newcomment_author_email" size="30" value="<?php echo esc_attr($email); ?>" tabindex="2" id="email" /></td>
+	<td><input type="text" name="newcomment_author_email" size="30" value="<?php echo $comment->comment_author_email; ?>" tabindex="2" id="email" /></td>
 </tr>
 <tr valign="top">
 	<td class="first">
 	<?php
-		$url = get_comment_author_url();
-		if ( ! empty( $url ) && 'http://' != $url ) {
-			$link = "<a href='$url' rel='external nofollow' target='_blank'>" . __('visit site') . "</a>";
+		if ( ! empty( $comment->comment_author_url ) && 'http://' != $comment->comment_author_url ) {
+			$link = '<a href="' . $comment->comment_author_url . '" rel="external nofollow" target="_blank">' . __('visit site') . '</a>';
 			printf( __( 'URL (%s):' ), apply_filters('get_comment_author_link', $link ) );
 		} else {
 			_e( 'URL:' );
 		} ?></td>
-	<td><input type="text" id="newcomment_author_url" name="newcomment_author_url" size="30" class="code" value="<?php echo esc_attr($url); ?>" tabindex="3" /></td>
+	<td><input type="text" id="newcomment_author_url" name="newcomment_author_url" size="30" class="code" value="<?php echo esc_attr($comment->comment_author_url); ?>" tabindex="3" /></td>
 </tr>
 </tbody>
 </table>

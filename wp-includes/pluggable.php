@@ -1767,4 +1767,3 @@ function wp_text_diff( $left_string, $right_string, $args = null ) {
 }
 endif;
 
-?>

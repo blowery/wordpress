@@ -236,10 +236,15 @@ class WP_Http {
 		$r = wp_parse_args( $args, $defaults );
 		$r = apply_filters( 'http_request_args', $r, $url );
 
+		// Allow plugins to short-circuit the request
+		$pre = apply_filters( 'pre_http_request', false, $r, $url );
+		if ( false !== $pre )
+			return $pre;
+
 		$arrURL = parse_url($url);
 
 		if ( $this->block_request( $url ) )
-			return new WP_Error('http_request_failed', 'User has blocked requests through HTTP.');
+			return new WP_Error('http_request_failed', __('User has blocked requests through HTTP.'));
 
 		// Determine if this is a https call and pass that on to the transport functions
 		// so that we can blacklist the transports that do not support ssl verification
@@ -306,7 +311,7 @@ class WP_Http {
 				do_action( 'http_api_debug', $response, 'response', get_class($transport) );
 
 			if ( ! is_wp_error($response) )
-				return $response;
+				return apply_filters( 'http_response', $response, $r, $url );
 		}
 
 		return $response;
@@ -624,6 +629,11 @@ class WP_Http_Fsockopen {
 				$arrURL['port'] = 80;
 			}
 		}
+
+		//fsockopen has issues with 'localhost' with IPv6 with certain versions of PHP, It attempts to connect to ::1,
+		// which fails when the server is not setup for it. For compatibility, always connect to the IPv4 address.
+		if ( 'localhost' == strtolower($fsockopen_host) )
+			$fsockopen_host = '127.0.0.1';
 
 		// There are issues with the HTTPS and SSL protocols that cause errors that can be safely
 		// ignored and should be ignored.
@@ -1784,7 +1794,7 @@ class WP_Http_Encoding {
 	 * @return string|bool False on failure.
 	 */
 	function decompress( $compressed, $length = null ) {
-		$decompressed = gzinflate( $compressed );
+		$decompressed = WP_Http_Encoding::compatible_gzinflate( $compressed );
 
 		if ( false !== $decompressed )
 			return $decompressed;
@@ -1802,6 +1812,42 @@ class WP_Http_Encoding {
 		}
 
 		return $compressed;
+	}
+
+	/**
+	 * Decompression of deflated string while staying compatible with the majority of servers.
+	 *
+	 * Certain Servers will return deflated data with headers which PHP's gziniflate() 
+	 * function cannot handle out of the box. The following function lifted from
+	 * http://au2.php.net/manual/en/function.gzinflate.php#77336 will attempt to deflate 
+	 * the various return forms used. 
+	 *
+	 * @since 2.8.1
+	 * @link http://au2.php.net/manual/en/function.gzinflate.php#77336
+	 *
+	 * @param string $gzData String to decompress.
+	 * @return string|bool False on failure.
+	 */
+	function compatible_gzinflate($gzData) {
+		if ( substr($gzData, 0, 3) == "\x1f\x8b\x08" ) {
+			$i = 10;
+			$flg = ord( substr($gzData, 3, 1) );
+			if ( $flg > 0 ) {
+				if ( $flg & 4 ) {
+					list($xlen) = unpack('v', substr($gzData, $i, 2) );
+					$i = $i + 2 + $xlen;
+				}
+				if ( $flg & 8 )
+					$i = strpos($gzData, "\0", $i) + 1;
+				if ( $flg & 16 )
+					$i = strpos($gzData, "\0", $i) + 1;
+				if ( $flg & 2 )
+					$i = $i + 2;
+			}
+			return gzinflate( substr($gzData, $i, -8) );
+		} else {
+			return false;
+		}
 	}
 
 	/**
