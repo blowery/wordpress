@@ -6,6 +6,10 @@
  * @subpackage Administration
  */
 
+// don't load directly
+if ( !defined('ABSPATH') )
+	die('-1');
+
 /**
  * Post ID global.
  * @name $post_ID
@@ -216,7 +220,7 @@ endif; ?>
 <div id="delete-action">
 <?php
 if ( ( 'edit' == $action ) && current_user_can('delete_page', $post->ID) ) { ?>
-<a class="submitdelete deletion" href="<?php echo wp_nonce_url("page.php?action=delete&amp;post=$post->ID", 'delete-page_' . $post->ID); ?>" onclick="if ( confirm('<?php echo esc_js(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n  'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this page '%s'\n  'Cancel' to stop, 'OK' to delete."), $post->post_title )); ?>') ) {return true;}return false;"><?php _e('Delete'); ?></a>
+<a class="submitdelete deletion" href="<?php echo wp_nonce_url("page.php?action=trash&amp;post=$post->ID", 'trash-page_' . $post->ID); ?>"><?php _e('Move to Trash'); ?></a>
 <?php } ?>
 </div>
 

@@ -23,7 +23,7 @@ setCommentsList = function() {
 			if ( isNaN(n) ) return;
 			n = n + ( $('#' + settings.element).is('.' + settings.dimClass) ? 1 : -1 );
 			if ( n < 0 ) { n = 0; }
-			$('#awaiting-mod')[ 0 == n ? 'addClass' : 'removeClass' ]('count-0');
+			a.parents('#awaiting-mod')[ 0 == n ? 'addClass' : 'removeClass' ]('count-0');
 			n = n.toString();
 			if ( n.length > 3 )
 				n = n.substr(0, n.length-3)+' '+n.substr(-3);
@@ -37,9 +37,6 @@ setCommentsList = function() {
 		settings.data._per_page = perPageInput.val();
 		settings.data._page = pageInput.val();
 		settings.data._url = document.location.href;
-
-		if ( 'undefined' != showNotice && settings.data.action && settings.data.action == 'delete-comment' && !settings.data.spam )
-			return showNotice.warn() ? settings : false;
 
 		return settings;
 	};
@@ -77,7 +74,7 @@ setCommentsList = function() {
 				n = n + 1;
 			}
 			if ( n < 0 ) { n = 0; }
-			$('#awaiting-mod')[ 0 == n ? 'addClass' : 'removeClass' ]('count-0');
+			a.parents('#awaiting-mod')[ 0 == n ? 'addClass' : 'removeClass' ]('count-0');
 			n = n.toString();
 			if ( n.length > 3 )
 				n = n.substr(0, n.length-3)+' '+n.substr(-3);
@@ -91,7 +88,24 @@ setCommentsList = function() {
 			if ( isNaN(n) ) return;
 			if ( $(settings.target).parents( 'span.spam' ).size() ) { // we marked a comment as spam
 				n = n + 1;
-			} else if ( $('#' + settings.element).is('.spam') ) { // we approved or deleted a comment marked as spam
+			} else if ( $('#' + settings.element).is('.spam') ) { // we approved, deleted, or destroyed a comment marked as spam
+				n = n - 1;
+			}
+			if ( n < 0 ) { n = 0; }
+			n = n.toString();
+			if ( n.length > 3 )
+				n = n.substr(0, n.length-3)+' '+n.substr(-3);
+			a.html(n);
+		});
+
+		$('span.trash-count').each( function() {
+			var a = $(this), n;
+			n = a.html().replace(/[ ,.]+/g, '');
+			n = parseInt(n,10);
+			if ( isNaN(n) ) return;
+			if ( $(settings.target).parents( 'span.trash' ).size() ) { // we trashed a comment
+				n = n + 1;
+			} else if ( $('#' + settings.element).is('.trash') ) { // we deleted or untrashed a trash comment
 				n = n - 1;
 			}
 			if ( n < 0 ) { n = 0; }

@@ -37,8 +37,8 @@ if ( ! is_user_logged_in() ) {
 			$x->send();
 	}
 
-	if ( !empty( $_POST['action']) )
-		do_action( 'wp_ajax_nopriv_' . $_POST['action'] );
+	if ( !empty( $_REQUEST['action']) )
+		do_action( 'wp_ajax_nopriv_' . $_REQUEST['action'] );
 
 	die('-1');
 }
@@ -181,17 +181,26 @@ function _wp_ajax_delete_comment_response( $comment_id ) {
 $id = isset($_POST['id'])? (int) $_POST['id'] : 0;
 switch ( $action = $_POST['action'] ) :
 case 'delete-comment' : // On success, die with time() instead of 1
-	check_ajax_referer( "delete-comment_$id" );
 	if ( !$comment = get_comment( $id ) )
 		die( (string) time() );
 	if ( !current_user_can( 'edit_post', $comment->comment_post_ID ) )
 		die('-1');
 
-	if ( isset($_POST['spam']) && 1 == $_POST['spam'] ) {
+	if ( isset($_POST['trash']) && 1 == $_POST['trash'] ) {
+		check_ajax_referer( "trash-comment_$id" );
+		if ( 'trash' == wp_get_comment_status( $comment->comment_ID ) )
+			die( (string) time() );
+		$r = wp_trash_comment( $comment->comment_ID );
+	} elseif ( isset($_POST['untrash']) && 1 == $_POST['untrash'] ) {
+		check_ajax_referer( "untrash-comment_$id" );
+		$r = wp_untrash_comment( $comment->comment_ID );
+	} elseif ( isset($_POST['spam']) && 1 == $_POST['spam'] ) {
+		check_ajax_referer( "delete-comment_$id" );
 		if ( 'spam' == wp_get_comment_status( $comment->comment_ID ) )
 			die( (string) time() );
 		$r = wp_set_comment_status( $comment->comment_ID, 'spam' );
 	} else {
+		check_ajax_referer( "delete-comment_$id" );
 		$r = wp_delete_comment( $comment->comment_ID );
 	}
 	if ( $r ) // Decide if we need to send back '1' or a more complicated response including page links and comment counts
@@ -213,20 +222,18 @@ case 'delete-cat' :
 		die('0');
 	break;
 case 'delete-tag' :
-	check_ajax_referer( "delete-tag_$id" );
+	$tag_id = (int) $_POST['tag_ID'];
+	check_ajax_referer( "delete-tag_$tag_id" );
 	if ( !current_user_can( 'manage_categories' ) )
 		die('-1');
 
-	if ( !empty($_POST['taxonomy']) )
-		$taxonomy = $_POST['taxonomy'];
-	else
-		$taxonomy = 'post_tag';
+	$taxonomy = !empty($_POST['taxonomy']) ? $_POST['taxonomy'] : 'post_tag';
 
-	$tag = get_term( $id, $taxonomy );
+	$tag = get_term( $tag_id, $taxonomy );
 	if ( !$tag || is_wp_error( $tag ) )
 		die('1');
 
-	if ( wp_delete_term($id, $taxonomy))
+	if ( wp_delete_term($tag_id, $taxonomy))
 		die('1');
 	else
 		die('0');
@@ -527,43 +534,16 @@ case 'add-tag' : // From Manage->Tags
 	if ( !current_user_can( 'manage_categories' ) )
 		die('-1');
 
-	if ( '' === trim($_POST['name']) ) {
-		$x = new WP_Ajax_Response( array(
-			'what' => 'tag',
-			'id' => new WP_Error( 'name', __('You did not enter a tag name.') )
-		) );
-		$x->send();
+	$taxonomy = !empty($_POST['taxonomy']) ? $_POST['taxonomy'] : 'post_tag';
+	$tag = wp_insert_term($_POST['tag-name'], $taxonomy, $_POST );
+
+	if ( !$tag || is_wp_error($tag) || (!$tag = get_term( $tag['term_id'], $taxonomy )) ) {
+		echo '<div class="error"><p>' . __('An error has occured. Please reload the page and try again.') . '</p></div>';
+		exit;
 	}
 
-	if ( !empty($_POST['taxonomy']) )
-		$taxonomy = $_POST['taxonomy'];
-	else
-		$taxonomy = 'post_tag';
-
-	$tag = wp_insert_term($_POST['name'], $taxonomy, $_POST );
-
-	if ( is_wp_error($tag) ) {
-		$x = new WP_Ajax_Response( array(
-			'what' => 'tag',
-			'id' => $tag
-		) );
-		$x->send();
-	}
-
-	if ( !$tag || (!$tag = get_term( $tag['term_id'], $taxonomy )) )
-		die('0');
-
-	$tag_full_name = $tag->name;
-	$tag_full_name = esc_attr($tag_full_name);
-
-	$x = new WP_Ajax_Response( array(
-		'what' => 'tag',
-		'id' => $tag->term_id,
-		'position' => '-1',
-		'data' => _tag_row( $tag, '', $taxonomy ),
-		'supplemental' => array('name' => $tag_full_name, 'show-link' => sprintf(__( 'Tag <a href="#%s">%s</a> added' ), "tag-$tag->term_id", $tag_full_name))
-	) );
-	$x->send();
+	echo _tag_row( $tag, '', $taxonomy );
+	exit;
 	break;
 case 'get-tagcloud' :
 	if ( !current_user_can( 'edit_posts' ) )
@@ -602,8 +582,12 @@ case 'add-comment' :
 	if ( !current_user_can( 'edit_post', $id ) )
 		die('-1');
 	$search = isset($_POST['s']) ? $_POST['s'] : false;
-	$start = isset($_POST['page']) ? intval($_POST['page']) * 25 - 1: 24;
-	$status = isset($_POST['comment_status']) ? $_POST['comment_status'] : false;
+	$status = isset($_POST['comment_status']) ? $_POST['comment_status'] : 'all';
+	$per_page = isset($_POST['per_page']) ?  (int) $_POST['per_page'] + 8 : 28;
+	$start = isset($_POST['page']) ? ( intval($_POST['page']) * $per_page ) -1 : $per_page - 1;
+	if ( 1 > $start )
+		$start = 27;
+
 	$mode = isset($_POST['mode']) ? $_POST['mode'] : 'detail';
 	$p = isset($_POST['p']) ? $_POST['p'] : 0;
 	$comment_type = isset($_POST['comment_type']) ? $_POST['comment_type'] : '';
@@ -814,8 +798,10 @@ case 'add-meta' :
 			die('0'); // if meta doesn't exist
 		if ( !current_user_can( 'edit_post', $meta->post_id ) )
 			die('-1');
-		if ( !$u = update_meta( $mid, $key, $value ) )
-			die('0'); // We know meta exists; we also know it's unchanged (or DB error, in which case there are bigger problems).
+		if ( $meta->meta_value != stripslashes($value) ) {
+			if ( !$u = update_meta( $mid, $key, $value ) )
+				die('0'); // We know meta exists; we also know it's unchanged (or DB error, in which case there are bigger problems).
+		}
 
 		$key = stripslashes($key);
 		$value = stripslashes($value);
@@ -1142,10 +1128,7 @@ case 'inline-save-tax':
 
 			break;
 		case 'tag' :
-			if ( !empty($_POST['taxonomy']) )
-				$taxonomy = $_POST['taxonomy'];
-			else
-				$taxonomy = 'post_tag';
+			$taxonomy = !empty($_POST['taxonomy']) ? $_POST['taxonomy'] : 'post_tag';
 
 			$tag = get_term( $id, $taxonomy );
 			$_POST['description'] = $tag->description;
@@ -1156,7 +1139,7 @@ case 'inline-save-tax':
 				if ( !$tag || is_wp_error( $tag ) )
 					die( __('Tag not updated.') );
 
-				echo _tag_row($tag);
+				echo _tag_row($tag, '', $taxonomy);
 			} else {
 				die( __('Tag not updated.') );
 			}

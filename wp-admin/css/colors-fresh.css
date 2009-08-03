@@ -58,7 +58,8 @@ div.dashboard-widget,
 	border-color: #ccc;
 }
 
-#poststuff .inside label.spam {
+#poststuff .inside label.spam,
+#poststuff .inside label.deleted {
 	color: red;
 }
 
@@ -267,7 +268,7 @@ td.help {
 	color: #000;
 }
 
-.side-info h5, .bordertitle {
+.side-info h5 {
 	border-bottom-color: #dadada;
 }
 

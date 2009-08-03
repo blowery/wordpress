@@ -246,7 +246,8 @@ a.button {
 .tagchecklist,
 #col-container,
 #col-left,
-#col-right {
+#col-right,
+.fileedit-sub {
 	display: block;
 	zoom: 100%;
 }
@@ -335,6 +336,11 @@ table.ie-fixed {
 
 .widefat tbody th.check-column {
 	padding: 4px 0 22px;
+}
+
+.widefat {
+	empty-cells: show;
+	border-collapse: collapse;
 }
 
 .tablenav a.button-secondary {

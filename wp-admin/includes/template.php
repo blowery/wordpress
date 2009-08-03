@@ -376,7 +376,7 @@ function link_cat_row( $category, $name_override = false ) {
  *
  * Compares the first two arguments and if identical marks as checked
  *
- * @since 2.8
+ * @since 1.0
  *
  * @param any $checked One of the values to compare
  * @param any $current (true) The other value to compare if not just true
@@ -391,7 +391,7 @@ function checked( $checked, $current = true, $echo = true) {
  *
  * Compares the first two arguments and if identical marks as selected
  *
- * @since 2.8
+ * @since 1.0
  *
  * @param any selected One of the values to compare
  * @param any $current (true) The other value to compare if not just true
@@ -415,7 +415,7 @@ function selected( $selected, $current = true, $echo = true) {
  * @param string $type The type of checked|selected we are doing.
  */
 function __checked_selected_helper( $helper, $current, $echo, $type) {
-	if ( $helper == $current)
+	if ( (string) $helper === (string) $current)
 		$result = " $type='$type'";
 	else
 		$result = '';
@@ -663,7 +663,7 @@ function _tag_row( $tag, $class = '', $taxonomy = 'post_tag' ) {
 					$actions = array();
 					$actions['edit'] = '<a href="' . $edit_link . '">' . __('Edit') . '</a>';
 					$actions['inline hide-if-no-js'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
-					$actions['delete'] = "<a class='delete:the-list:tag-$tag->term_id submitdelete' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "'>" . __('Delete') . "</a>";
+					$actions['delete'] = "<a class='delete-tag' href='" . wp_nonce_url("edit-tags.php?action=delete&amp;taxonomy=$taxonomy&amp;tag_ID=$tag->term_id", 'delete-tag_' . $tag->term_id) . "'>" . __('Delete') . "</a>";
 					$actions = apply_filters('tag_row_actions', $actions, $tag);
 					$action_count = count($actions);
 					$i = 0;
@@ -730,7 +730,7 @@ function tag_rows( $page = 1, $pagesize = 20, $searchterms = '', $taxonomy = 'po
 	$out = '';
 	$count = 0;
 	foreach( $tags as $tag )
-		$out .= _tag_row( $tag, ++$count % 2 ? ' class="iedit alternate"' : ' class="iedit"', $taxonomy );
+		$out .= _tag_row( $tag, ++$count % 2 ? ' class="alternate"' : '', $taxonomy );
 
 	// filter and send to screen
 	echo $out;
@@ -753,7 +753,8 @@ function wp_manage_posts_columns() {
 	$posts_columns['author'] = __('Author');
 	$posts_columns['categories'] = __('Categories');
 	$posts_columns['tags'] = __('Tags');
-	if ( !isset($_GET['post_status']) || !in_array($_GET['post_status'], array('pending', 'draft', 'future')) )
+	$post_status = !empty($_REQUEST['post_status']) ? $_REQUEST['post_status'] : 'all';
+	if ( !in_array( $post_status, array('pending', 'draft', 'future') ) )
 		$posts_columns['comments'] = '<div class="vers"><img alt="Comments" src="images/comment-grey-bubble.png" /></div>';
 	$posts_columns['date'] = __('Date');
 	$posts_columns = apply_filters('manage_posts_columns', $posts_columns);
@@ -800,10 +801,8 @@ function wp_manage_pages_columns() {
 	$posts_columns['cb'] = '<input type="checkbox" />';
 	$posts_columns['title'] = __('Title');
 	$posts_columns['author'] = __('Author');
-	$post_status = 'all';
-	if ( !empty($_GET['post_status']) )
-		$post_status = $_GET['post_status'];
-	if ( !in_array($post_status, array('pending', 'draft', 'future')) )
+	$post_status = !empty($_REQUEST['post_status']) ? $_REQUEST['post_status'] : 'all';
+	if ( !in_array( $post_status, array('pending', 'draft', 'future') ) )
 		$posts_columns['comments'] = '<div class="vers"><img alt="" src="images/comment-grey-bubble.png" /></div>';
 	$posts_columns['date'] = __('Date');
 	$posts_columns = apply_filters('manage_pages_columns', $posts_columns);
@@ -1055,21 +1054,18 @@ function inline_edit_row( $type ) {
 
 <?php endif; // $bulk
 
-		ob_start();
 		$authors = get_editable_user_ids( $current_user->id, true, $type ); // TODO: ROLE SYSTEM
 		if ( $authors && count( $authors ) > 1 ) :
-			$users_opt = array('include' => $authors, 'name' => 'post_author', 'class'=> 'authors', 'multi' => 1);
+			$users_opt = array('include' => $authors, 'name' => 'post_author', 'class'=> 'authors', 'multi' => 1, 'echo' => 0);
 			if ( $bulk )
 				$users_opt['show_option_none'] = __('- No Change -');
-?>
-		<label>
-			<span class="title"><?php _e( 'Author' ); ?></span>
-			<?php wp_dropdown_users( $users_opt ); ?>
-		</label>
 
-<?php
+		$authors_dropdown  = '<label>';
+		$authors_dropdown .= '<span class="title">' . __( 'Author' ) . '</span>';
+		$authors_dropdown .= wp_dropdown_users( $users_opt );
+		$authors_dropdown .= '</label>';
+
 		endif; // authors
-		$authors_dropdown = ob_get_clean();
 ?>
 
 <?php if ( !$bulk ) : echo $authors_dropdown; ?>
@@ -1365,7 +1361,7 @@ function post_rows( $posts = array() ) {
  * @param unknown_type $mode
  */
 function _post_row($a_post, $pending_comments, $mode) {
-	global $post;
+	global $post, $current_user;
 	static $rowclass;
 
 	$global_post = $post;
@@ -1373,7 +1369,6 @@ function _post_row($a_post, $pending_comments, $mode) {
 	setup_postdata($post);
 
 	$rowclass = 'alternate' == $rowclass ? '' : 'alternate';
-	global $current_user;
 	$post_owner = ( $current_user->ID == $post->post_author ? 'self' : 'other' );
 	$edit_link = get_edit_post_link( $post->ID );
 	$title = _draft_or_post_title();
@@ -1438,24 +1433,29 @@ function _post_row($a_post, $pending_comments, $mode) {
 		case 'title':
 			$attributes = 'class="post-title column-title"' . $style;
 		?>
-		<td <?php echo $attributes ?>><strong><?php if ( current_user_can( 'edit_post', $post->ID ) ) { ?><a class="row-title" href="<?php echo $edit_link; ?>" title="<?php echo esc_attr(sprintf(__('Edit &#8220;%s&#8221;'), $title)); ?>"><?php echo $title ?></a><?php } else { echo $title; }; _post_states($post); ?></strong>
+		<td <?php echo $attributes ?>><strong><?php if ( current_user_can('edit_post', $post->ID) && $post->post_status != 'trash' ) { ?><a class="row-title" href="<?php echo $edit_link; ?>" title="<?php echo esc_attr(sprintf(__('Edit &#8220;%s&#8221;'), $title)); ?>"><?php echo $title ?></a><?php } else { echo $title; }; _post_states($post); ?></strong>
 		<?php
 			if ( 'excerpt' == $mode )
 				the_excerpt();
 
 			$actions = array();
-			if ( current_user_can('edit_post', $post->ID) ) {
-				$actions['edit'] = '<a href="' . get_edit_post_link($post->ID, true) . '" title="' . esc_attr(__('Edit this post')) . '">' . __('Edit') . '</a>';
-				$actions['inline hide-if-no-js'] = '<a href="#" class="editinline" title="' . esc_attr(__('Edit this post inline')) . '">' . __('Quick&nbsp;Edit') . '</a>';
-			}
-			if ( current_user_can('delete_post', $post->ID) ) {
-				$actions['delete'] = "<a class='submitdelete' title='" . esc_attr(__('Delete this post')) . "' href='" . wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID) . "' onclick=\"if ( confirm('" . esc_js(sprintf( ('draft' == $post->post_status) ? __("You are about to delete this draft '%s'\n 'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this post '%s'\n 'Cancel' to stop, 'OK' to delete."), $post->post_title )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
-			}
-			if ( in_array($post->post_status, array('pending', 'draft')) ) {
-				if ( current_user_can('edit_post', $post->ID) )
-					$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('Preview') . '</a>';
+			if ( 'trash' == $post->post_status && current_user_can('delete_post', $post->ID) ) {
+				$actions['untrash'] = "<a title='" . esc_attr(__('Remove this post from the Trash')) . "' href='" . wp_nonce_url("post.php?action=untrash&amp;post=$post->ID", 'untrash-post_' . $post->ID) . "'>" . __('Restore') . "</a>";
+				$actions['delete'] = "<a class='submitdelete' title='" . esc_attr(__('Delete this post permanently')) . "' href='" . wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID) . "'>" . __('Delete Permanently') . "</a>";
 			} else {
-				$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . esc_attr(sprintf(__('View &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('View') . '</a>';
+				if ( current_user_can('edit_post', $post->ID) ) {
+					$actions['edit'] = '<a href="' . get_edit_post_link($post->ID, true) . '" title="' . esc_attr(__('Edit this post')) . '">' . __('Edit') . '</a>';
+					$actions['inline hide-if-no-js'] = '<a href="#" class="editinline" title="' . esc_attr(__('Edit this post inline')) . '">' . __('Quick&nbsp;Edit') . '</a>';
+				}
+				if ( current_user_can('delete_post', $post->ID) ) {
+					$actions['trash'] = "<a class='submitdelete' title='" . esc_attr(__('Move this post to the Trash')) . "' href='" . wp_nonce_url("post.php?action=trash&amp;post=$post->ID", 'trash-post_' . $post->ID) . "'>" . __('Trash') . "</a>";
+				}
+				if ( in_array($post->post_status, array('pending', 'draft')) ) {
+					if ( current_user_can('edit_post', $post->ID) )
+						$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('Preview') . '</a>';
+				} else {
+					$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . esc_attr(sprintf(__('View &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('View') . '</a>';
+				}
 			}
 			$actions = apply_filters('post_row_actions', $actions, $post);
 			$action_count = count($actions);
@@ -1656,21 +1656,26 @@ foreach ($posts_columns as $column_name=>$column_display_name) {
 		$attributes = 'class="post-title page-title column-title"' . $style;
 		$edit_link = get_edit_post_link( $page->ID );
 		?>
-		<td <?php echo $attributes ?>><strong><?php if ( current_user_can( 'edit_page', $page->ID ) ) { ?><a class="row-title" href="<?php echo $edit_link; ?>" title="<?php echo esc_attr(sprintf(__('Edit &#8220;%s&#8221;'), $title)); ?>"><?php echo $pad; echo $title ?></a><?php } else { echo $pad; echo $title; }; _post_states($page); echo isset($parent_name) ? ' | ' . __('Parent Page: ') . esc_html($parent_name) : ''; ?></strong>
+		<td <?php echo $attributes ?>><strong><?php if ( current_user_can('edit_page', $page->ID) && $post->post_status != 'trash' ) { ?><a class="row-title" href="<?php echo $edit_link; ?>" title="<?php echo esc_attr(sprintf(__('Edit &#8220;%s&#8221;'), $title)); ?>"><?php echo $pad; echo $title ?></a><?php } else { echo $pad; echo $title; }; _post_states($page); echo isset($parent_name) ? ' | ' . __('Parent Page: ') . esc_html($parent_name) : ''; ?></strong>
 		<?php
 		$actions = array();
-		if ( current_user_can('edit_page', $page->ID) ) {
-			$actions['edit'] = '<a href="' . $edit_link . '" title="' . esc_attr(__('Edit this page')) . '">' . __('Edit') . '</a>';
-			$actions['inline'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
-		}
-		if ( current_user_can('delete_page', $page->ID) ) {
-			$actions['delete'] = "<a class='submitdelete' title='" . esc_attr(__('Delete this page')) . "' href='" . wp_nonce_url("page.php?action=delete&amp;post=$page->ID", 'delete-page_' . $page->ID) . "' onclick=\"if ( confirm('" . esc_js(sprintf( ('draft' == $page->post_status) ? __("You are about to delete this draft '%s'\n 'Cancel' to stop, 'OK' to delete.") : __("You are about to delete this page '%s'\n 'Cancel' to stop, 'OK' to delete."), $page->post_title )) . "') ) { return true;}return false;\">" . __('Delete') . "</a>";
-		}
-		if ( in_array($post->post_status, array('pending', 'draft')) ) {
-			if ( current_user_can('edit_page', $page->ID) )
-				$actions['view'] = '<a href="' . get_permalink($page->ID) . '" title="' . esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('Preview') . '</a>';
+		if ($post->post_status == 'trash' && current_user_can('delete_page', $page->ID)) {
+			$actions['untrash'] = "<a title='" . esc_attr(__('Remove this page from the Trash')) . "' href='" . wp_nonce_url("page.php?action=untrash&amp;post=$page->ID", 'untrash-page_' . $page->ID) . "'>" . __('Restore') . "</a>";
+			$actions['delete'] = "<a class='submitdelete' title='" . esc_attr(__('Delete this page permanently')) . "' href='" . wp_nonce_url("page.php?action=delete&amp;post=$page->ID", 'delete-page_' . $page->ID) . "'>" . __('Delete Permanently') . "</a>";
 		} else {
-			$actions['view'] = '<a href="' . get_permalink($page->ID) . '" title="' . esc_attr(sprintf(__('View &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('View') . '</a>';
+			if ( current_user_can('edit_page', $page->ID) ) {
+				$actions['edit'] = '<a href="' . $edit_link . '" title="' . esc_attr(__('Edit this page')) . '">' . __('Edit') . '</a>';
+				$actions['inline'] = '<a href="#" class="editinline">' . __('Quick&nbsp;Edit') . '</a>';
+			}
+			if ( current_user_can('delete_page', $page->ID) ) {
+				$actions['trash'] = "<a class='submitdelete' title='" . esc_attr(__('Move this page to the Trash')) . "' href='" . wp_nonce_url("page.php?action=trash&amp;post=$page->ID", 'trash-page_' . $page->ID) . "'>" . __('Trash') . "</a>";
+			}
+			if ( in_array($post->post_status, array('pending', 'draft')) ) {
+				if ( current_user_can('edit_page', $page->ID) )
+					$actions['view'] = '<a href="' . get_permalink($page->ID) . '" title="' . esc_attr(sprintf(__('Preview &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('Preview') . '</a>';
+			} else {
+				$actions['view'] = '<a href="' . get_permalink($page->ID) . '" title="' . esc_attr(sprintf(__('View &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('View') . '</a>';
+			}
 		}
 		$actions = apply_filters('page_row_actions', $actions, $page);
 		$action_count = count($actions);
@@ -1986,13 +1991,13 @@ function user_row( $user_object, $style = '', $role = '' ) {
  *
  * @since unknown
  *
- * @param unknown_type $status
- * @param unknown_type $s
- * @param unknown_type $start
- * @param unknown_type $num
- * @param unknown_type $post
- * @param unknown_type $type
- * @return unknown
+ * @param string $status Comment status (approved, spam, trash, etc)
+ * @param string $s Term to search for
+ * @param int $start Offset to start at for pagination
+ * @param int $num Maximum number of comments to return
+ * @param int $post Post ID or 0 to return all comments
+ * @param string $type Comment type (comment, trackback, pingback, etc)
+ * @return array [0] contains the comments and [1] contains the total number of comments that match (ignoring $start and $num)
  */
 function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0, $type = '' ) {
 	global $wpdb;
@@ -2004,61 +2009,63 @@ function _wp_get_comment_list( $status = '', $s = false, $start, $num, $post = 0
 	$index = '';
 
 	if ( 'moderated' == $status ) {
-		$approved = "comment_approved = '0'";
+		$approved = "c.comment_approved = '0'";
 		$total = $count->moderated;
 	} elseif ( 'approved' == $status ) {
-		$approved = "comment_approved = '1'";
+		$approved = "c.comment_approved = '1'";
 		$total = $count->approved;
 	} elseif ( 'spam' == $status ) {
-		$approved = "comment_approved = 'spam'";
+		$approved = "c.comment_approved = 'spam'";
 		$total = $count->spam;
+	} elseif ( 'trash' == $status ) {
+		$approved = "c.comment_approved = 'trash'";
+		$total = $count->trash;
 	} else {
-		$approved = "( comment_approved = '0' OR comment_approved = '1' )";
+		$approved = "( c.comment_approved = '0' OR c.comment_approved = '1' )";
 		$total = $count->moderated + $count->approved;
-		$index = 'USE INDEX (comment_date_gmt)';
+		$index = 'USE INDEX (c.comment_date_gmt)';
 	}
 
 	if ( $post ) {
 		$total = '';
-		$post = " AND comment_post_ID = '$post'";
-		$orderby = "ORDER BY comment_date_gmt ASC LIMIT $start, $num";
+		$post = " AND c.comment_post_ID = '$post'";
+		$orderby = "ORDER BY c.comment_date_gmt ASC LIMIT $start, $num";
 	} else {
 		$post = '';
-		$orderby = "ORDER BY comment_date_gmt DESC LIMIT $start, $num";
+		$orderby = "ORDER BY c.comment_date_gmt DESC LIMIT $start, $num";
 	}
 
 	if ( 'comment' == $type )
-		$typesql = "AND comment_type = ''";
-	elseif ( 'pingback' == $type )
-		$typesql = "AND comment_type = 'pingback'";
-	elseif ( 'trackback' == $type )
-		$typesql = "AND comment_type = 'trackback'";
+		$typesql = "AND c.comment_type = ''";
 	elseif ( 'pings' == $type )
-		$typesql = "AND ( comment_type = 'pingback' OR comment_type = 'trackback' )";
+		$typesql = "AND ( c.comment_type = 'pingback' OR c.comment_type = 'trackback' )";
+	elseif ( !empty($type) )
+		$typesql = $wpdb->prepare("AND c.comment_type = %s", $type);
 	else
 		$typesql = '';
 
 	if ( !empty($type) )
 		$total = '';
 
+	$query = "FROM $wpdb->comments c LEFT JOIN $wpdb->posts p ON c.comment_post_ID = p.ID WHERE p.post_status != 'trash' ";
 	if ( $s ) {
 		$total = '';
 		$s = $wpdb->escape($s);
-		$query = "FROM $wpdb->comments WHERE
-			(comment_author LIKE '%$s%' OR
-			comment_author_email LIKE '%$s%' OR
-			comment_author_url LIKE ('%$s%') OR
-			comment_author_IP LIKE ('%$s%') OR
-			comment_content LIKE ('%$s%') ) AND
+		$query .= "AND
+			(c.comment_author LIKE '%$s%' OR
+			c.comment_author_email LIKE '%$s%' OR
+			c.comment_author_url LIKE ('%$s%') OR
+			c.comment_author_IP LIKE ('%$s%') OR
+			c.comment_content LIKE ('%$s%') ) AND
 			$approved
 			$typesql";
 	} else {
-		$query = "FROM $wpdb->comments $index WHERE $approved $post $typesql";
+		$query .= "AND $approved $post $typesql";
 	}
-
+	
 	$comments = $wpdb->get_results("SELECT * $query $orderby");
 	if ( '' === $total )
-		$total = $wpdb->get_var("SELECT COUNT(comment_ID) $query");
+		$total = $wpdb->get_var("SELECT COUNT(c.comment_ID) $query");
 
 	update_comment_cache($comments);
 
@@ -2085,9 +2092,7 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 	$author_url = get_comment_author_url();
 	if ( 'http://' == $author_url )
 		$author_url = '';
-	$author_url_display = $author_url;
-	$author_url_display = str_replace('http://www.', '', $author_url_display);
-	$author_url_display = str_replace('http://', '', $author_url_display);
+	$author_url_display = preg_replace('|http://(www\.)?|i', '', $author_url);
 	if ( strlen($author_url_display) > 50 )
 		$author_url_display = substr($author_url_display, 0, 49) . '...';
 
@@ -2101,6 +2106,8 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 	$approve_url = esc_url( wp_nonce_url( "comment.php?action=approvecomment&p=$post->ID&c=$comment->comment_ID", "approve-comment_$comment->comment_ID" ) );
 	$unapprove_url = esc_url( wp_nonce_url( "comment.php?action=unapprovecomment&p=$post->ID&c=$comment->comment_ID", "unapprove-comment_$comment->comment_ID" ) );
 	$spam_url = esc_url( wp_nonce_url( "comment.php?action=deletecomment&dt=spam&p=$post->ID&c=$comment->comment_ID", "delete-comment_$comment->comment_ID" ) );
+	$trash_url = esc_url( wp_nonce_url( "comment.php?action=trashcomment&p=$post->ID&c=$comment->comment_ID", "trash-comment_$comment->comment_ID" ) );
+	$untrash_url = esc_url( wp_nonce_url( "comment.php?action=untrashcomment&p=$post->ID&c=$comment->comment_ID", "untrash-comment_$comment->comment_ID" ) );
 
 	echo "<tr id='comment-$comment->comment_ID' class='$the_comment_status'>";
 	$columns = get_column_headers('edit-comments');
@@ -2126,36 +2133,50 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 				echo '<div id="submitted-on">';
 				printf(__('Submitted on <a href="%1$s">%2$s at %3$s</a>'), get_comment_link($comment->comment_ID), get_comment_date(__('Y/m/d')), get_comment_date(__('g:ia')));
 				echo '</div>';
-				comment_text(); ?>
+				comment_text();
+				if ( $user_can ) { ?>
 				<div id="inline-<?php echo $comment->comment_ID; ?>" class="hidden">
-				<textarea class="comment" rows="3" cols="10"><?php echo $comment->comment_content; ?></textarea>
-				<div class="author-email"><?php if ( $user_can ) echo esc_attr( $comment->comment_author_email ); ?></div>
-				<div class="author"><?php if ( $user_can ) echo esc_attr( $comment->comment_author ); ?></div>
+				<textarea class="comment" rows="1" cols="1"><?php echo htmlspecialchars($comment->comment_content, ENT_QUOTES); ?></textarea>
+				<div class="author-email"><?php echo esc_attr( $comment->comment_author_email ); ?></div>
+				<div class="author"><?php echo esc_attr( $comment->comment_author ); ?></div>
 				<div class="author-url"><?php echo esc_attr( $comment->comment_author_url ); ?></div>
 				<div class="comment_status"><?php echo $comment->comment_approved; ?></div>
 				</div>
 				<?php
+				}
 				$actions = array();
 
 				if ( $user_can ) {
-					$actions['approve'] = "<a href='$approve_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=approved vim-a' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
-					$actions['unapprove'] = "<a href='$unapprove_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=unapproved vim-u' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
-					if ( $comment_status && 'all' != $comment_status ) { // not looking at all comments
-						if ( 'approved' == $the_comment_status ) {
-							$actions['unapprove'] = "<a href='$unapprove_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=unapproved vim-u vim-destructive' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
-							unset($actions['approve']);
-						} else {
-							$actions['approve'] = "<a href='$approve_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=approved vim-a vim-destructive' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
-							unset($actions['unapprove']);
+					if ( 'trash' == $the_comment_status ) {
+						$actions['untrash'] = "<a href='$untrash_url' class='delete:the-comment-list:comment-$comment->comment_ID::untrash=1 vim-t vim-destructive''>" . __( 'Restore' ) . '</a>';
+						$actions['delete'] = "<a href='$delete_url' class='delete:the-comment-list:comment-$comment->comment_ID delete vim-d vim-destructive'>" . __('Delete Permanently') . '</a>';
+					} else {
+						$actions['approve'] = "<a href='$approve_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=approved vim-a' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
+						$actions['unapprove'] = "<a href='$unapprove_url' class='dim:the-comment-list:comment-$comment->comment_ID:unapproved:e7e7d3:e7e7d3:new=unapproved vim-u' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
+
+						if ( $comment_status && 'all' != $comment_status ) { // not looking at all comments
+							if ( 'approved' == $the_comment_status ) {
+								$actions['unapprove'] = "<a href='$unapprove_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=unapproved vim-u vim-destructive' title='" . __( 'Unapprove this comment' ) . "'>" . __( 'Unapprove' ) . '</a>';
+								unset($actions['approve']);
+							} else {
+								$actions['approve'] = "<a href='$approve_url' class='delete:the-comment-list:comment-$comment->comment_ID:e7e7d3:action=dim-comment&amp;new=approved vim-a vim-destructive' title='" . __( 'Approve this comment' ) . "'>" . __( 'Approve' ) . '</a>';
+								unset($actions['unapprove']);
+							}
 						}
+
+						if ( 'spam' == $the_comment_status ) {
+							$actions['delete'] = "<a href='$delete_url' class='delete:the-comment-list:comment-$comment->comment_ID delete vim-d vim-destructive'>" . __('Delete Permanently') . '</a>';
+						} else {
+							$actions['spam'] = "<a href='$spam_url' class='delete:the-comment-list:comment-$comment->comment_ID::spam=1 vim-s vim-destructive' title='" . __( 'Mark this comment as spam' ) . "'>" . /* translators: mark as spam link */ _x( 'Spam', 'verb' ) . '</a>';
+							$actions['trash'] = "<a href='$trash_url' class='delete:the-comment-list:comment-$comment->comment_ID::trash=1 delete vim-t vim-destructive'>" . __('Trash') . '</a>';
+						}
+
+						$actions['edit'] = "<a href='comment.php?action=editcomment&amp;c={$comment->comment_ID}' title='" . __('Edit comment') . "'>". __('Edit') . '</a>';
+						$actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
+
+						if ( 'spam' != $the_comment_status )
+							$actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\');return false;" class="vim-r" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a>';
 					}
-					if ( 'spam' != $the_comment_status )
-						$actions['spam'] = "<a href='$spam_url' class='delete:the-comment-list:comment-$comment->comment_ID::spam=1 vim-s vim-destructive' title='" . __( 'Mark this comment as spam' ) . "'>" . /* translators: mark as spam link */ _x( 'Spam', 'verb' ) . '</a>';
-					$actions['delete'] = "<a href='$delete_url' class='delete:the-comment-list:comment-$comment->comment_ID delete vim-d vim-destructive'>" . __('Delete') . '</a>';
-					$actions['edit'] = "<a href='comment.php?action=editcomment&amp;c={$comment->comment_ID}' title='" . __('Edit comment') . "'>". __('Edit') . '</a>';
-					$actions['quickedit'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\',\'edit\');return false;" class="vim-q" title="'.__('Quick Edit').'" href="#">' . __('Quick&nbsp;Edit') . '</a>';
-					if ( 'spam' != $the_comment_status )
-						$actions['reply'] = '<a onclick="commentReply.open(\''.$comment->comment_ID.'\',\''.$post->ID.'\');return false;" class="vim-r" title="'.__('Reply to this comment').'" href="#">' . __('Reply') . '</a>';
 
 					$actions = apply_filters( 'comment_row_actions', $actions, $comment );
 
@@ -2168,6 +2189,15 @@ function _wp_comment_row( $comment_id, $mode, $comment_status, $checkbox = true,
 						// Reply and quickedit need a hide-if-no-js span when not added with ajax
 						if ( ('reply' == $action || 'quickedit' == $action) && ! $from_ajax )
 							$action .= ' hide-if-no-js';
+						elseif ($action == 'untrash' && $the_comment_status == 'trash') {
+							$trash_meta = get_option('wp_trash_meta');
+							if (is_array($trash_meta) && isset($trash_meta['comments'][$comment_id]['status'])) {
+								if ($trash_meta['comments'][$comment_id]['status'] == '1')
+									$action .= ' approve';
+								else
+									$action .= ' unapprove';
+							}
+						}
 
 						echo "<span class='$action'>$sep$link</span>";
 					}

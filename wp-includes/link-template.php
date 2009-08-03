@@ -768,8 +768,7 @@ function get_edit_comment_link( $comment_id = 0 ) {
 function edit_comment_link( $link = 'Edit This', $before = '', $after = '' ) {
 	global $comment, $post;
 
-	if ( $post->post_type == 'attachment' ) {
-	} elseif ( $post->post_type == 'page' ) {
+	if ( $post->post_type == 'page' ) {
 		if ( !current_user_can( 'edit_page', $post->ID ) )
 			return;
 	} else {
@@ -1693,7 +1692,7 @@ function site_url($path = '', $scheme = null) {
 	// should the list of allowed schemes be maintained elsewhere?
 	$orig_scheme = $scheme;
 	if ( !in_array($scheme, array('http', 'https')) ) {
-		if ( ('login_post' == $scheme) && ( force_ssl_login() || force_ssl_admin() ) )
+		if ( ( 'login_post' == $scheme || 'rpc' == $scheme ) && ( force_ssl_login() || force_ssl_admin() ) )
 			$scheme = 'https';
 		elseif ( ('login' == $scheme) && ( force_ssl_admin() ) )
 			$scheme = 'https';
