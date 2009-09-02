@@ -22,8 +22,7 @@ if (empty($theme)) {
 	$theme = get_current_theme();
 } else {
 	$theme = stripslashes($theme);
- }
-
+}
 
 if ( ! isset($themes[$theme]) )
 	wp_die(__('The requested theme does not exist.'));
@@ -76,9 +75,6 @@ default:
 
 	if ( !current_user_can('edit_themes') )
 		wp_die('<p>'.__('You do not have sufficient permissions to edit themes for this blog.').'</p>');
-
-	if ( use_codepress() )
-		wp_enqueue_script( 'codepress' );
 
 	require_once('admin-header.php');
 
@@ -141,8 +137,8 @@ $desc_header = ( $description != $file_show ) ? "<strong>$description</strong> (
 </div>
 <br class="clear" />
 </div>
-<br class="clear" />
-	<div id="templateside">
+
+<div id="templateside">
 	<h3><?php _e("Theme Files"); ?></h3>
 
 <?php
@@ -194,8 +190,9 @@ if ($allowed_files) :
 	</ul>
 <?php endif; ?>
 </div>
+
 <?php if (!$error) { ?>
-	<form name="template" id="template" action="theme-editor.php" method="post">
+<form name="template" id="template" action="theme-editor.php" method="post">
 	<?php wp_nonce_field('edit-theme_' . $file . $theme) ?>
 		 <div><textarea cols="70" rows="25" name="newcontent" id="newcontent" tabindex="1" class="codepress <?php echo $codepress_lang ?>"><?php echo $content ?></textarea>
 		 <input type="hidden" name="action" value="update" />
@@ -221,7 +218,7 @@ if ($allowed_files) :
 <p><em><?php _e('You need to make this file writable before you can save your changes. See <a href="http://codex.wordpress.org/Changing_File_Permissions">the Codex</a> for more information.'); ?></em></p>
 <?php endif; ?>
 		</div>
-	</form>
+</form>
 <?php
 	} else {
 		echo '<div class="error"><p>' . __('Oops, no such file exists! Double check the name and try again, merci.') . '</p></div>';
