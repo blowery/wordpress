@@ -3,13 +3,18 @@
 Plugin Name: Akismet
 Plugin URI: http://akismet.com/
 Description: Akismet checks your comments against the Akismet web service to see if they look like spam or not. You need a <a href="http://wordpress.com/api-keys/">WordPress.com API key</a> to use it. You can review the spam it catches under "Comments." To show off your Akismet stats just put <code>&lt;?php akismet_counter(); ?&gt;</code> in your template. See also: <a href="http://wordpress.org/extend/plugins/stats/">WP Stats plugin</a>.
-Version: 2.2.5
+Version: 2.2.6
 Author: Matt Mullenweg
 Author URI: http://ma.tt/
 */
 
+define('AKISMET_VERSION', '2.2.6');
+
 // If you hardcode a WP.com API key here, all key config screens will be hidden
-$wpcom_api_key = '';
+if ( defined('WPCOM_API_KEY') )
+	$wpcom_api_key = constant('WPCOM_API_KEY');
+else
+	$wpcom_api_key = '';
 
 function akismet_init() {
 	global $wpcom_api_key, $akismet_api_host, $akismet_api_port;
@@ -364,12 +369,14 @@ function akismet_get_host($host) {
 // Returns array with headers in $response[0] and body in $response[1]
 function akismet_http_post($request, $host, $path, $port = 80, $ip=null) {
 	global $wp_version;
+	
+	$akismet_version = constant('AKISMET_VERSION');
 
 	$http_request  = "POST $path HTTP/1.0\r\n";
 	$http_request .= "Host: $host\r\n";
 	$http_request .= "Content-Type: application/x-www-form-urlencoded; charset=" . get_option('blog_charset') . "\r\n";
 	$http_request .= "Content-Length: " . strlen($request) . "\r\n";
-	$http_request .= "User-Agent: WordPress/$wp_version | Akismet/2.0\r\n";
+	$http_request .= "User-Agent: WordPress/$wp_version | Akismet/$akismet_version\r\n";
 	$http_request .= "\r\n";
 	$http_request .= $request;
 	
@@ -407,7 +414,7 @@ function akismet_auto_check_comment( $comment ) {
 	$ignore = array( 'HTTP_COOKIE' );
 
 	foreach ( $_SERVER as $key => $value )
-		if ( !in_array( $key, $ignore ) )
+		if ( !in_array( $key, $ignore ) && is_string($value) )
 			$comment["$key"] = $value;
 
 	$query_string = '';

@@ -1,0 +1,24 @@
+body {
+  font-size: 8pt;
+}
+
+#doc2 {
+  width: auto;
+  margin: 0 5em;
+}
+
+#inner {
+  padding: 0;
+  border: none;
+  background: transparent;
+  margin: 0 auto;
+}
+
+#hd h1 {
+  font-size: 32pt;
+}
+
+a {
+  color: #000;
+  text-decoration: none;
+}
