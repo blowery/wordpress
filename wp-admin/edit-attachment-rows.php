@@ -222,4 +222,3 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 <?php
 } // end if ( have_posts() )
 ?>
-
