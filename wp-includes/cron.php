@@ -8,7 +8,7 @@
 /**
  * Schedules a hook to run only once.
  *
- * Schedules a hook which will be executed once by the Wordpress actions core at
+ * Schedules a hook which will be executed once by the WordPress actions core at
  * a time which you specify. The action will fire off when someone visits your
  * WordPress site, if the schedule time has passed.
  *
@@ -393,7 +393,3 @@ function _upgrade_cron_array($cron) {
 function check_server_timer( $local_time ) {
 	return true;
 }
-
-add_action( 'wp_scheduled_delete', 'wp_scheduled_delete' );
-if ( !wp_next_scheduled('wp_scheduled_delete') && !defined('WP_INSTALLING') )
-	wp_schedule_event(time(), 'daily', 'wp_scheduled_delete');

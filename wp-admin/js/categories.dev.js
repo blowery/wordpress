@@ -6,7 +6,7 @@ jQuery(document).ready(function($) {
 	addAfter = function( r, settings ) {
 		var name, id;
 
-		name = $("<span>" + $('name', r).text() + "</span>").html();
+		name = $("<span>" + $('name', r).text() + "</span>").text();
 		id = $('cat', r).attr('id');
 		options[options.length] = new Option(name, id);
 	}
@@ -30,5 +30,5 @@ jQuery(document).ready(function($) {
 	else
 		$('#the-list').wpList({ delBefore: delBefore });
 
-	$('.delete a[class^="delete"]').click(function(){return false;});
+	$('.delete a[class^="delete"]').live('click', function(){return false;});
 });

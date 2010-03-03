@@ -59,7 +59,7 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 
 	case 'cb':
 		?>
-		<th scope="row" class="check-column"><input type="checkbox" name="media[]" value="<?php the_ID(); ?>" /></th>
+		<th scope="row" class="check-column"><?php if ( current_user_can('edit_post', $post->ID) ) { ?><input type="checkbox" name="media[]" value="<?php the_ID(); ?>" /><?php } ?></th>
 		<?php
 		break;
 
@@ -89,16 +89,21 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 		<p>
 		<?php
 		$actions = array();
-		if ( $is_trash && current_user_can('delete_post', $post->ID) ) {
-			$actions['untrash'] = "<a class='submitdelete' href='" . wp_nonce_url("post.php?action=untrash&amp;post=$post->ID", 'untrash-post_' . $post->ID) . "'>" . __('Restore') . "</a>";
-			$actions['delete'] = "<a class='submitdelete' href='" . wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID) . "'>" . __('Delete Permanently') . "</a>";
-		} else {
-			if ( current_user_can('edit_post', $post->ID) )
-				$actions['edit'] = '<a href="' . get_edit_post_link($post->ID, true) . '">' . __('Edit') . '</a>';
-			if ( current_user_can('delete_post', $post->ID) )
+		if ( current_user_can('edit_post', $post->ID) && !$is_trash )
+			$actions['edit'] = '<a href="' . get_edit_post_link($post->ID, true) . '">' . __('Edit') . '</a>';
+		if ( current_user_can('delete_post', $post->ID) ) {
+			if ( $is_trash )
+				$actions['untrash'] = "<a class='submitdelete' href='" . wp_nonce_url("post.php?action=untrash&amp;post=$post->ID", 'untrash-post_' . $post->ID) . "'>" . __('Restore') . "</a>";
+			elseif ( EMPTY_TRASH_DAYS && MEDIA_TRASH )
 				$actions['trash'] = "<a class='submitdelete' href='" . wp_nonce_url("post.php?action=trash&amp;post=$post->ID", 'trash-post_' . $post->ID) . "'>" . __('Trash') . "</a>";
-			$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . esc_attr(sprintf(__('View &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('View') . '</a>';
+			if ( $is_trash || !EMPTY_TRASH_DAYS || !MEDIA_TRASH ) {
+				$delete_ays = (!$is_trash && !MEDIA_TRASH) ? " onclick='return showNotice.warn();'" : '';
+				$actions['delete'] = "<a class='submitdelete'$delete_ays href='" . wp_nonce_url("post.php?action=delete&amp;post=$post->ID", 'delete-post_' . $post->ID) . "'>" . __('Delete Permanently') . "</a>";
+			}
 		}
+		if ( !$is_trash )
+			$actions['view'] = '<a href="' . get_permalink($post->ID) . '" title="' . esc_attr(sprintf(__('View &#8220;%s&#8221;'), $title)) . '" rel="permalink">' . __('View') . '</a>';
+		$actions = apply_filters( 'media_row_actions', $actions, $post );
 		$action_count = count($actions);
 		$i = 0;
 		echo '<div class="row-actions">';
@@ -171,7 +176,8 @@ foreach ($posts_columns as $column_name => $column_display_name ) {
 			<?php
 		} else {
 			?>
-			<td <?php echo $attributes ?>>&nbsp;</td>
+			<td <?php echo $attributes ?>><?php _e('(Unattached)'); ?><br />
+			<a class="hide-if-no-js" onclick="findPosts.open('media[]','<?php echo $post->ID ?>');return false;" href="#the-list"><?php _e('Attach'); ?></a></td>
 			<?php
 		}
 

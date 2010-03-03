@@ -344,6 +344,11 @@ function wp_dropdown_categories( $args = '' ) {
 	$defaults['selected'] = ( is_category() ) ? get_query_var( 'cat' ) : 0;
 
 	$r = wp_parse_args( $args, $defaults );
+
+	if ( !isset( $r['pad_counts'] ) && $r['show_count'] && $r['hierarchical'] ) {
+		$r['pad_counts'] = true;
+	}
+
 	$r['include_last_update_time'] = $r['show_last_update'];
 	extract( $r );
 
@@ -523,7 +528,7 @@ function wp_list_categories( $args = '' ) {
 function wp_tag_cloud( $args = '' ) {
 	$defaults = array(
 		'smallest' => 8, 'largest' => 22, 'unit' => 'pt', 'number' => 45,
-		'format' => 'flat', 'orderby' => 'name', 'order' => 'ASC',
+		'format' => 'flat', 'separator' => "\n", 'orderby' => 'name', 'order' => 'ASC',
 		'exclude' => '', 'include' => '', 'link' => 'view', 'taxonomy' => 'post_tag', 'echo' => true
 	);
 	$args = wp_parse_args( $args, $defaults );
@@ -566,6 +571,17 @@ function default_topic_count_text( $count ) {
 }
 
 /**
+ * Default topic count scaling for tag links
+ *
+ * @param integer $count number of posts with that tag
+ * @return integer scaled count
+ */
+function default_topic_count_scale( $count ) {
+	return round(log10($count + 1) * 100);
+}
+
+
+/**
  * Generates a tag cloud (heatmap) from provided data.
  *
  * The text size is set by the 'smallest' and 'largest' arguments, which will
@@ -600,9 +616,9 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 	global $wp_rewrite;
 	$defaults = array(
 		'smallest' => 8, 'largest' => 22, 'unit' => 'pt', 'number' => 0,
-		'format' => 'flat', 'orderby' => 'name', 'order' => 'ASC',
+		'format' => 'flat', 'separator' => "\n", 'orderby' => 'name', 'order' => 'ASC',
 		'topic_count_text_callback' => 'default_topic_count_text',
-		'filter' => 1,
+		'topic_count_scale_callback' => 'default_topic_count_scale', 'filter' => 1,
 	);
 
 	if ( !isset( $args['topic_count_text_callback'] ) && isset( $args['single_text'] ) && isset( $args['multiple_text'] ) ) {
@@ -641,8 +657,11 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 		$tags = array_slice($tags, 0, $number);
 
 	$counts = array();
-	foreach ( (array) $tags as $key => $tag )
-		$counts[ $key ] = $tag->count;
+	$real_counts = array(); // For the alt tag
+	foreach ( (array) $tags as $key => $tag ) {
+		$real_counts[ $key ] = $tag->count;
+		$counts[ $key ] = $topic_count_scale_callback($tag->count);
+	}
 
 	$min_count = min( $counts );
 	$spread = max( $counts ) - $min_count;
@@ -655,14 +674,13 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 
 	$a = array();
 
-	$rel = ( is_object( $wp_rewrite ) && $wp_rewrite->using_permalinks() ) ? ' rel="tag"' : '';
-
 	foreach ( $tags as $key => $tag ) {
 		$count = $counts[ $key ];
+		$real_count = $real_counts[ $key ];
 		$tag_link = '#' != $tag->link ? esc_url( $tag->link ) : '#';
 		$tag_id = isset($tags[ $key ]->id) ? $tags[ $key ]->id : $key;
 		$tag_name = $tags[ $key ]->name;
-		$a[] = "<a href='$tag_link' class='tag-link-$tag_id' title='" . esc_attr( $topic_count_text_callback( $count ) ) . "'$rel style='font-size: " .
+		$a[] = "<a href='$tag_link' class='tag-link-$tag_id' title='" . esc_attr( $topic_count_text_callback( $real_count ) ) . "' style='font-size: " .
 			( $smallest + ( ( $count - $min_count ) * $font_step ) )
 			. "$unit;'>$tag_name</a>";
 	}
@@ -677,7 +695,7 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 		$return .= "</li>\n</ul>\n";
 		break;
 	default :
-		$return = join( "\n", $a );
+		$return = join( $separator, $a );
 		break;
 	endswitch;
 
@@ -849,11 +867,12 @@ function get_the_terms( $id = 0, $taxonomy ) {
 
  	$id = (int) $id;
 
-	if ( ! $id && ! in_the_loop() )
-		return false; // in-the-loop function
-
-	if ( !$id )
-		$id = (int) $post->ID;
+	if ( !$id ) {
+		if ( !$post->ID )
+			return false;
+		else
+			$id = (int) $post->ID;
+	}
 
 	$terms = get_object_term_cache( $id, $taxonomy );
 	if ( false === $terms )
@@ -866,11 +885,11 @@ function get_the_terms( $id = 0, $taxonomy ) {
 }
 
 /**
- * Retrieve terms as a list with specified format.
+ * Retrieve a post's terms as a list with specified format.
  *
  * @since 2.5.0
  *
- * @param int $id Term ID.
+ * @param int $id Post ID.
  * @param string $taxonomy Taxonomy name.
  * @param string $before Optional. Before list.
  * @param string $sep Optional. Separate items using this.
@@ -910,12 +929,13 @@ function get_the_term_list( $id = 0, $taxonomy, $before = '', $sep = '', $after 
  * @param string $after Optional. After list.
  * @return null|bool False on WordPress error. Returns null when displaying.
  */
-function the_terms( $id, $taxonomy, $before = '', $sep = '', $after = '' ) {
-	$return = get_the_term_list( $id, $taxonomy, $before, $sep, $after );
-	if ( is_wp_error( $return ) )
+function the_terms( $id, $taxonomy, $before = '', $sep = ', ', $after = '' ) {
+	$term_list = get_the_term_list( $id, $taxonomy, $before, $sep, $after );
+
+	if ( is_wp_error( $term_list ) )
 		return false;
-	else
-		echo $return;
+
+	echo apply_filters('the_terms', $term_list, $taxonomy, $before, $sep, $after);
 }
 
 /**

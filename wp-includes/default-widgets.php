@@ -376,8 +376,8 @@ class WP_Widget_Text extends WP_Widget {
 
 	function widget( $args, $instance ) {
 		extract($args);
-		$title = apply_filters('widget_title', empty($instance['title']) ? '' : $instance['title']);
-		$text = apply_filters( 'widget_text', $instance['text'] );
+		$title = apply_filters( 'widget_title', empty($instance['title']) ? '' : $instance['title'], $instance );
+		$text = apply_filters( 'widget_text', $instance['text'], $instance );
 		echo $before_widget;
 		if ( !empty( $title ) ) { echo $before_title . $title . $after_title; } ?>
 			<div class="textwidget"><?php echo $instance['filter'] ? wpautop($text) : $text; ?></div>
@@ -391,7 +391,7 @@ class WP_Widget_Text extends WP_Widget {
 		if ( current_user_can('unfiltered_html') )
 			$instance['text'] =  $new_instance['text'];
 		else
-			$instance['text'] = wp_filter_post_kses( $new_instance['text'] );
+			$instance['text'] = stripslashes( wp_filter_post_kses( addslashes($new_instance['text']) ) ); // wp_filter_post_kses() expects slashed
 		$instance['filter'] = isset($new_instance['filter']);
 		return $instance;
 	}
@@ -634,7 +634,7 @@ class WP_Widget_Recent_Comments extends WP_Widget {
 			$number = 15;
 
 		if ( !$comments = wp_cache_get( 'recent_comments', 'widget' ) ) {
-			$comments = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE comment_approved = '1' ORDER BY comment_date_gmt DESC LIMIT 15");
+			$comments = $wpdb->get_results("SELECT $wpdb->comments.* FROM $wpdb->comments JOIN $wpdb->posts ON $wpdb->posts.ID = $wpdb->comments.comment_post_ID WHERE comment_approved = '1' AND post_status = 'publish' ORDER BY comment_date_gmt DESC LIMIT 15");
 			wp_cache_add( 'recent_comments', $comments, 'widget' );
 		}
 
@@ -732,6 +732,10 @@ class WP_Widget_RSS extends WP_Widget {
 			echo $before_title . $title . $after_title;
 		wp_widget_rss_output( $rss, $instance );
 		echo $after_widget;
+
+		if ( ! is_wp_error($rss) )
+			$rss->__destruct();
+		unset($rss);
 	}
 
 	function update($new_instance, $old_instance) {
@@ -770,7 +774,6 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 	if ( is_wp_error($rss) ) {
 		if ( is_admin() || current_user_can('manage_options') )
 			echo '<p>' . sprintf( __('<strong>RSS Error</strong>: %s'), $rss->get_error_message() ) . '</p>';
-
 		return;
 	}
 
@@ -787,6 +790,8 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 
 	if ( !$rss->get_item_quantity() ) {
 		echo '<ul><li>' . __( 'An error has occurred; the feed is probably down. Try again later.' ) . '</li></ul>';
+		$rss->__destruct(); 
+		unset($rss);
 		return;
 	}
 
@@ -838,6 +843,8 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 		}
 	}
 	echo '</ul>';
+	$rss->__destruct(); 
+	unset($rss);
 }
 
 
@@ -946,6 +953,9 @@ function wp_widget_rss_process( $widget_rss, $check_feed = true ) {
 			$link = esc_url(strip_tags($rss->get_permalink()));
 			while ( stristr($link, 'http') != $link )
 				$link = substr($link, 1);
+
+			$rss->__destruct();
+			unset($rss);
 		}
 	}
 

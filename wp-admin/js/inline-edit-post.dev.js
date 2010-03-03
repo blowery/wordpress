@@ -74,7 +74,7 @@ inlineEditPost = {
 	},
 
 	setBulk : function() {
-		var te = '', type = this.type, tax;
+		var te = '', type = this.type, tax, c = true;
 		this.revert();
 
 		$('#bulk-edit td').attr('colspan', $('.widefat:first thead th:visible').length);
@@ -83,11 +83,15 @@ inlineEditPost = {
 
 		$('tbody th.check-column input[type="checkbox"]').each(function(i){
 			if ( $(this).attr('checked') ) {
+				c = false;
 				var id = $(this).val(), theTitle;
 				theTitle = $('#inline_'+id+' .post_title').text() || inlineEditL10n.notitle;
 				te += '<div id="ttle'+id+'"><a id="_'+id+'" class="ntdelbutton" title="'+inlineEditL10n.ntdeltitle+'">X</a>'+theTitle+'</div>';
 			}
 		});
+
+		if ( c )
+			return this.revert();
 
 		$('#bulk-titles').html(te);
 		$('#bulk-titles a').click(function() {
@@ -126,6 +130,11 @@ inlineEditPost = {
 
 		// populate the data
 		rowData = $('#inline_'+id);
+		if ( !$(':input[name="post_author"] option[value=' + $('.post_author', rowData).text() + ']', editRow).val() ) {
+			// author no longer has edit caps, so we need to add them to the list of authors
+			$(':input[name="post_author"]', editRow).prepend('<option value="' + $('.post_author', rowData).text() + '">' + $('#' + t.type + '-' + id + ' .author').text() + '</option>');
+		}
+
 		for ( f = 0; f < fields.length; f++ ) {
 			$(':input[name="'+fields[f]+'"]', editRow).val( $('.'+fields[f], rowData).text() );
 		}
