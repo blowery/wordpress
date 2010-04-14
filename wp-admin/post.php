@@ -150,21 +150,11 @@ case 'edit':
 	wp_enqueue_script( 'admin-comments' );
 	enqueue_comment_hotkeys_js();
 
-<<<<<<< HEAD:wp-admin/post.php
-	if ( current_user_can('edit_post', $post_ID) ) {
-		if ( $last = wp_check_post_lock( $post->ID ) ) {
-			add_action('admin_notices', '_admin_notice_post_locked' );
-		} else {
-			wp_set_post_lock( $post->ID );
-			wp_enqueue_script('autosave');
-		}
-=======
 	if ( $last = wp_check_post_lock( $post->ID ) ) {
 		add_action('admin_notices', '_admin_notice_post_locked' );
 	} else {
 		wp_set_post_lock( $post->ID );
 		wp_enqueue_script('autosave');
->>>>>>> tags/2.9.2:wp-admin/post.php
 	}
 
 	$title = __('Edit Post');
